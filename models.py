@@ -203,7 +203,7 @@ class Transaction(Base):
     amount = Column(Float, nullable=False)
     currency = Column(String, nullable=False)
     description = Column(String)
-    metadata = Column(JSON)
+    transaction_metadata = Column(JSON)  # Changed from metadata to transaction_metadata
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class MarketListing(Base):
@@ -227,7 +227,7 @@ class ChatMessage(Base):
     channel = Column(String, nullable=False)
     content = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    metadata = Column(JSON)
+    message_metadata = Column(JSON)  # Changed from metadata to message_metadata
 
 class UserSession(Base):
     __tablename__ = 'user_sessions'
