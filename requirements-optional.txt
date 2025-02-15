@@ -1,0 +1,40 @@
+# Game Development
+pygame==2.5.1
+arcade==2.6.17
+
+# AI and Machine Learning
+numpy==1.25.2
+scipy==1.11.2
+scikit-learn==1.3.0
+
+# Additional Web Dependencies
+aiohttp==3.8.5
+websockets==11.0.3
+redis==5.0.0
+python-multipart==0.0.6
+
+# Image Processing
+Pillow==10.0.0
+aiofiles==23.2.1
+
+# Monitoring
+prometheus-client==0.17.1
+
+# Performance Testing
+locust==2.16.1
+pytest-profiling==1.7.0
+memory-profiler==0.61.0
+line-profiler==4.1.1
+
+# Additional Testing
+pytest-rerunfailures==12.0
+pytest-selenium==4.0.1
+pytest-vcr==1.0.2
+pytest-watch==4.2.0
+
+# Documentation Extensions
+sphinx-autodoc-typehints==1.24.0
+
+# Development Extras
+icecream==2.1.3
+freezegun==1.2.2

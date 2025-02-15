@@ -1,0 +1,511 @@
+{% extends "base.html" %}
+
+{% block title %}Terminusa Online - Marketplace{% endblock %}
+
+{% block extra_css %}
+<style>
+    .marketplace-container {
+        display: grid;
+        grid-template-columns: 250px 1fr;
+        gap: 1rem;
+    }
+
+    .filters {
+        background-color: var(--secondary-color);
+        padding: 1rem;
+        border-radius: 0.5rem;
+    }
+
+    .listings {
+        background-color: var(--secondary-color);
+        padding: 1rem;
+        border-radius: 0.5rem;
+    }
+
+    .listing-card {
+        background-color: var(--primary-color);
+        border: 1px solid var(--accent-color);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: transform 0.2s;
+    }
+
+    .listing-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .item-preview {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .item-image {
+        width: 64px;
+        height: 64px;
+        background-color: var(--secondary-color);
+        border-radius: 0.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .item-details {
+        flex-grow: 1;
+    }
+
+    .item-grade {
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.8rem;
+        display: inline-block;
+        margin-bottom: 0.5rem;
+    }
+
+    .grade-basic { background-color: #95a5a6; }
+    .grade-intermediate { background-color: #2ecc71; }
+    .grade-excellent { background-color: #3498db; }
+    .grade-legendary { background-color: #9b59b6; }
+    .grade-immortal { background-color: #f1c40f; }
+
+    .price-tag {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: bold;
+    }
+
+    .currency-icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .filter-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .filter-section h5 {
+        margin-bottom: 1rem;
+    }
+
+    .filter-options {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .price-range {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .create-listing-btn {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        z-index: 1000;
+    }
+
+    .modal-content {
+        background-color: var(--secondary-color);
+        color: var(--text-color);
+    }
+
+    .modal-header {
+        border-bottom-color: var(--accent-color);
+    }
+
+    .modal-footer {
+        border-top-color: var(--accent-color);
+    }
+
+    .item-select {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .item-option {
+        width: 64px;
+        height: 64px;
+        background-color: var(--primary-color);
+        border: 1px solid var(--accent-color);
+        border-radius: 0.25rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+
+    .item-option.selected {
+        border-color: #f1c40f;
+        box-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
+    }
+
+    .wallet-info {
+        position: sticky;
+        top: 0;
+        background-color: var(--secondary-color);
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 0.5rem;
+        z-index: 100;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Create Listing Button -->
+<button class="btn btn-primary create-listing-btn" data-bs-toggle="modal" data-bs-target="#createListingModal">
+    <i class="fas fa-plus"></i> Create Listing
+</button>
+
+<div class="marketplace-container">
+    <!-- Filters Sidebar -->
+    <div class="filters">
+        <div class="wallet-info">
+            <h5>Your Wallet</h5>
+            <div class="currency-display">
+                <img src="/static/images/solana.png" class="currency-icon" alt="SOL">
+                <span class="currency-amount">{{ wallet.sol_balance }} SOL</span>
+            </div>
+            <div class="currency-display">
+                <img src="/static/images/exon.png" class="currency-icon" alt="EXON">
+                <span class="currency-amount">{{ wallet.exons }} EXON</span>
+            </div>
+            <div class="currency-display">
+                <img src="/static/images/crystal.png" class="currency-icon" alt="CRYS">
+                <span class="currency-amount">{{ wallet.crystals }} CRYS</span>
+            </div>
+        </div>
+
+        <div class="filter-section">
+            <h5>Item Type</h5>
+            <div class="filter-options">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="weapon" id="filterWeapon">
+                    <label class="form-check-label" for="filterWeapon">Weapons</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="armor" id="filterArmor">
+                    <label class="form-check-label" for="filterArmor">Armor</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="accessory" id="filterAccessory">
+                    <label class="form-check-label" for="filterAccessory">Accessories</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="consumable" id="filterConsumable">
+                    <label class="form-check-label" for="filterConsumable">Consumables</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="filter-section">
+            <h5>Grade</h5>
+            <div class="filter-options">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="basic" id="filterBasic">
+                    <label class="form-check-label" for="filterBasic">Basic</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="intermediate" id="filterIntermediate">
+                    <label class="form-check-label" for="filterIntermediate">Intermediate</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="excellent" id="filterExcellent">
+                    <label class="form-check-label" for="filterExcellent">Excellent</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="legendary" id="filterLegendary">
+                    <label class="form-check-label" for="filterLegendary">Legendary</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" value="immortal" id="filterImmortal">
+                    <label class="form-check-label" for="filterImmortal">Immortal</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="filter-section">
+            <h5>Price Range</h5>
+            <div class="filter-options">
+                <select class="form-select mb-2" id="priceCurrency">
+                    <option value="SOL">SOL</option>
+                    <option value="EXON">EXON</option>
+                    <option value="CRYSTAL">CRYSTAL</option>
+                </select>
+                <div class="price-range">
+                    <input type="number" class="form-control" id="minPrice" placeholder="Min">
+                    <span>-</span>
+                    <input type="number" class="form-control" id="maxPrice" placeholder="Max">
+                </div>
+            </div>
+        </div>
+
+        <button class="btn btn-primary w-100" onclick="applyFilters()">Apply Filters</button>
+    </div>
+
+    <!-- Listings Area -->
+    <div class="listings">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4>Market Listings</h4>
+            <div class="d-flex gap-2">
+                <select class="form-select" id="sortBy">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="price_asc">Price: Low to High</option>
+                    <option value="price_desc">Price: High to Low</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="listingsContainer">
+            {% for listing in listings %}
+            <div class="listing-card" data-created="{{ listing.created_at }}" data-price="{{ listing.price }}">
+                <div class="item-preview">
+                    <div class="item-image">
+                        <img src="/static/images/items/{{ listing.item.type }}.png" alt="{{ listing.item.name }}">
+                    </div>
+                    <div class="item-details">
+                        <span class="item-grade grade-{{ listing.item.grade.lower() }}">{{ listing.item.grade }}</span>
+                        <h5>{{ listing.item.name }}</h5>
+                        <small>Listed by {{ listing.seller.username }}</small>
+                    </div>
+                    <div class="price-tag">
+                        <img src="/static/images/{{ listing.currency.lower() }}.png" class="currency-icon" alt="{{ listing.currency }}">
+                        <span>{{ listing.price }}</span>
+                    </div>
+                </div>
+                <div class="item-stats">
+                    {% for stat, value in listing.item.stats.items() %}
+                    <small class="me-2">{{ stat }}: {{ value }}</small>
+                    {% endfor %}
+                </div>
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <small>Expires in {{ listing.time_left }}</small>
+                    <button class="btn btn-primary" onclick="purchaseListing({{ listing.id }})">Purchase</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Create Listing Modal -->
+<div class="modal fade" id="createListingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Listing</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>Select Item</h6>
+                <div class="item-select" id="itemSelect">
+                    {% for item in inventory.items %}
+                    <div class="item-option" data-item-id="{{ item.id }}" onclick="selectItem(this)">
+                        <img src="/static/images/items/{{ item.type }}.png" alt="{{ item.name }}">
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Currency</label>
+                    <select class="form-select" id="listingCurrency">
+                        <option value="SOL">SOL</option>
+                        <option value="EXON">EXON</option>
+                        <option value="CRYSTAL">CRYSTAL</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Price</label>
+                    <input type="number" class="form-control" id="listingPrice" min="0" step="0.000001">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Duration</label>
+                    <select class="form-select" id="listingDuration">
+                        <option value="1">1 Day</option>
+                        <option value="3">3 Days</option>
+                        <option value="7">7 Days</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="createListing()">Create Listing</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let selectedItemId = null;
+
+    function selectItem(element) {
+        document.querySelectorAll('.item-option').forEach(el => {
+            el.classList.remove('selected');
+        });
+        element.classList.add('selected');
+        selectedItemId = element.dataset.itemId;
+    }
+
+    function createListing() {
+        if (!selectedItemId) {
+            showAlert('Please select an item', 'danger');
+            return;
+        }
+
+        const data = {
+            item_id: selectedItemId,
+            currency: document.getElementById('listingCurrency').value,
+            price: parseFloat(document.getElementById('listingPrice').value),
+            duration: parseInt(document.getElementById('listingDuration').value)
+        };
+
+        fetch('/marketplace/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === 'success') {
+                showAlert('Listing created successfully');
+                location.reload();
+            } else {
+                showAlert(result.message, 'danger');
+            }
+        })
+        .catch(error => {
+            showAlert('Error creating listing', 'danger');
+            console.error('Error:', error);
+        });
+    }
+
+    function purchaseListing(listingId) {
+        fetch(`/marketplace/purchase/${listingId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === 'success') {
+                showAlert('Item purchased successfully');
+                location.reload();
+            } else {
+                showAlert(result.message, 'danger');
+            }
+        })
+        .catch(error => {
+            showAlert('Error purchasing item', 'danger');
+            console.error('Error:', error);
+        });
+    }
+
+    function applyFilters() {
+        const filters = {
+            types: Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
+                .filter(cb => cb.id.startsWith('filter'))
+                .map(cb => cb.value),
+            price: {
+                currency: document.getElementById('priceCurrency').value,
+                min: document.getElementById('minPrice').value,
+                max: document.getElementById('maxPrice').value
+            }
+        };
+
+        fetch('/marketplace/filter', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify(filters)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === 'success') {
+                updateListings(result.listings);
+            } else {
+                showAlert(result.message, 'danger');
+            }
+        })
+        .catch(error => {
+            showAlert('Error applying filters', 'danger');
+            console.error('Error:', error);
+        });
+    }
+
+    function updateListings(listings) {
+        const container = document.getElementById('listingsContainer');
+        container.innerHTML = listings.map(listing => {
+            const statsHtml = Object.entries(listing.item.stats)
+                .map(([stat, value]) => `<small class="me-2">${stat}: ${value}</small>`)
+                .join('');
+            
+            return `
+                <div class="listing-card" data-created="${listing.created_at}" data-price="${listing.price}">
+                    <div class="item-preview">
+                        <div class="item-image">
+                            <img src="/static/images/items/${listing.item.type}.png" alt="${listing.item.name}">
+                        </div>
+                        <div class="item-details">
+                            <span class="item-grade grade-${listing.item.grade.toLowerCase()}">${listing.item.grade}</span>
+                            <h5>${listing.item.name}</h5>
+                            <small>Listed by ${listing.seller.username}</small>
+                        </div>
+                        <div class="price-tag">
+                            <img src="/static/images/${listing.currency.toLowerCase()}.png" class="currency-icon" alt="${listing.currency}">
+                            <span>${listing.price}</span>
+                        </div>
+                    </div>
+                    <div class="item-stats">${statsHtml}</div>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <small>Expires in ${listing.time_left}</small>
+                        <button class="btn btn-primary" onclick="purchaseListing(${listing.id})">Purchase</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    document.getElementById('sortBy').addEventListener('change', function() {
+        const sortBy = this.value;
+        const listings = Array.from(document.querySelectorAll('.listing-card'));
+        
+        listings.sort((a, b) => {
+            switch(sortBy) {
+                case 'newest':
+                    return new Date(b.dataset.created) - new Date(a.dataset.created);
+                case 'oldest':
+                    return new Date(a.dataset.created) - new Date(b.dataset.created);
+                case 'price_asc':
+                    return parseFloat(a.dataset.price) - parseFloat(b.dataset.price);
+                case 'price_desc':
+                    return parseFloat(b.dataset.price) - parseFloat(a.dataset.price);
+                default:
+                    return 0;
+            }
+        });
+        
+        const container = document.getElementById('listingsContainer');
+        container.innerHTML = '';
+        listings.forEach(listing => container.appendChild(listing));
+    });
+</script>
+{% endblock %}

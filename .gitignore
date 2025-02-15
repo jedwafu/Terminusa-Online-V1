@@ -1,0 +1,29 @@
+# Environment variables
+.env
+.env.test
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Test reports
+test-reports/
+
+# IDE files
+.vscode/
+.idea/
+
+# Virtual environment
+venv/
+env/
+
+# Logs
+*.log
+
+# Local development files
+*.sqlite3
+*.db
+
+# Temporary files
+*.tmp
+*.temp

@@ -1,0 +1,488 @@
+{% extends "base.html" %}
+
+{% block title %}Terminusa Online - Guilds{% endblock %}
+
+{% block extra_css %}
+<style>
+    .guilds-container {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 1rem;
+    }
+
+    .guild-info {
+        background-color: var(--secondary-color);
+        padding: 1rem;
+        border-radius: 0.5rem;
+    }
+
+    .guild-content {
+        background-color: var(--secondary-color);
+        padding: 1rem;
+        border-radius: 0.5rem;
+    }
+
+    .guild-stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-card {
+        background-color: var(--primary-color);
+        padding: 1rem;
+        border-radius: 0.5rem;
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--accent-color);
+    }
+
+    .member-list {
+        margin-top: 1rem;
+    }
+
+    .member-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem;
+        background-color: var(--primary-color);
+        border-radius: 0.25rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .member-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .member-role {
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.8rem;
+    }
+
+    .role-leader { background-color: #f1c40f; color: #2c3e50; }
+    .role-officer { background-color: #e67e22; }
+    .role-member { background-color: #3498db; }
+
+    .quest-card {
+        background-color: var(--primary-color);
+        border: 1px solid var(--accent-color);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .quest-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .quest-progress {
+        height: 10px;
+        background-color: var(--secondary-color);
+        border-radius: 5px;
+        overflow: hidden;
+        margin: 0.5rem 0;
+    }
+
+    .quest-progress-bar {
+        height: 100%;
+        background-color: var(--accent-color);
+        transition: width 0.3s;
+    }
+
+    .quest-rewards {
+        display: flex;
+        gap: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .reward-item {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .guild-treasury {
+        background-color: var(--primary-color);
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .currency-display {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .currency-icon {
+        width: 20px;
+        height: 20px;
+    }
+
+    .tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .tab {
+        padding: 0.5rem 1rem;
+        background-color: var(--primary-color);
+        border-radius: 0.25rem;
+        cursor: pointer;
+    }
+
+    .tab.active {
+        background-color: var(--accent-color);
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if user_guild %}
+    <!-- Guild Member View -->
+    <div class="guilds-container">
+        <!-- Left Sidebar - Guild Info -->
+        <div class="guild-info">
+            <h3>{{ user_guild.name }}</h3>
+            <div class="guild-treasury">
+                <h5>Guild Treasury</h5>
+                <div class="currency-display">
+                    <img src="/static/images/exon.png" class="currency-icon" alt="EXON">
+                    <span>{{ user_guild.exons_balance }} EXON</span>
+                </div>
+                <div class="currency-display">
+                    <img src="/static/images/crystal.png" class="currency-icon" alt="CRYS">
+                    <span>{{ user_guild.crystals_balance }} CRYS</span>
+                </div>
+            </div>
+
+            <div class="guild-stats">
+                <div class="stat-card">
+                    <div class="stat-value">{{ user_guild.level }}</div>
+                    <div>Guild Level</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ user_guild.members|length }}/50</div>
+                    <div>Members</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ user_guild.quests_completed }}</div>
+                    <div>Quests Completed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ user_guild.gates_cleared }}</div>
+                    <div>Gates Cleared</div>
+                </div>
+            </div>
+
+            {% if user.id == user_guild.leader_id %}
+                <button class="btn btn-primary w-100 mb-3" onclick="openGuildSettings()">Guild Settings</button>
+            {% endif %}
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="guild-content">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('quests')">Guild Quests</div>
+                <div class="tab" onclick="switchTab('members')">Members</div>
+                <div class="tab" onclick="switchTab('rankings')">Rankings</div>
+            </div>
+
+            <!-- Quests Tab -->
+            <div id="questsTab" class="tab-content active">
+                <h4>Active Guild Quests</h4>
+                {% for quest in user_guild.active_quests %}
+                    <div class="quest-card">
+                        <div class="quest-header">
+                            <h5>{{ quest.name }}</h5>
+                            <span>{{ quest.time_left }} remaining</span>
+                        </div>
+                        <p>{{ quest.description }}</p>
+                        <div class="quest-progress">
+                            <div class="quest-progress-bar" style="width: {{ (quest.progress / quest.target * 100)|round }}%"></div>
+                        </div>
+                        <small>Progress: {{ quest.progress }}/{{ quest.target }}</small>
+                        <div class="quest-rewards">
+                            <div class="reward-item">
+                                <img src="/static/images/crystal.png" class="currency-icon" alt="CRYS">
+                                <span>{{ quest.reward_crystals }}</span>
+                            </div>
+                            <div class="reward-item">
+                                <img src="/static/images/exon.png" class="currency-icon" alt="EXON">
+                                <span>{{ quest.reward_exons }}</span>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <!-- Members Tab -->
+            <div id="membersTab" class="tab-content">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4>Guild Members</h4>
+                    {% if user.id == user_guild.leader_id %}
+                        <button class="btn btn-primary" onclick="inviteMember()">Invite Member</button>
+                    {% endif %}
+                </div>
+
+                <div class="member-list">
+                    {% for member in user_guild.members %}
+                        <div class="member-item">
+                            <div class="member-info">
+                                <span>{{ member.username }}</span>
+                                <span class="member-role role-{{ member.role }}">{{ member.role|title }}</span>
+                            </div>
+                            <div class="member-actions">
+                                {% if user.id == user_guild.leader_id and member.id != user.id %}
+                                    <button class="btn btn-sm btn-primary" onclick="promoteMember({{ member.id }})">Promote</button>
+                                    <button class="btn btn-sm btn-danger" onclick="kickMember({{ member.id }})">Kick</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Rankings Tab -->
+            <div id="rankingsTab" class="tab-content">
+                <h4>Guild Rankings</h4>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Member</th>
+                                <th>Contribution</th>
+                                <th>Quests Completed</th>
+                                <th>Gates Cleared</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for member in user_guild.member_rankings %}
+                                <tr>
+                                    <td>{{ member.username }}</td>
+                                    <td>{{ member.contribution }}</td>
+                                    <td>{{ member.quests_completed }}</td>
+                                    <td>{{ member.gates_cleared }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <!-- Non-Guild Member View -->
+    <div class="container">
+        <div class="row mb-4">
+            <div class="col">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2>Available Guilds</h2>
+                    <button class="btn btn-primary" onclick="createGuild()">Create Guild</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            {% for guild in all_guilds %}
+                <div class="col-md-4 mb-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">{{ guild.name }}</h5>
+                            <p class="card-text">Level {{ guild.level }} Guild</p>
+                            <div class="mb-3">
+                                <small>Members: {{ guild.members|length }}/50</small>
+                                <br>
+                                <small>Leader: {{ guild.leader.username }}</small>
+                            </div>
+                            <button class="btn btn-primary" onclick="requestJoin({{ guild.id }})">Request to Join</button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
+
+<!-- Create Guild Modal -->
+<div class="modal fade" id="createGuildModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Guild</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Guild Name</label>
+                    <input type="text" class="form-control" id="guildName">
+                </div>
+                <div class="alert alert-info">
+                    Creating a guild requires:
+                    <ul class="mb-0">
+                        <li>1,000 EXON</li>
+                        <li>1,000 Crystals</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitCreateGuild()">Create Guild</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function switchTab(tabName) {
+        // Update tab buttons
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.querySelector(`.tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+
+        // Update tab content
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(`${tabName}Tab`).classList.add('active');
+    }
+
+    function createGuild() {
+        const modal = new bootstrap.Modal(document.getElementById('createGuildModal'));
+        modal.show();
+    }
+
+    function submitCreateGuild() {
+        const name = document.getElementById('guildName').value.trim();
+        if (!name) {
+            showAlert('Please enter a guild name', 'danger');
+            return;
+        }
+
+        fetch('/guilds/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ name })
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === 'success') {
+                showAlert('Guild created successfully');
+                location.reload();
+            } else {
+                showAlert(result.message, 'danger');
+            }
+        })
+        .catch(error => {
+            showAlert('Error creating guild', 'danger');
+            console.error('Error:', error);
+        });
+    }
+
+    function requestJoin(guildId) {
+        fetch(`/guilds/join/${guildId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === 'success') {
+                showAlert('Join request sent successfully');
+                location.reload();
+            } else {
+                showAlert(result.message, 'danger');
+            }
+        })
+        .catch(error => {
+            showAlert('Error sending join request', 'danger');
+            console.error('Error:', error);
+        });
+    }
+
+    function promoteMember(memberId) {
+        fetch(`/guilds/promote/${memberId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === 'success') {
+                showAlert('Member promoted successfully');
+                location.reload();
+            } else {
+                showAlert(result.message, 'danger');
+            }
+        })
+        .catch(error => {
+            showAlert('Error promoting member', 'danger');
+            console.error('Error:', error);
+        });
+    }
+
+    function kickMember(memberId) {
+        if (!confirm('Are you sure you want to kick this member?')) {
+            return;
+        }
+
+        fetch(`/guilds/kick/${memberId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.status === 'success') {
+                showAlert('Member kicked successfully');
+                location.reload();
+            } else {
+                showAlert(result.message, 'danger');
+            }
+        })
+        .catch(error => {
+            showAlert('Error kicking member', 'danger');
+            console.error('Error:', error);
+        });
+    }
+
+    function openGuildSettings() {
+        // Implementation for guild settings
+    }
+
+    function inviteMember() {
+        // Implementation for member invitation
+    }
+</script>
+{% endblock %}

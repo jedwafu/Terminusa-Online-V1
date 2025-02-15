@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block title %}Terminusa Online - Welcome{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hero-section {
+        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/static/images/hero-bg.jpg');
+        background-size: cover;
+        background-position: center;
+        padding: 100px 0;
+        margin-bottom: 3rem;
+        text-align: center;
+        color: #fff;
+    }
+
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: bold;
+        margin-bottom: 1.5rem;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .hero-subtitle {
+        font-size: 1.5rem;
+        margin-bottom: 2rem;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    }
+
+    .feature-card {
+        height: 100%;
+        transition: transform 0.3s;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .feature-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        color: var(--accent-color);
+    }
+
+    .currency-section {
+        background-color: var(--secondary-color);
+        padding: 3rem 0;
+        margin: 3rem 0;
+    }
+
+    .currency-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: #f1c40f;
+    }
+
+    .stat-card {
+        text-align: center;
+        padding: 1.5rem;
+        background-color: var(--secondary-color);
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: var(--accent-color);
+    }
+
+    .stat-label {
+        font-size: 1.1rem;
+        color: var(--text-color);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="container">
+        <h1 class="hero-title">Welcome to Terminusa Online</h1>
+        <p class="hero-subtitle">Inspired by Solo Leveling - A Gate Hunter MMORPG</p>
+        <div class="d-flex justify-content-center gap-3">
+            {% if not current_user.is_authenticated %}
+                <a href="/register" class="btn btn-primary btn-lg">Start Your Journey</a>
+                <a href="/login" class="btn btn-outline-light btn-lg">Login</a>
+            {% else %}
+                <a href="/play" class="btn btn-primary btn-lg">Enter Game</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row mb-5">
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon">
+                        <i class="fas fa-dungeon"></i>
+                    </div>
+                    <h3>Gates & Magic Beasts</h3>
+                    <p>Challenge various gates filled with powerful magic beasts. Solo or party play available.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon">
+                        <i class="fas fa-hat-wizard"></i>
+                    </div>
+                    <h3>Job Classes</h3>
+                    <p>Choose from multiple job classes and evolve them as you progress. Become a Shadow Monarch!</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card">
+                <div class="card-body text-center">
+                    <div class="feature-icon">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <h3>Economy System</h3>
+                    <p>Trade with Solana, Exons, and Crystals. Participate in the marketplace and token swaps.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="currency-section">
+        <div class="container">
+            <h2 class="text-center mb-4">Game Currencies</h2>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <div class="currency-icon">
+                                <i class="fab fa-bitcoin"></i>
+                            </div>
+                            <h4>Solana</h4>
+                            <p>Web3 cryptocurrency for secure transactions and token swaps.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <div class="currency-icon">
+                                <i class="fas fa-gem"></i>
+                            </div>
+                            <h4>Exons</h4>
+                            <p>In-game currency for trading and purchasing special items.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <div class="currency-icon">
+                                <i class="fas fa-crystal-ball"></i>
+                            </div>
+                            <h4>Crystals</h4>
+                            <p>Earned from gates and used for various in-game purchases.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-12 text-center mb-4">
+            <h2>Game Statistics</h2>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.total_players }}</div>
+                <div class="stat-label">Active Players</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.gates_cleared }}</div>
+                <div class="stat-label">Gates Cleared</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.guilds_formed }}</div>
+                <div class="stat-label">Active Guilds</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.market_trades }}</div>
+                <div class="stat-label">Market Trades</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-12 text-center mb-4">
+            <h2>Getting Started</h2>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h4>New Players</h4>
+                    <ol>
+                        <li>Create your account</li>
+                        <li>Choose your starting class</li>
+                        <li>Complete tutorial gates</li>
+                        <li>Join a guild or form a party</li>
+                        <li>Start your journey as a gate hunter!</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h4>Key Features</h4>
+                    <ul>
+                        <li>AI-powered quest and gate systems</li>
+                        <li>Dynamic marketplace economy</li>
+                        <li>Unique job class progression</li>
+                        <li>Guild and party systems</li>
+                        <li>Web3 integration with Solana</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Add any index-specific JavaScript here
+    document.addEventListener('DOMContentLoaded', function() {
+        // Animate stats on scroll
+        const stats = document.querySelectorAll('.stat-number');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const target = entry.target;
+                    const value = parseInt(target.textContent);
+                    let current = 0;
+                    const increment = value / 50;
+                    const timer = setInterval(() => {
+                        current += increment;
+                        if (current >= value) {
+                            clearInterval(timer);
+                            current = value;
+                        }
+                        target.textContent = Math.round(current);
+                    }, 20);
+                    observer.unobserve(target);
+                }
+            });
+        });
+        
+        stats.forEach(stat => observer.observe(stat));
+    });
+</script>
+{% endblock %}
