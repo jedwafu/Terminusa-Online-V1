@@ -1,8 +1,4 @@
-#!/usr/bin/env python3
-import os
-import sys
-import argparse
-from typing import Optional
+from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
@@ -10,6 +6,16 @@ from models import Base, User, UserRole
 import bcrypt
 from datetime import datetime
 import json
+import os
+
+# Create the SQLAlchemy instance
+db = SQLAlchemy()
+
+def init_db(app):
+    """Initialize the database with the Flask app"""
+    db.init_app(app)
+    with app.app_context():
+        db.create_all()
 
 class DatabaseSetup:
     """Database setup and initialization"""
@@ -197,92 +203,16 @@ class DatabaseSetup:
             print(f"Error resetting database: {e}")
             return False
 
-def main():
-    """Main entry point"""
-    parser = argparse.ArgumentParser(
-        description='Database setup utility'
-    )
-    
-    parser.add_argument(
-        '--reset',
-        action='store_true',
-        help='Reset database to initial state'
-    )
-    
-    parser.add_argument(
-        '--create-tables',
-        action='store_true',
-        help='Create database tables'
-    )
-    
-    parser.add_argument(
-        '--drop-tables',
-        action='store_true',
-        help='Drop database tables'
-    )
-    
-    parser.add_argument(
-        '--create-admin',
-        action='store_true',
-        help='Create admin user'
-    )
-    
-    parser.add_argument(
-        '--create-test-data',
-        action='store_true',
-        help='Create test data'
-    )
-    
-    parser.add_argument(
-        '--verify',
-        action='store_true',
-        help='Verify database setup'
-    )
-    
-    parser.add_argument(
-        '--db-url',
-        default=os.getenv(
-            'DB_URL',
-            'sqlite:///terminusa.db'
-        ),
-        help='Database URL'
-    )
-    
-    args = parser.parse_args()
+if __name__ == '__main__':
+    # Get database URL from environment or use default
+    db_url = os.getenv('DB_URL', 'sqlite:///terminusa.db')
     
     # Create database setup instance
-    db_setup = DatabaseSetup(args.db_url)
+    db_setup = DatabaseSetup(db_url)
     
-    # Process commands
-    if args.reset:
-        if not db_setup.reset_database():
-            sys.exit(1)
-    
-    if args.create_tables:
-        if not db_setup.create_tables():
-            sys.exit(1)
-    
-    if args.drop_tables:
-        if not db_setup.drop_tables():
-            sys.exit(1)
-    
-    if args.create_admin:
-        if not db_setup.create_admin_user(
-            "admin",
-            "admin@terminusa.com",
-            "admin123"
-        ):
-            sys.exit(1)
-    
-    if args.create_test_data:
-        if not db_setup.create_test_data():
-            sys.exit(1)
-    
-    if args.verify:
-        if not db_setup.verify_database():
-            sys.exit(1)
-    
-    print("Database setup completed successfully")
-
-if __name__ == '__main__':
-    main()
+    # Reset database (drop all tables, recreate them, and add initial data)
+    if db_setup.reset_database():
+        print("Database setup completed successfully")
+    else:
+        print("Database setup failed")
+        sys.exit(1)
