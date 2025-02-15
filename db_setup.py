@@ -1,3 +1,4 @@
+from typing import Optional, Dict, Any
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
@@ -7,6 +8,7 @@ import bcrypt
 from datetime import datetime
 import json
 import os
+import sys
 
 # Create the SQLAlchemy instance
 db = SQLAlchemy()
