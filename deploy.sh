@@ -17,7 +17,7 @@ elif [ ! -d "$INSTALL_DIR/.git" ]; then
 else
     echo "Directory exists. Pulling updates..."
     cd $INSTALL_DIR
-    git pull origin main
+    git pull origin master
 fi
 
 # Install/update dependencies if requirements.txt exists
