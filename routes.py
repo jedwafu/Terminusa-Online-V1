@@ -1,6 +1,6 @@
 from flask import jsonify, request, render_template
 from app import app, db
-from models import User, Transaction, ChatMessage, EmailVerification
+from models import User, Transaction, ChatMessage
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import logging
 from datetime import datetime, timedelta
@@ -82,16 +82,27 @@ def verify_email():
             'message': 'Verification token is required'
         }), 400
 
-    if email_service.verify_email(token):
-        return jsonify({
-            'status': 'success',
-            'message': 'Email verified successfully'
-        }), 200
-    else:
+    user = User.query.filter_by(email_verification_token=token).first()
+    if not user:
         return jsonify({
             'status': 'error',
-            'message': 'Invalid or expired verification token'
+            'message': 'Invalid verification token'
         }), 400
+
+    if user.email_verification_sent_at + timedelta(hours=24) < datetime.utcnow():
+        return jsonify({
+            'status': 'error',
+            'message': 'Verification token has expired'
+        }), 400
+
+    user.is_email_verified = True
+    user.email_verification_token = None
+    db.session.commit()
+
+    return jsonify({
+        'status': 'success',
+        'message': 'Email verified successfully'
+    }), 200
 
 @app.route('/resend-verification', methods=['POST'])
 def resend_verification():
