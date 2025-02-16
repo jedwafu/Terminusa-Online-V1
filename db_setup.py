@@ -64,19 +64,18 @@ class DatabaseSetup:
                 bcrypt.gensalt()
             ).decode('utf-8')
             
-            # Create admin user
-            admin = User(
-                username=username,
-                email=email,
-                password=password_hash,
-                salt=salt,
-                role='admin',
-                is_email_verified=True,
-                created_at=datetime.utcnow()
-            )
+            # Create admin user with all required fields
+            admin = User()
+            admin.username = username
+            admin.email = email
+            admin.password = password_hash
+            admin.salt = salt
+            admin.role = 'admin'
+            admin.is_email_verified = True
+            admin.created_at = datetime.utcnow()
             
             session.add(admin)
-            session.commit()
+            session.flush()  # Get admin.id
 
             # Create wallet for admin
             wallet = Wallet(
@@ -116,23 +115,24 @@ class DatabaseSetup:
             session = self.Session()
             
             # Create test users
-            test_users = []
             for i in range(1, 6):
+                # Generate salt and hash password
                 salt = os.urandom(16).hex()
                 password_hash = bcrypt.hashpw(
                     f"password{i}".encode('utf-8'),
                     bcrypt.gensalt()
                 ).decode('utf-8')
                 
-                user = User(
-                    username=f"test_user_{i}",
-                    email=f"test{i}@example.com",
-                    password=password_hash,
-                    salt=salt,
-                    role='player',
-                    is_email_verified=True,
-                    created_at=datetime.utcnow()
-                )
+                # Create user with all required fields
+                user = User()
+                user.username = f"test_user_{i}"
+                user.email = f"test{i}@example.com"
+                user.password = password_hash
+                user.salt = salt
+                user.role = 'player'
+                user.is_email_verified = True
+                user.created_at = datetime.utcnow()
+                
                 session.add(user)
                 session.flush()  # Get user.id
 
@@ -156,7 +156,6 @@ class DatabaseSetup:
                 session.add(inventory)
             
             session.commit()
-            
             print("Test data created successfully")
             return True
             
