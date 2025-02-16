@@ -28,6 +28,9 @@ else
     exit 1
 fi
 
+# Stop services for configuration
+systemctl stop postfix opendkim
+
 # Backup original configurations
 echo -e "${YELLOW}Backing up original configurations...${NC}"
 cp /etc/postfix/main.cf /etc/postfix/main.cf.backup
@@ -54,10 +57,14 @@ Selector        default
 Socket          inet:8891@localhost
 EOF
 
+# Set Postfix compatibility level
+postconf compatibility_level=3.6
+
 # Configure Postfix
 echo -e "${YELLOW}Configuring Postfix...${NC}"
 cat > /etc/postfix/main.cf << EOF
 # Basic Configuration
+compatibility_level = 3.6
 smtpd_banner = \$myhostname ESMTP Terminusa Mail Server
 biff = no
 append_dot_mydomain = no
@@ -116,46 +123,55 @@ command_directory = /usr/sbin
 daemon_directory = /usr/lib/postfix/sbin
 data_directory = /var/lib/postfix
 mail_owner = postfix
+setgid_group = postdrop
 EOF
 
-# Fix chroot environment
-echo -e "${YELLOW}Setting up chroot environment...${NC}"
+# Create and set permissions for mail directories
+echo -e "${YELLOW}Setting up mail directories...${NC}"
+mkdir -p /var/mail
+mkdir -p /var/spool/postfix/pid
+mkdir -p /var/spool/postfix/public
+mkdir -p /var/spool/postfix/private
+mkdir -p /var/spool/postfix/etc
+mkdir -p /var/spool/postfix/lib
+mkdir -p /var/spool/postfix/usr
+
+# Set correct ownership and permissions
+chown -R root:root /var/spool/postfix
+chown -R postfix:root /var/spool/postfix/pid
+chown -R postfix:postdrop /var/spool/postfix/public
+chown -R postfix:postfix /var/spool/postfix/private
+chmod 755 /var/mail
+chmod 755 /var/spool/postfix
+chmod 700 /var/spool/postfix/pid
+chmod 710 /var/spool/postfix/public
+chmod 700 /var/spool/postfix/private
+
+# Copy necessary files to chroot
+cp /etc/services /var/spool/postfix/etc/
+cp /etc/resolv.conf /var/spool/postfix/etc/
+cp -r /etc/ssl /var/spool/postfix/etc/
+cp /etc/localtime /var/spool/postfix/etc/
+cp /etc/nsswitch.conf /var/spool/postfix/etc/
+cp /etc/hosts /var/spool/postfix/etc/
+cp /etc/passwd /var/spool/postfix/etc/
+
+# Set correct ownership for chroot files
+chown -R root:root /var/spool/postfix/etc
+chown -R root:root /var/spool/postfix/lib
+chown -R root:root /var/spool/postfix/usr
+
+# Run Postfix's built-in permission fixer
+echo -e "${YELLOW}Running Postfix permission fixes...${NC}"
 postfix set-permissions
 postfix check
-
-# Fix permissions for chroot environment
-echo -e "${YELLOW}Fixing permissions in chroot environment...${NC}"
-CHROOT="/var/spool/postfix"
-# Copy necessary files to chroot
-cp /etc/services $CHROOT/etc/
-cp /etc/resolv.conf $CHROOT/etc/
-cp -r /etc/ssl $CHROOT/etc/
-cp /etc/localtime $CHROOT/etc/
-cp /etc/nsswitch.conf $CHROOT/etc/
-cp /etc/hosts $CHROOT/etc/
-
-# Set correct ownership
-chown -R root:root $CHROOT/etc
-chown -R root:root $CHROOT/lib
-chown -R root:root $CHROOT/usr
-chown -R postfix:postfix $CHROOT/pid
-chown -R postfix:postfix $CHROOT/private
-chown -R postfix:root $CHROOT/public
-chmod -R 644 $CHROOT/etc/*
-chmod -R 755 $CHROOT/usr
-chmod -R 755 $CHROOT/lib
-
-# Create required directories with correct permissions
-mkdir -p /var/mail
-chmod 755 /var/mail
-chown -R vmail:vmail /var/mail 2>/dev/null || true
 
 # Restart services
 echo -e "${YELLOW}Restarting services...${NC}"
 systemctl enable opendkim
-systemctl restart opendkim
+systemctl start opendkim
 systemctl enable postfix
-systemctl restart postfix
+systemctl start postfix
 
 # Test configuration
 echo -e "${YELLOW}Testing Postfix configuration...${NC}"
