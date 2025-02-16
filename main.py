@@ -4,6 +4,7 @@ import time
 import socket
 import signal
 import sys
+import multiprocessing
 from dotenv import load_dotenv
 import logging
 from flask import Flask
@@ -20,9 +21,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Global variables for cleanup
-server_instance = None
-game_state_updater = None
+# Global flag for graceful shutdown
+should_exit = multiprocessing.Event()
 
 def is_port_in_use(port):
     """Check if a port is in use"""
@@ -46,46 +46,46 @@ def cleanup_port(port):
         logger.error(f"Error cleaning up port: {e}")
     return False
 
-def start_game_state_updater(game_manager):
+def start_game_state_updater(game_manager, stop_event):
     """Start background thread to update game state"""
     def update_loop():
-        while getattr(threading.current_thread(), "do_run", True):
+        while not stop_event.is_set():
             try:
                 game_manager.update_game_state()
                 time.sleep(60)  # Update every minute
             except Exception as e:
                 logger.error(f"Error in game state update: {str(e)}", exc_info=True)
     
-    thread = threading.Thread(target=update_loop, daemon=True)
-    thread.do_run = True
+    thread = threading.Thread(target=update_loop)
+    thread.daemon = True
     thread.start()
     return thread
 
-def signal_handler(sig, frame):
-    """Handle shutdown signals gracefully"""
-    logger.info("Shutdown signal received, cleaning up...")
-    
-    # Stop the game state updater
-    global game_state_updater
-    if game_state_updater:
-        game_state_updater.do_run = False
-        game_state_updater.join(timeout=5)
-        logger.info("Game state updater stopped")
-
-    # Import socketio here to avoid circular imports
+def run_server(app, host, port, debug):
+    """Run the Flask-SocketIO server in a separate process"""
+    from app import socketio
     try:
-        from app import socketio
-        logger.info("Stopping SocketIO...")
-        socketio.stop()
+        socketio.run(
+            app,
+            host=host,
+            port=port,
+            debug=debug,
+            use_reloader=False,
+            allow_unsafe_werkzeug=True,
+            log_output=True
+        )
     except Exception as e:
-        logger.error(f"Error stopping SocketIO: {e}")
+        logger.error(f"Server error: {e}")
+        should_exit.set()
 
-    logger.info("Shutdown complete")
-    sys.exit(0)
+def signal_handler(signum, frame):
+    """Handle shutdown signals gracefully"""
+    logger.info(f"Received signal {signum}, initiating shutdown...")
+    should_exit.set()
 
 def main():
     try:
-        # Set up signal handlers for graceful shutdown
+        # Set up signal handlers
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
 
@@ -98,7 +98,7 @@ def main():
         logger.info("Environment variables loaded")
 
         # Import app and game manager after environment is loaded
-        from app import app, socketio
+        from app import app
         from game_systems import GameManager
 
         # Initialize game manager
@@ -106,8 +106,8 @@ def main():
         logger.info("Game manager initialized")
 
         # Start game state updater
-        global game_state_updater
-        game_state_updater = start_game_state_updater(game_manager)
+        updater_stop = threading.Event()
+        game_state_updater = start_game_state_updater(game_manager, updater_stop)
         logger.info("Game state updater started")
 
         # Configure server
@@ -130,26 +130,40 @@ def main():
                 else:
                     raise RuntimeError(f"Could not find available port in range {port}-{port+9}")
 
+        # Start server in a separate process
         logger.info(f"Starting server on port {port}")
-        socketio.run(
-            app,
-            host='0.0.0.0',
-            port=port,
-            debug=debug,
-            use_reloader=False,
-            allow_unsafe_werkzeug=True,
-            log_output=True
+        server_process = multiprocessing.Process(
+            target=run_server,
+            args=(app, '0.0.0.0', port, debug)
         )
+        server_process.start()
+
+        # Monitor the server process
+        while not should_exit.is_set() and server_process.is_alive():
+            time.sleep(1)
+
+        # Cleanup
+        logger.info("Initiating shutdown...")
+        updater_stop.set()
+        if server_process.is_alive():
+            server_process.terminate()
+            server_process.join(timeout=5)
+        game_state_updater.join(timeout=5)
+        logger.info("Shutdown complete")
 
     except Exception as e:
         logger.error(f"Error in main: {str(e)}", exc_info=True)
         raise
+    finally:
+        # Ensure processes are cleaned up
+        if 'server_process' in locals() and server_process.is_alive():
+            server_process.terminate()
+            server_process.join(timeout=5)
 
 if __name__ == "__main__":
     try:
+        multiprocessing.freeze_support()
         main()
     except Exception as e:
         logger.error(f"Fatal error: {str(e)}", exc_info=True)
-        # Ensure cleanup on error
-        signal_handler(signal.SIGTERM, None)
-        raise
+        sys.exit(1)
