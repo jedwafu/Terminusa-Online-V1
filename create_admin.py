@@ -6,19 +6,36 @@ from dotenv import load_dotenv
 from app import app
 from models import User, PlayerCharacter, Wallet, Inventory
 from database import db, init_db
+import time
 
 def create_admin_account():
     """Create the admin account with default credentials"""
     with app.app_context():
         try:
             # Initialize database and create tables
+            print("Initializing database...")
             init_db(app)
             
-            # Explicitly create tables
-            print("Creating database tables...")
-            db.drop_all()  # Drop existing tables
-            db.create_all()  # Create fresh tables
-            print("Database tables created successfully")
+            # Wait for tables to be ready
+            max_attempts = 5
+            attempt = 0
+            while attempt < max_attempts:
+                try:
+                    # Check if tables exist
+                    tables = db.engine.table_names()
+                    if 'users' in tables:
+                        print(f"Tables created: {', '.join(tables)}")
+                        break
+                    attempt += 1
+                    if attempt == max_attempts:
+                        raise Exception("Failed to create tables")
+                    time.sleep(1)
+                except Exception as e:
+                    print(f"Attempt {attempt + 1} failed: {str(e)}")
+                    attempt += 1
+                    if attempt == max_attempts:
+                        raise
+                    time.sleep(1)
             
             # Create admin user
             print("Creating admin user...")
@@ -38,9 +55,8 @@ def create_admin_account():
             )
             
             db.session.add(admin)
-            db.session.flush()  # Get admin.id
-
-            # Create admin character
+            db.session.commit()  # Commit to get admin.id
+            
             print("Creating admin character...")
             character = PlayerCharacter(
                 user_id=admin.id,
@@ -61,8 +77,8 @@ def create_admin_account():
                 magical_defense=100
             )
             db.session.add(character)
+            db.session.commit()
 
-            # Create admin wallet
             print("Creating admin wallet...")
             wallet = Wallet(
                 user_id=admin.id,
@@ -74,17 +90,16 @@ def create_admin_account():
                 exons=100000
             )
             db.session.add(wallet)
+            db.session.commit()
 
-            # Create admin inventory
             print("Creating admin inventory...")
             inventory = Inventory(
                 user_id=admin.id,
                 max_slots=1000
             )
             db.session.add(inventory)
-
-            # Commit changes
             db.session.commit()
+
             print("\nAdmin account created successfully!")
             print("----------------------------------------")
             print("Username: admin")
