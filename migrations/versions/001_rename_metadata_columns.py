@@ -8,12 +8,20 @@ Create Date: 2024-02-16
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import sqlite
+from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic
 revision = '001'
 down_revision = None
 branch_labels = None
 depends_on = None
+
+def has_column(table_name, column_name):
+    """Check if a column exists in a table"""
+    conn = op.get_bind()
+    insp = inspect(conn)
+    columns = [c['name'] for c in insp.get_columns(table_name)]
+    return column_name in columns
 
 def upgrade():
     # Create temporary tables with new column names
@@ -38,17 +46,35 @@ def upgrade():
     )
 
     # Copy data from old tables to new tables
-    op.execute('''
-        INSERT INTO transactions_new 
-        SELECT id, user_id, type, amount, currency, description, metadata, created_at 
-        FROM transactions
-    ''')
+    if has_column('transactions', 'metadata'):
+        # Old column name exists
+        op.execute('''
+            INSERT INTO transactions_new 
+            SELECT id, user_id, type, amount, currency, description, metadata, created_at 
+            FROM transactions
+        ''')
+    else:
+        # New column name exists
+        op.execute('''
+            INSERT INTO transactions_new 
+            SELECT id, user_id, type, amount, currency, description, transaction_metadata, created_at 
+            FROM transactions
+        ''')
 
-    op.execute('''
-        INSERT INTO chat_messages_new 
-        SELECT id, sender_id, channel, content, created_at, metadata 
-        FROM chat_messages
-    ''')
+    if has_column('chat_messages', 'metadata'):
+        # Old column name exists
+        op.execute('''
+            INSERT INTO chat_messages_new 
+            SELECT id, sender_id, channel, content, created_at, metadata 
+            FROM chat_messages
+        ''')
+    else:
+        # New column name exists
+        op.execute('''
+            INSERT INTO chat_messages_new 
+            SELECT id, sender_id, channel, content, created_at, message_metadata 
+            FROM chat_messages
+        ''')
 
     # Drop old tables
     op.drop_table('transactions')
@@ -80,7 +106,7 @@ def downgrade():
         sa.Column('metadata', sa.JSON())
     )
 
-    # Copy data from current tables to old tables
+    # Copy data back
     op.execute('''
         INSERT INTO transactions_old 
         SELECT id, user_id, type, amount, currency, description, transaction_metadata, created_at 
