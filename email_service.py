@@ -7,18 +7,36 @@ import secrets
 from models import User
 from db_setup import db
 import logging
+import socket
+from dotenv import load_dotenv
 
+# Load environment variables
+load_dotenv()
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('logs/email.log'),
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger(__name__)
 
 class EmailService:
     def __init__(self):
-        self.smtp_host = "localhost"  # Local SMTP server
-        self.smtp_port = 25  # Default SMTP port
-        self.from_email = "noreply@terminusa.online"
+        # Email Configuration
+        self.smtp_host = 'localhost'  # Local Postfix server
+        self.smtp_port = 25  # Standard SMTP port
+        self.from_email = f"noreply@{socket.getfqdn()}"  # Use server's FQDN
         self.verification_url = os.getenv('VERIFICATION_URL', 'https://play.terminusa.online/verify')
+        
+        # Ensure mail directory exists
+        os.makedirs('logs', exist_ok=True)
 
     def send_email(self, to_email: str, subject: str, html_content: str) -> bool:
-        """Send email using local SMTP server"""
+        """Send email using local Postfix SMTP server"""
         try:
             msg = MIMEMultipart('alternative')
             msg['Subject'] = subject
@@ -30,7 +48,7 @@ class EmailService:
             msg.attach(html_part)
 
             # Connect to local SMTP server
-            with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
+            with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=10) as server:
                 server.send_message(msg)
                 
             logger.info(f"Email sent successfully to {to_email}")
@@ -158,12 +176,14 @@ def init_email_service(app):
     """Initialize email service"""
     try:
         # Test SMTP connection
-        with smtplib.SMTP('localhost', 25) as server:
-            server.verify('admin@terminusa.online')
-        logger.info("SMTP server connection successful")
-        return EmailService()
+        with smtplib.SMTP('localhost', 25, timeout=5) as server:
+            server.verify('test@terminusa.online')
+            logger.info("SMTP server connection successful")
+            return EmailService()
     except Exception as e:
-        logger.warning(f"Failed to connect to SMTP server: {str(e)}")
+        logger.error(f"Failed to connect to SMTP server: {str(e)}")
+        logger.error("Please ensure Postfix is installed and running.")
+        logger.error("Run setup_smtp.sh to configure the SMTP server.")
         return None
 
 # Initialize email service

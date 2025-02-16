@@ -1,152 +1,129 @@
 #!/bin/bash
 
-# Stop services
-systemctl stop postfix opendkim
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
 
-# Backup original configs
+echo -e "${YELLOW}Setting up Postfix SMTP Server...${NC}"
+
+# Check if running as root
+if [ "$EUID" -ne 0 ]; then 
+    echo -e "${RED}Please run as root${NC}"
+    exit 1
+fi
+
+# Install Postfix and related packages
+echo -e "${YELLOW}Installing Postfix and dependencies...${NC}"
+if [ -f /etc/debian_version ]; then
+    # Debian/Ubuntu
+    apt-get update
+    DEBIAN_FRONTEND=noninteractive apt-get install -y postfix mailutils
+elif [ -f /etc/redhat-release ]; then
+    # RHEL/CentOS
+    yum install -y postfix mailx
+else
+    echo -e "${RED}Unsupported distribution. Please install Postfix manually.${NC}"
+    exit 1
+fi
+
+# Backup original Postfix configuration
+echo -e "${YELLOW}Backing up original configuration...${NC}"
 cp /etc/postfix/main.cf /etc/postfix/main.cf.backup
-cp /etc/opendkim.conf /etc/opendkim.conf.backup
-
-# Update hostname
-CURRENT_HOSTNAME=$(hostname)
-hostnamectl set-hostname terminusa.online
-echo "127.0.0.1 terminusa.online" >> /etc/hosts
-
-# Create mail directories
-mkdir -p /var/mail/vhosts/terminusa.online
-mkdir -p /var/mail/vhosts/admin
-mkdir -p /var/mail/vhosts/noreply
-
-# Create virtual users and domains
-cat > /etc/postfix/virtual_domains << EOL
-terminusa.online OK
-EOL
-
-cat > /etc/postfix/virtual_mailbox_maps << EOL
-admin@terminusa.online    terminusa.online/admin/
-noreply@terminusa.online  terminusa.online/noreply/
-EOL
-
-cat > /etc/postfix/virtual_alias_maps << EOL
-postmaster@terminusa.online    admin@terminusa.online
-abuse@terminusa.online         admin@terminusa.online
-root@terminusa.online          admin@terminusa.online
-@vmi2429108.contaboserver.net  admin@terminusa.online
-EOL
-
-# Create mail user and group
-groupadd -g 5000 vmail 2>/dev/null || true
-useradd -g vmail -u 5000 vmail -d /var/mail/vhosts -m -s /sbin/nologin 2>/dev/null || true
-
-# Set permissions
-chown -R vmail:vmail /var/mail/vhosts
-chmod -R 770 /var/mail/vhosts
 
 # Configure Postfix
-cat > /etc/postfix/main.cf << EOL
-# General Settings
+echo -e "${YELLOW}Configuring Postfix...${NC}"
+cat > /etc/postfix/main.cf << EOF
+# Basic Configuration
+smtpd_banner = \$myhostname ESMTP Terminusa Mail Server
+biff = no
+append_dot_mydomain = no
+readme_directory = no
+
+# TLS Configuration
+smtpd_tls_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
+smtpd_tls_key_file=/etc/ssl/private/ssl-cert-snakeoil.key
+smtpd_use_tls=yes
+smtpd_tls_auth_only = yes
+smtp_tls_security_level = may
+smtpd_tls_security_level = may
+
+# Network Configuration
 myhostname = terminusa.online
 mydomain = terminusa.online
 myorigin = \$mydomain
 inet_interfaces = all
 inet_protocols = ipv4
+mydestination = \$myhostname, localhost.\$mydomain, localhost, \$mydomain
+mynetworks = 127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+relayhost =
 
-# Virtual Domain Settings
-virtual_mailbox_domains = /etc/postfix/virtual_domains
-virtual_mailbox_base = /var/mail/vhosts
-virtual_mailbox_maps = hash:/etc/postfix/virtual_mailbox_maps
-virtual_alias_maps = hash:/etc/postfix/virtual_alias_maps
-virtual_minimum_uid = 5000
-virtual_uid_maps = static:5000
-virtual_gid_maps = static:5000
-virtual_transport = virtual
+# Mail Directory
+home_mailbox = Maildir/
+mail_spool_directory = /var/mail
 
-# Local Settings
-mydestination = localhost
-local_transport = virtual
-local_recipient_maps = \$virtual_mailbox_maps
+# Security
+smtpd_helo_required = yes
+disable_vrfy_command = yes
+smtpd_delay_reject = yes
 
-# Network Settings
-mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128
-smtpd_recipient_restrictions = 
+# Access Control
+smtpd_recipient_restrictions =
     permit_mynetworks,
-    reject_unauth_destination,
-    reject_invalid_hostname,
-    reject_non_fqdn_hostname,
-    reject_non_fqdn_sender,
-    reject_non_fqdn_recipient,
-    reject_unknown_sender_domain,
-    reject_unknown_recipient_domain,
-    reject_rbl_client zen.spamhaus.org
+    permit_sasl_authenticated,
+    reject_unauth_destination
 
-# TLS Settings
-smtpd_tls_cert_file = /etc/letsencrypt/live/terminusa.online/fullchain.pem
-smtpd_tls_key_file = /etc/letsencrypt/live/terminusa.online/privkey.pem
-smtpd_tls_security_level = may
-smtp_tls_security_level = may
-smtpd_tls_protocols = !SSLv2, !SSLv3
-smtp_tls_protocols = !SSLv2, !SSLv3
+# Size Limits
+message_size_limit = 10485760
+mailbox_size_limit = 1073741824
 
-# Performance Settings
+# Performance
 maximal_queue_lifetime = 1h
 bounce_queue_lifetime = 1h
-maximal_backoff_time = 15m
-minimal_backoff_time = 5m
-queue_run_delay = 5m
+EOF
 
-# Logging Settings
-debug_peer_level = 2
-maillog_file = /var/log/mail.log
-EOL
+# Create required directories
+echo -e "${YELLOW}Creating mail directories...${NC}"
+mkdir -p /var/spool/postfix
+mkdir -p /var/mail
+chmod 755 /var/mail
 
-# Hash the maps
-postmap /etc/postfix/virtual_mailbox_maps
-postmap /etc/postfix/virtual_alias_maps
+# Restart Postfix
+echo -e "${YELLOW}Restarting Postfix...${NC}"
+systemctl enable postfix
+systemctl restart postfix
 
-# Fix permissions for chroot
-for dir in /var/spool/postfix/usr/lib /var/spool/postfix/usr/lib/sasl2 /var/spool/postfix/usr/lib/zoneinfo; do
-    if [ -d "$dir" ]; then
-        chown root:root "$dir"
-    fi
-done
-
-# Configure OpenDKIM
-cat > /etc/opendkim.conf << EOL
-Domain                  terminusa.online
-KeyFile                 /etc/opendkim/keys/terminusa.online/default.private
-Selector                default
-Socket                  inet:8891@localhost
-PidFile                /var/run/opendkim/opendkim.pid
-SignatureAlgorithm     rsa-sha256
-UserID                 opendkim:opendkim
-UMask                  022
-OversignHeaders        From
-TrustAnchorFile        /usr/share/dns/root.key
-EOL
-
-# Generate DKIM keys if not exists
-if [ ! -d "/etc/opendkim/keys/terminusa.online" ]; then
-    mkdir -p /etc/opendkim/keys/terminusa.online
-    opendkim-genkey -D /etc/opendkim/keys/terminusa.online/ -d terminusa.online -s default
-    chown -R opendkim:opendkim /etc/opendkim/keys
+# Test configuration
+echo -e "${YELLOW}Testing Postfix configuration...${NC}"
+if postfix check; then
+    echo -e "${GREEN}Postfix configuration test passed${NC}"
+else
+    echo -e "${RED}Postfix configuration test failed${NC}"
+    exit 1
 fi
 
-# Start services
-systemctl start opendkim
-systemctl start postfix
+# Open firewall ports
+echo -e "${YELLOW}Configuring firewall...${NC}"
+if command -v ufw > /dev/null; then
+    # Ubuntu/Debian with UFW
+    ufw allow 25/tcp
+    ufw allow 587/tcp
+elif command -v firewall-cmd > /dev/null; then
+    # RHEL/CentOS with firewalld
+    firewall-cmd --permanent --add-service=smtp
+    firewall-cmd --permanent --add-port=587/tcp
+    firewall-cmd --reload
+fi
 
-# Show status
-systemctl status postfix
-systemctl status opendkim
+# Create test script
+echo -e "${YELLOW}Creating test script...${NC}"
+cat > /usr/local/bin/test-smtp << EOF
+#!/bin/bash
+echo "This is a test email from Terminusa SMTP Server" | mail -s "Test Email" \$1
+EOF
+chmod +x /usr/local/bin/test-smtp
 
-# Show DKIM key for DNS
-echo "Add this TXT record to your DNS:"
-echo ""
-cat /etc/opendkim/keys/terminusa.online/default.txt
-echo ""
-echo "Testing mail setup..."
-echo "Test email" | mail -s "SMTP Test" admin@terminusa.online
-
-# Show mail log
-echo "Checking mail log..."
-tail -f /var/log/mail.log
+echo -e "${GREEN}SMTP Server setup complete!${NC}"
+echo -e "${YELLOW}To test the server, run: test-smtp your@email.com${NC}"
+echo -e "${YELLOW}Check mail.log for any errors: tail -f /var/log/mail.log${NC}"
