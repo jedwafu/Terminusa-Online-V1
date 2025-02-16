@@ -44,7 +44,13 @@ app.config.update(
 print("[DEBUG] Initializing extensions")
 jwt = JWTManager(app)
 cors = CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(
+    app,
+    cors_allowed_origins="*",
+    async_mode='threading',  # Use threading mode instead of eventlet
+    logger=True,
+    engineio_logger=True
+)
 
 # Initialize database
 init_db(app)
