@@ -6,7 +6,6 @@ from flask_socketio import SocketIO
 from dotenv import load_dotenv
 import logging
 from logging.handlers import RotatingFileHandler
-import ssl
 
 from db_setup import init_db, db
 from email_service import init_email_service
@@ -20,7 +19,6 @@ required_env_vars = [
     'FLASK_SECRET_KEY',
     'JWT_SECRET_KEY',
     'DATABASE_URL',
-    'SOLANA_RPC_URL',
     'SERVER_PORT',
     'WEBAPP_PORT'
 ]
@@ -28,9 +26,6 @@ required_env_vars = [
 missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_vars:
     raise ValueError(f"Missing required environment variables: {missing_vars}")
-
-# Export required variables
-SOLANA_RPC_URL = os.getenv('SOLANA_RPC_URL')
 
 # Initialize Flask app
 print("[DEBUG] Creating Flask app")
@@ -137,26 +132,7 @@ def internal_error(error):
     db.session.rollback()
     return {'status': 'error', 'message': 'Internal server error'}, 500
 
-# SSL Configuration
-def configure_ssl():
-    """Configure SSL if certificates are available"""
-    cert_path = os.getenv('SSL_CERT_PATH')
-    key_path = os.getenv('SSL_KEY_PATH')
-    
-    if cert_path and key_path and os.path.exists(cert_path) and os.path.exists(key_path):
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        context.load_cert_chain(cert_path, key_path)
-        return context
-    return None
-
 if __name__ == '__main__':
-    ssl_context = configure_ssl()
     port = int(os.getenv('SERVER_PORT', 5000))
     debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-    
-    if ssl_context:
-        print(f"[DEBUG] Starting server with SSL on port {port}")
-        socketio.run(app, host='0.0.0.0', port=port, ssl_context=ssl_context, debug=debug)
-    else:
-        print(f"[DEBUG] Starting server without SSL on port {port}")
-        socketio.run(app, host='0.0.0.0', port=port, debug=debug)
+    socketio.run(app, host='0.0.0.0', port=port, debug=debug)

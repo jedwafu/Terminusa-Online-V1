@@ -6,10 +6,6 @@ import logging
 from flask import Flask
 from werkzeug.serving import make_server
 
-from server import app as server_app
-from web_app import app as web_app
-from game_systems import GameManager
-
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
@@ -60,6 +56,10 @@ def main():
         load_dotenv(override=True)
         logger.info("Environment variables loaded")
 
+        # Import app and game manager after environment is loaded
+        from app import app, socketio
+        from game_systems import GameManager
+
         # Initialize game manager
         game_manager = GameManager()
         logger.info("Game manager initialized")
@@ -68,27 +68,12 @@ def main():
         state_updater = start_game_state_updater(game_manager)
         logger.info("Game state updater started")
 
-        # Configure server app
-        server_port = int(os.getenv('SERVER_PORT', 5000))
-        server_thread = ServerThread(server_app, '0.0.0.0', server_port)
-        server_thread.start()
-        logger.info(f"Game server started on port {server_port}")
+        # Configure server
+        port = int(os.getenv('SERVER_PORT', 5000))
+        debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
 
-        # Configure web app
-        web_port = int(os.getenv('WEBAPP_PORT', 5001))
-        web_thread = ServerThread(web_app, '0.0.0.0', web_port)
-        web_thread.start()
-        logger.info(f"Web server started on port {web_port}")
-
-        # Keep main thread alive
-        try:
-            while True:
-                time.sleep(1)
-        except KeyboardInterrupt:
-            logger.info("Shutting down servers...")
-            server_thread.shutdown()
-            web_thread.shutdown()
-            logger.info("Servers stopped")
+        logger.info(f"Starting server on port {port}")
+        socketio.run(app, host='0.0.0.0', port=port, debug=debug)
 
     except Exception as e:
         logger.error(f"Error in main: {str(e)}", exc_info=True)
