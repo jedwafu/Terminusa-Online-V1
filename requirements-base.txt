@@ -11,7 +11,7 @@ itsdangerous==2.1.2
 click==8.1.7
 
 # Database
-SQLAlchemy==2.0.25
+SQLAlchemy==1.4.50  # Downgraded to avoid typing-extensions conflict
 alembic==1.13.1
 psycopg2-binary==2.9.9
 greenlet==3.0.3
@@ -32,4 +32,4 @@ gevent==23.9.1
 six==1.16.0
 pytz==2024.1
 python-dateutil==2.8.2
-typing-extensions==4.5.0
+typing-extensions==4.5.0  # Keep this version for tensorflow compatibility
