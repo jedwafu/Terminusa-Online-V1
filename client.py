@@ -14,6 +14,8 @@ from rich.prompt import Prompt, Confirm
 from rich.progress import Progress
 import time
 import asyncio
+from urllib.parse import urljoin
+import socket
 
 console = Console()
 
@@ -33,7 +35,60 @@ class TerminusaClient(cmd.Cmd):
         self.token = None
         self.user_data = None
         self.character = None
-        self.base_url = os.getenv('API_URL', 'http://localhost:5000')
+        self.session = requests.Session()
+        self.session.headers.update({'User-Agent': 'TerminusaClient/1.0'})
+        
+        # Get server details from environment or use defaults
+        host = os.getenv('SERVER_HOST', 'localhost')
+        port = os.getenv('SERVER_PORT', '5000')
+        self.base_url = os.getenv('API_URL', f'http://{host}:{port}')
+        
+        # Test server connection
+        self._test_server_connection()
+        
+    def _test_server_connection(self):
+        """Test connection to the server"""
+        try:
+            console.print(f"[yellow]Connecting to server at {self.base_url}...[/yellow]")
+            response = self.session.get(urljoin(self.base_url, '/api/health'), timeout=5)
+            if response.status_code == 200:
+                console.print("[green]Successfully connected to server![/green]")
+            else:
+                console.print(f"[red]Server is not responding correctly (Status: {response.status_code})[/red]")
+        except requests.exceptions.ConnectionError as e:
+            console.print(f"[red]Could not connect to server at {self.base_url}[/red]")
+            console.print("[yellow]Please ensure the server is running and the connection details are correct.[/yellow]")
+            console.print(f"[dim]Error details: {str(e)}[/dim]")
+        except Exception as e:
+            console.print(f"[red]Error testing server connection: {str(e)}[/red]")
+
+    def _make_request(self, method, endpoint, **kwargs):
+        """Make a request to the server with proper error handling"""
+        try:
+            url = urljoin(self.base_url, endpoint)
+            timeout = kwargs.pop('timeout', 10)
+            response = self.session.request(method, url, timeout=timeout, **kwargs)
+            
+            # Handle common status codes
+            if response.status_code == 401:
+                self.token = None
+                self.user_data = None
+                self.character = None
+                raise Exception("Authentication failed. Please login again.")
+            elif response.status_code == 403:
+                raise Exception("Access denied. You don't have permission for this action.")
+            elif response.status_code == 404:
+                raise Exception("Resource not found.")
+            elif response.status_code >= 500:
+                raise Exception("Server error. Please try again later.")
+            
+            return response
+        except requests.exceptions.ConnectionError as e:
+            raise Exception(f"Connection error: Could not connect to server at {self.base_url}")
+        except requests.exceptions.Timeout:
+            raise Exception("Request timed out. Server is not responding.")
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Request failed: {str(e)}")
         
     def do_login(self, arg):
         """Login to your account"""
@@ -41,8 +96,9 @@ class TerminusaClient(cmd.Cmd):
         password = getpass.getpass("Password: ")
         
         try:
-            response = requests.post(
-                f"{self.base_url}/api/login",
+            response = self._make_request(
+                'POST',
+                '/api/login',
                 json={"username": username, "password": password}
             )
             
@@ -50,6 +106,7 @@ class TerminusaClient(cmd.Cmd):
                 data = response.json()
                 self.token = data['token']
                 self.user_data = data['user']
+                self.session.headers.update({'Authorization': f'Bearer {self.token}'})
                 self._load_character()
                 console.print("[green]Login successful![/green]")
                 self._show_character_info()
@@ -71,8 +128,9 @@ class TerminusaClient(cmd.Cmd):
             return
         
         try:
-            response = requests.post(
-                f"{self.base_url}/api/register",
+            response = self._make_request(
+                'POST',
+                '/api/register',
                 json={
                     "username": username,
                     "email": email,
@@ -100,10 +158,7 @@ class TerminusaClient(cmd.Cmd):
             return
         
         try:
-            response = requests.get(
-                f"{self.base_url}/api/game/inventory",
-                headers=self._get_headers()
-            )
+            response = self._make_request('GET', '/api/game/inventory')
             
             if response.status_code == 200:
                 data = response.json()
@@ -136,10 +191,7 @@ class TerminusaClient(cmd.Cmd):
             return
         
         try:
-            response = requests.get(
-                f"{self.base_url}/api/game/gates",
-                headers=self._get_headers()
-            )
+            response = self._make_request('GET', '/api/game/gates')
             
             if response.status_code == 200:
                 data = response.json()
@@ -179,9 +231,9 @@ class TerminusaClient(cmd.Cmd):
             
         try:
             gate_id = int(arg)
-            response = requests.post(
-                f"{self.base_url}/api/game/gates/{gate_id}/enter",
-                headers=self._get_headers()
+            response = self._make_request(
+                'POST',
+                f'/api/game/gates/{gate_id}/enter'
             )
             
             if response.status_code == 200:
@@ -207,20 +259,10 @@ class TerminusaClient(cmd.Cmd):
             return False
         return True
 
-    def _get_headers(self):
-        """Get headers for API requests"""
-        return {
-            'Authorization': f'Bearer {self.token}',
-            'Content-Type': 'application/json'
-        }
-
     def _load_character(self):
         """Load character data"""
         try:
-            response = requests.get(
-                f"{self.base_url}/api/game/profile",
-                headers=self._get_headers()
-            )
+            response = self._make_request('GET', '/api/game/profile')
             
             if response.status_code == 200:
                 self.character = response.json()['character']
@@ -291,9 +333,9 @@ class TerminusaClient(cmd.Cmd):
                 task = progress.add_task("[cyan]Exploring gate...", total=100)
                 
                 while not progress.finished:
-                    response = requests.get(
-                        f"{self.base_url}/api/game/gates/session/{session_id}",
-                        headers=self._get_headers()
+                    response = self._make_request(
+                        'GET',
+                        f'/api/game/gates/session/{session_id}'
                     )
                     
                     if response.status_code == 200:
