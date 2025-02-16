@@ -33,7 +33,9 @@ systemctl stop postfix opendkim
 
 # Create admin user for mail
 echo -e "${YELLOW}Creating mail users...${NC}"
-useradd -r -m -s /sbin/nologin admin || true
+if ! id -u admin > /dev/null 2>&1; then
+    useradd -m -s /bin/bash admin
+fi
 usermod -aG mail admin
 
 # Backup original configurations
@@ -53,9 +55,10 @@ chown opendkim:opendkim /etc/opendkim/keys/terminusa.online/default.private
 chmod 600 /etc/opendkim/keys/terminusa.online/default.private
 
 # Configure OpenDKIM socket directory
-mkdir -p /var/spool/postfix/opendkim
-chown opendkim:postfix /var/spool/postfix/opendkim
-chmod 750 /var/spool/postfix/opendkim
+DKIM_SOCKET_DIR="/var/spool/postfix/opendkim"
+mkdir -p "$DKIM_SOCKET_DIR"
+chown opendkim:postfix "$DKIM_SOCKET_DIR"
+chmod 750 "$DKIM_SOCKET_DIR"
 
 # Configure OpenDKIM
 cat > /etc/opendkim.conf << EOF
@@ -67,10 +70,10 @@ LogWhy          yes
 # Daemon settings
 Mode            sv
 Canonicalization        relaxed/simple
-Socket          unix:/var/spool/postfix/opendkim/opendkim.sock
+Socket          unix:$DKIM_SOCKET_DIR/opendkim.sock
 UMask           002
 UserID          opendkim:postfix
-PidFile         /var/run/opendkim/opendkim.pid
+PidFile         /run/opendkim/opendkim.pid
 InternalHosts   127.0.0.1, localhost, terminusa.online
 
 # Signing
@@ -79,82 +82,30 @@ KeyFile         /etc/opendkim/keys/terminusa.online/default.private
 Selector        default
 EOF
 
+# Create OpenDKIM run directory
+mkdir -p /run/opendkim
+chown opendkim:opendkim /run/opendkim
+chmod 755 /run/opendkim
+
 # Set Postfix compatibility level
 postconf compatibility_level=3.6
 
 # Configure Postfix
 echo -e "${YELLOW}Configuring Postfix...${NC}"
-cat > /etc/postfix/main.cf << EOF
-# Basic Configuration
-compatibility_level = 3.6
-smtpd_banner = \$myhostname ESMTP Terminusa Mail Server
-biff = no
-append_dot_mydomain = no
-readme_directory = no
-
-# TLS Configuration
-smtpd_tls_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
-smtpd_tls_key_file=/etc/ssl/private/ssl-cert-snakeoil.key
-smtpd_use_tls=yes
-smtpd_tls_auth_only = yes
-smtp_tls_security_level = may
-smtpd_tls_security_level = may
-
-# Network Configuration
-myhostname = terminusa.online
-mydomain = terminusa.online
-myorigin = \$mydomain
-inet_interfaces = all
-inet_protocols = ipv4
-mydestination = \$myhostname, localhost.\$mydomain, localhost, \$mydomain
-mynetworks = 127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
-relayhost =
-
-# DKIM Configuration
-milter_protocol = 2
-milter_default_action = accept
-smtpd_milters = unix:/opendkim/opendkim.sock
-non_smtpd_milters = unix:/opendkim/opendkim.sock
-internal_mail_filter_classes = bounce
-
-# Mail Directory
-home_mailbox = Maildir/
-mail_spool_directory = /var/mail
-virtual_alias_maps = hash:/etc/postfix/virtual
-
-# Security
-smtpd_helo_required = yes
-disable_vrfy_command = yes
-smtpd_delay_reject = yes
-
-# Access Control
-smtpd_recipient_restrictions =
-    permit_mynetworks,
-    permit_sasl_authenticated,
-    reject_unauth_destination
-
-# Size Limits
-message_size_limit = 10485760
-mailbox_size_limit = 1073741824
-
-# Performance
-maximal_queue_lifetime = 1h
-bounce_queue_lifetime = 1h
-
-# Chroot configuration
-queue_directory = /var/spool/postfix
-command_directory = /usr/sbin
-daemon_directory = /usr/lib/postfix/sbin
-data_directory = /var/lib/postfix
-mail_owner = postfix
-setgid_group = postdrop
-
-# Local delivery
-local_transport = local:$myhostname
-alias_maps = hash:/etc/aliases
-alias_database = hash:/etc/aliases
-local_recipient_maps = proxy:unix:passwd.byname \$alias_maps
-EOF
+postconf -e "smtpd_milters = unix:opendkim/opendkim.sock"
+postconf -e "non_smtpd_milters = unix:opendkim/opendkim.sock"
+postconf -e "milter_default_action = accept"
+postconf -e "milter_protocol = 2"
+postconf -e "myhostname = terminusa.online"
+postconf -e "mydomain = terminusa.online"
+postconf -e "myorigin = \$mydomain"
+postconf -e "home_mailbox = Maildir/"
+postconf -e "virtual_alias_maps = hash:/etc/postfix/virtual"
+postconf -e "alias_maps = hash:/etc/aliases"
+postconf -e "alias_database = hash:/etc/aliases"
+postconf -e "local_recipient_maps = unix:passwd.byname \$alias_maps"
+postconf -e "mydestination = \$myhostname, localhost.\$mydomain, localhost, \$mydomain"
+postconf -e "local_transport = local:\$myhostname"
 
 # Configure aliases
 echo -e "${YELLOW}Configuring aliases...${NC}"
@@ -163,7 +114,7 @@ postmaster: root
 root: admin
 admin: admin
 EOF
-newaliases
+postalias /etc/aliases
 
 # Configure virtual aliases
 echo -e "${YELLOW}Configuring virtual aliases...${NC}"
@@ -176,38 +127,9 @@ postmap /etc/postfix/virtual
 
 # Create mail directories
 echo -e "${YELLOW}Setting up mail directories...${NC}"
-mkdir -p /var/mail
 mkdir -p /home/admin/Maildir/{new,cur,tmp}
 chown -R admin:mail /home/admin/Maildir
 chmod -R 700 /home/admin/Maildir
-
-# Set up Postfix directories
-mkdir -p /var/spool/postfix/{pid,public,private,etc,lib,usr}
-
-# Set correct ownership and permissions
-chown -R root:root /var/spool/postfix
-chown -R postfix:root /var/spool/postfix/pid
-chown -R postfix:postdrop /var/spool/postfix/public
-chown -R postfix:postfix /var/spool/postfix/private
-chmod 755 /var/mail
-chmod 755 /var/spool/postfix
-chmod 700 /var/spool/postfix/pid
-chmod 710 /var/spool/postfix/public
-chmod 700 /var/spool/postfix/private
-
-# Copy necessary files to chroot
-cp /etc/{services,resolv.conf,localtime,nsswitch.conf,hosts} /var/spool/postfix/etc/
-cp -r /etc/ssl /var/spool/postfix/etc/
-
-# Set correct ownership for chroot files
-chown -R root:root /var/spool/postfix/etc
-chown -R root:root /var/spool/postfix/lib
-chown -R root:root /var/spool/postfix/usr
-
-# Run Postfix's built-in permission fixer
-echo -e "${YELLOW}Running Postfix permission fixes...${NC}"
-postfix set-permissions
-postfix check
 
 # Add postfix user to opendkim group and vice versa
 usermod -aG opendkim postfix
