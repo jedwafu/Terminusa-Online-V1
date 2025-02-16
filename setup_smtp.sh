@@ -31,6 +31,11 @@ fi
 # Stop services for configuration
 systemctl stop postfix opendkim
 
+# Create admin user for mail
+echo -e "${YELLOW}Creating mail users...${NC}"
+useradd -r -m -s /sbin/nologin admin || true
+usermod -aG mail admin
+
 # Backup original configurations
 echo -e "${YELLOW}Backing up original configurations...${NC}"
 cp /etc/postfix/main.cf /etc/postfix/main.cf.backup
@@ -49,8 +54,8 @@ chmod 600 /etc/opendkim/keys/terminusa.online/default.private
 
 # Create OpenDKIM socket directory
 mkdir -p /var/run/opendkim
-chown opendkim:opendkim /var/run/opendkim
-chmod 755 /var/run/opendkim
+chown opendkim:postfix /var/run/opendkim
+chmod 775 /var/run/opendkim
 
 # Configure OpenDKIM
 cat > /etc/opendkim.conf << EOF
@@ -62,9 +67,9 @@ LogWhy          yes
 # Daemon settings
 Mode            sv
 Canonicalization        relaxed/simple
-Socket          local:/var/run/opendkim/opendkim.sock
+Socket          unix:/var/run/opendkim/opendkim.sock
 UMask           002
-UserID          opendkim:opendkim
+UserID          opendkim:postfix
 PidFile         /var/run/opendkim/opendkim.pid
 
 # Signing
@@ -76,7 +81,7 @@ EOF
 # Create OpenDKIM socket directory in chroot
 mkdir -p /var/spool/postfix/var/run/opendkim
 chown opendkim:postfix /var/spool/postfix/var/run/opendkim
-chmod 750 /var/spool/postfix/var/run/opendkim
+chmod 775 /var/spool/postfix/var/run/opendkim
 
 # Set Postfix compatibility level
 postconf compatibility_level=3.6
@@ -119,6 +124,7 @@ internal_mail_filter_classes = bounce
 # Mail Directory
 home_mailbox = Maildir/
 mail_spool_directory = /var/mail
+virtual_alias_maps = hash:/etc/postfix/virtual
 
 # Security
 smtpd_helo_required = yes
@@ -148,9 +154,21 @@ mail_owner = postfix
 setgid_group = postdrop
 EOF
 
-# Create and set permissions for mail directories
+# Configure virtual aliases
+echo -e "${YELLOW}Configuring virtual aliases...${NC}"
+cat > /etc/postfix/virtual << EOF
+admin@terminusa.online    admin
+EOF
+postmap /etc/postfix/virtual
+
+# Create mail directories
 echo -e "${YELLOW}Setting up mail directories...${NC}"
 mkdir -p /var/mail
+mkdir -p /home/admin/Maildir
+chown -R admin:mail /home/admin/Maildir
+chmod -R 700 /home/admin/Maildir
+
+# Set up Postfix directories
 mkdir -p /var/spool/postfix/pid
 mkdir -p /var/spool/postfix/public
 mkdir -p /var/spool/postfix/private
@@ -188,6 +206,9 @@ echo -e "${YELLOW}Running Postfix permission fixes...${NC}"
 postfix set-permissions
 postfix check
 
+# Create socket directory link
+ln -sf /var/run/opendkim/opendkim.sock /var/spool/postfix/var/run/opendkim/opendkim.sock
+
 # Restart services
 echo -e "${YELLOW}Restarting services...${NC}"
 systemctl enable opendkim
@@ -218,7 +239,7 @@ EOF
 chmod +x /usr/local/bin/test-smtp
 
 echo -e "${GREEN}SMTP Server setup complete!${NC}"
-echo -e "${YELLOW}To test the server, run: test-smtp your@email.com${NC}"
+echo -e "${YELLOW}To test the server, run: test-smtp admin@terminusa.online${NC}"
 echo -e "${YELLOW}Check mail.log for any errors: tail -f /var/log/mail.log${NC}"
 
 # Test mail setup
