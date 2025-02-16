@@ -28,7 +28,9 @@ def is_port_in_use(port):
     """Check if a port is in use"""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         try:
-            s.bind(('0.0.0.0', port))
+            # Try to bind to all interfaces
+            s.bind(('', port))
+            s.close()
             return False
         except socket.error:
             return True
@@ -41,6 +43,10 @@ def cleanup_port(port):
         if os.name != 'nt':  # Not Windows
             os.system(f'fuser -k {port}/tcp')
             time.sleep(2)  # Increased delay to ensure port is released
+            return not is_port_in_use(port)
+        else:  # On Windows
+            os.system(f'netstat -ano | findstr :{port}')
+            time.sleep(2)
             return not is_port_in_use(port)
     except Exception as e:
         logger.error(f"Error cleaning up port: {e}")
@@ -65,6 +71,7 @@ def run_server(app, host, port, debug):
     """Run the Flask-SocketIO server in a separate process"""
     from app import socketio
     try:
+        logger.info(f"Starting server process on {host}:{port}")
         socketio.run(
             app,
             host=host,
@@ -113,6 +120,9 @@ def main():
         # Configure server
         port = int(os.getenv('SERVER_PORT', 5000))
         debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+        
+        # Use 0.0.0.0 to bind to all interfaces
+        host = '0.0.0.0'
 
         # Check if port is in use
         if is_port_in_use(port):
@@ -131,12 +141,19 @@ def main():
                     raise RuntimeError(f"Could not find available port in range {port}-{port+9}")
 
         # Start server in a separate process
-        logger.info(f"Starting server on port {port}")
+        logger.info(f"Starting server on {host}:{port}")
         server_process = multiprocessing.Process(
             target=run_server,
-            args=(app, '0.0.0.0', port, debug)
+            args=(app, host, port, debug)
         )
         server_process.start()
+
+        # Wait a bit to ensure server starts
+        time.sleep(2)
+        
+        # Check if server process is still alive
+        if not server_process.is_alive():
+            raise RuntimeError("Server failed to start")
 
         # Monitor the server process
         while not should_exit.is_set() and server_process.is_alive():
