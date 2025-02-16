@@ -27,9 +27,13 @@ missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_vars:
     raise ValueError(f"Missing required environment variables: {missing_vars}")
 
-# Initialize Flask app
+# Initialize Flask app with explicit template and static folders
 print("[DEBUG] Creating Flask app")
-app = Flask(__name__)
+app = Flask(__name__, 
+    template_folder=os.path.abspath('templates'),
+    static_folder=os.path.abspath('static'),
+    static_url_path='/static'
+)
 
 # Configure app
 print("[DEBUG] Configuring Flask app")

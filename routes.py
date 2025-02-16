@@ -1,14 +1,30 @@
-from flask import jsonify, request, render_template
+from flask import jsonify, request, render_template, send_from_directory, make_response
 from app import app, db
 from models import User, Transaction, ChatMessage, Wallet, Inventory, Item, Gate, Guild
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt, verify_jwt_in_request
 import logging
 from datetime import datetime, timedelta
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import generate_password_hash
 from email_service import email_service
-from functools import wraps
 import os
-import secrets
+from functools import wraps
+
+# Root route
+@app.route('/')
+def index():
+    """Main landing page"""
+    try:
+        response = make_response(render_template('index.html'))
+        response.headers['Content-Type'] = 'text/html'
+        return response
+    except Exception as e:
+        app.logger.error(f"Error rendering index page: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to render page'}), 500
+
+# Static files
+@app.route('/static/<path:path>')
+def send_static(path):
+    return send_from_directory('static', path)
 
 # Health check route
 @app.route('/health')
@@ -16,56 +32,6 @@ def health_check():
     return jsonify({'status': 'healthy'})
 
 # Authentication routes
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    username = data.get('username')
-    
-    try:
-        print(f"[DEBUG] Attempting to log in user: {username}")
-        user = User.query.filter_by(username=username).first()
-        if not user:
-            print("[DEBUG] User not found")
-            return jsonify({'status': 'error', 'message': 'Invalid credentials'}), 401
-        
-        if not check_password_hash(user.password, data.get('password', '')):
-            print("[DEBUG] Password does not match")
-            return jsonify({'status': 'error', 'message': 'Invalid credentials'}), 401
-
-        wallet = Wallet.query.filter_by(user_id=user.id).first()
-        if not wallet:
-            print("[DEBUG] Wallet not found")
-            return jsonify({'status': 'error', 'message': 'Wallet not found'}), 404
-
-        # Create JWT with role claim
-        additional_claims = {'role': user.role}
-        access_token = create_access_token(
-            identity=user.username,
-            additional_claims=additional_claims,
-            expires_delta=timedelta(minutes=15)
-        )
-        
-        response_data = {
-            'status': 'success',
-            'token': access_token,
-            'role': user.role,
-            'user': {
-                'id': user.id,
-                'username': user.username,
-                'role': user.role,
-            },
-            'wallet': {
-                'address': wallet.address,
-                'balance': wallet.sol_balance,
-                'assets': {'crystals': wallet.crystals, 'exons': wallet.exons}
-            }
-        }
-        return jsonify(response_data), 200
-
-    except Exception as e:
-        logging.error(f"Login error: {str(e)}")
-        return jsonify({'status': 'error', 'message': 'Login failed'}), 500
-
 @app.route('/register', methods=['POST'])
 def register():
     try:
@@ -101,31 +67,9 @@ def register():
             email=email,
             password=generate_password_hash(password),
             role=role,
-            is_email_verified=False,
-            created_at=datetime.utcnow()
+            is_email_verified=False
         )
         db.session.add(user)
-        db.session.flush()  # Get user.id
-
-        # Create wallet
-        wallet = Wallet(
-            user_id=user.id,
-            address=f"wallet_{secrets.token_hex(8)}",
-            encrypted_privkey=f"key_{secrets.token_hex(16)}",
-            iv=f"iv_{secrets.token_hex(8)}",
-            sol_balance=0.0,
-            crystals=100,  # Starting crystals
-            exons=10      # Starting exons
-        )
-        db.session.add(wallet)
-
-        # Create inventory
-        inventory = Inventory(
-            user_id=user.id,
-            max_slots=100  # Starting inventory size
-        )
-        db.session.add(inventory)
-
         db.session.commit()
 
         # Send verification email
@@ -295,64 +239,6 @@ def require_admin():
         return wrapped
     return wrapper
 
-# Admin routes
-@app.route('/admin/users', methods=['GET'])
-@require_admin()
-def admin_list_users():
-    try:
-        users = User.query.all()
-        user_list = []
-        for user in users:
-            user_list.append({
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'role': user.role,
-                'is_verified': user.is_email_verified,
-                'created_at': user.created_at.isoformat() if user.created_at else None
-            })
-        return jsonify({'status': 'success', 'users': user_list}), 200
-    except Exception as e:
-        logging.error(f"Error listing users: {str(e)}")
-        return jsonify({'status': 'error', 'message': 'Failed to list users'}), 500
-
-@app.route('/admin/users/<int:user_id>', methods=['PUT'])
-@require_admin()
-def admin_update_user(user_id):
-    try:
-        user = User.query.get(user_id)
-        if not user:
-            return jsonify({'status': 'error', 'message': 'User not found'}), 404
-
-        data = request.json
-        if 'username' in data:
-            user.username = data['username']
-        if 'password' in data:
-            user.password = generate_password_hash(data['password'])
-        if 'role' in data:
-            user.role = data['role']
-
-        db.session.commit()
-        return jsonify({'status': 'success', 'message': 'User updated'}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'status': 'error', 'message': 'Failed to update user'}), 500
-
-@app.route('/admin/users/<int:user_id>', methods=['DELETE'])
-@require_admin()
-def admin_delete_user(user_id):
-    try:
-        user = User.query.get(user_id)
-        if not user:
-            return jsonify({'status': 'error', 'message': 'User not found'}), 404
-
-        db.session.delete(user)
-        db.session.commit()
-        return jsonify({'status': 'success', 'message': 'User deleted'}), 200
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'status': 'error', 'message': 'Failed to delete user'}), 500
-
 # Game routes
 @app.route('/game/profile', methods=['GET'])
 @jwt_required()
@@ -389,12 +275,37 @@ def get_profile():
         logging.error(f"Error getting profile: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Failed to get profile'}), 500
 
+# Admin routes
+@app.route('/admin/users', methods=['GET'])
+@require_admin()
+def admin_list_users():
+    try:
+        users = User.query.all()
+        user_list = []
+        for user in users:
+            user_list.append({
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'role': user.role,
+                'is_verified': user.is_email_verified,
+                'created_at': user.created_at.isoformat() if user.created_at else None
+            })
+        return jsonify({'status': 'success', 'users': user_list}), 200
+    except Exception as e:
+        logging.error(f"Error listing users: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to list users'}), 500
+
 # Error handlers
 @app.errorhandler(404)
 def not_found_error(error):
-    return jsonify({'status': 'error', 'message': 'Resource not found'}), 404
+    if request.path.startswith('/api/'):
+        return jsonify({'status': 'error', 'message': 'Resource not found'}), 404
+    return render_template('index.html'), 404
 
 @app.errorhandler(500)
 def internal_error(error):
     db.session.rollback()
-    return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+    if request.path.startswith('/api/'):
+        return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+    return render_template('index.html'), 500
