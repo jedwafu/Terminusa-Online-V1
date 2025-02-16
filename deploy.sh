@@ -1,117 +1,187 @@
 #!/bin/bash
 
-# Enable error handling and verbose output
-set -e
-set -x
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
 
-# Configuration
-REPO_URL="https://github.com/jedwafu/terminusa-online"
-INSTALL_DIR="/root/Terminusa"
-SERVICE_NAME="terminusa"
-DOMAIN_NAME="terminusa.online"
+echo -e "${GREEN}Starting Terminusa Online Deployment${NC}"
 
-echo "Starting deployment..."
-
-# Check if running as root
-if [ "$EUID" -ne 0 ]; then 
-    echo "Please run as root"
-    exit 1
-fi
-
-# Create required directories
-mkdir -p ${INSTALL_DIR}/logs
-mkdir -p ${INSTALL_DIR}/static/css
-mkdir -p ${INSTALL_DIR}/static/js
-mkdir -p ${INSTALL_DIR}/static/images
-mkdir -p ${INSTALL_DIR}/templates
-
-# Set proper permissions
-chown -R root:root ${INSTALL_DIR}
-chmod -R 755 ${INSTALL_DIR}
-chmod -R 777 ${INSTALL_DIR}/logs
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
 
 # Install system dependencies
-echo "Installing system dependencies..."
-apt-get update
-apt-get install -y python3 python3-pip postfix opendkim opendkim-tools mailutils \
-    libsasl2-2 libsasl2-modules fail2ban net-tools ufw curl wget nginx
+echo -e "${YELLOW}Installing system dependencies...${NC}"
+sudo apt-get update
+sudo apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
+    python3-dev \
+    build-essential \
+    nginx \
+    supervisor \
+    redis-server \
+    postgresql \
+    postgresql-contrib \
+    libpq-dev \
+    screen \
+    htop
+
+# Create and activate virtual environment
+echo -e "${YELLOW}Setting up Python virtual environment...${NC}"
+python3 -m venv venv
+source venv/bin/activate
 
 # Install Python dependencies
-echo "Installing Python dependencies..."
-pip3 install -r ${INSTALL_DIR}/requirements.txt
+echo -e "${YELLOW}Installing Python dependencies...${NC}"
+pip install --upgrade pip
+pip install -r requirements-server.txt
 
-# Configure Nginx
-echo "Configuring Nginx..."
-cat > /etc/nginx/sites-available/terminusa << EOL
+# Create necessary directories
+echo -e "${YELLOW}Creating necessary directories...${NC}"
+mkdir -p logs
+mkdir -p static/uploads
+
+# Initialize PostgreSQL database
+echo -e "${YELLOW}Setting up PostgreSQL...${NC}"
+if ! sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw terminusa; then
+    sudo -u postgres createdb terminusa
+    sudo -u postgres createuser terminusa_user
+    sudo -u postgres psql -c "ALTER USER terminusa_user WITH PASSWORD 'strongpassword';"
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE terminusa TO terminusa_user;"
+fi
+
+# Initialize Redis
+echo -e "${YELLOW}Setting up Redis...${NC}"
+sudo systemctl enable redis-server
+sudo systemctl start redis-server
+
+# Initialize the database
+echo -e "${YELLOW}Initializing application database...${NC}"
+python reset_db.py
+
+# Set up environment variables if .env doesn't exist
+if [ ! -f .env ]; then
+    echo -e "${YELLOW}Creating .env file...${NC}"
+    cp .env.example .env
+    # Generate new secret keys
+    sed -i "s/your-secret-key-here/$(python3 -c 'import secrets; print(secrets.token_hex(32))')/" .env
+    sed -i "s/your-jwt-secret-key-here/$(python3 -c 'import secrets; print(secrets.token_hex(32))')/" .env
+    sed -i "s/your-password-salt-here/$(python3 -c 'import secrets; print(secrets.token_hex(16))')/" .env
+fi
+
+# Set up Nginx if it's not already configured
+if [ ! -f /etc/nginx/sites-available/terminusa ]; then
+    echo -e "${YELLOW}Setting up Nginx configuration...${NC}"
+    sudo bash -c 'cat > /etc/nginx/sites-available/terminusa << EOL
 server {
     listen 80;
     server_name terminusa.online www.terminusa.online;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name terminusa.online www.terminusa.online;
+
+    ssl_certificate /etc/letsencrypt/live/terminusa.online/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/terminusa.online/privkey.pem;
 
     location / {
-        proxy_pass http://127.0.0.1:5000;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_pass http://localhost:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /socket.io {
+        proxy_pass http://localhost:5000/socket.io;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+        proxy_set_header Host $host;
     }
 
     location /static {
-        alias ${INSTALL_DIR}/static;
-    }
-
-    location /templates {
-        alias ${INSTALL_DIR}/templates;
+        alias /root/Terminusa/static;
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
     }
 }
-EOL
 
-# Enable the site
-ln -sf /etc/nginx/sites-available/terminusa /etc/nginx/sites-enabled/
-rm -f /etc/nginx/sites-enabled/default
+server {
+    listen 80;
+    server_name play.terminusa.online;
+    return 301 https://$server_name$request_uri;
+}
 
-# Configure systemd service
-echo "Creating systemd service..."
-cat > /etc/systemd/system/${SERVICE_NAME}.service << EOL
-[Unit]
-Description=Terminusa Online Game Server
-After=network.target postgresql.service
-Wants=postgresql.service
+server {
+    listen 443 ssl;
+    server_name play.terminusa.online;
 
-[Service]
-Type=simple
-User=root
-WorkingDirectory=${INSTALL_DIR}
-Environment="PYTHONPATH=${INSTALL_DIR}"
-ExecStart=/usr/bin/python3 ${INSTALL_DIR}/main.py
-Restart=always
-RestartSec=10
-StandardOutput=append:/var/log/terminusa/terminusa.log
-StandardError=append:/var/log/terminusa/terminusa.error.log
+    ssl_certificate /etc/letsencrypt/live/play.terminusa.online/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/play.terminusa.online/privkey.pem;
 
-[Install]
-WantedBy=multi-user.target
-EOL
+    location / {
+        proxy_pass http://localhost:5001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
 
-# Configure firewall
-echo "Configuring firewall..."
-ufw allow 22/tcp    # SSH
-ufw allow 80/tcp    # HTTP
-ufw allow 443/tcp   # HTTPS
-ufw allow 5000/tcp  # Flask
-ufw allow 5001/tcp  # Web Server
+    location /socket.io {
+        proxy_pass http://localhost:5001/socket.io;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+        proxy_set_header Host $host;
+    }
 
-# Reload services
-echo "Reloading services..."
-systemctl daemon-reload
-systemctl restart nginx
-systemctl enable ${SERVICE_NAME}
-systemctl restart ${SERVICE_NAME}
+    location /static {
+        alias /root/Terminusa/static;
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+    }
+}
+EOL'
 
-# Display status
-echo "Checking service status..."
-systemctl status ${SERVICE_NAME}
-systemctl status nginx
+    sudo ln -s /etc/nginx/sites-available/terminusa /etc/nginx/sites-enabled/
+    sudo nginx -t && sudo systemctl restart nginx
+fi
 
-echo "Deployment completed!"
-echo "To view logs:"
-echo "  Server logs: tail -f /var/log/terminusa/terminusa.log"
-echo "  Error logs: tail -f /var/log/terminusa/terminusa.error.log"
-echo "  Nginx logs: tail -f /var/log/nginx/access.log"
+# Set up Supervisor configuration
+echo -e "${YELLOW}Setting up Supervisor configuration...${NC}"
+sudo bash -c 'cat > /etc/supervisor/conf.d/terminusa.conf << EOL
+[program:terminusa]
+directory=/root/Terminusa
+command=/root/Terminusa/venv/bin/gunicorn -w 4 -k gevent -b 127.0.0.1:5000 main:app
+autostart=true
+autorestart=true
+stderr_logfile=/root/Terminusa/logs/supervisor.err.log
+stdout_logfile=/root/Terminusa/logs/supervisor.out.log
+environment=PYTHONPATH="/root/Terminusa"
+
+[program:terminusa_play]
+directory=/root/Terminusa
+command=/root/Terminusa/venv/bin/gunicorn -w 4 -k gevent -b 127.0.0.1:5001 play:app
+autostart=true
+autorestart=true
+stderr_logfile=/root/Terminusa/logs/supervisor_play.err.log
+stdout_logfile=/root/Terminusa/logs/supervisor_play.out.log
+environment=PYTHONPATH="/root/Terminusa"
+EOL'
+
+sudo supervisorctl reread
+sudo supervisorctl update
+
+echo -e "${GREEN}Deployment completed successfully!${NC}"
+echo -e "${YELLOW}Run ./start_server.sh to start the server${NC}"
+
+# Make start_server.sh executable
+chmod +x start_server.sh
