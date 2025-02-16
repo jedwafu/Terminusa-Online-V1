@@ -17,12 +17,6 @@ user_achievements = Table(
     Column('achievement_id', Integer, ForeignKey('achievements.id'))
 )
 
-user_items = Table(
-    'user_items', Base.metadata,
-    Column('user_id', Integer, ForeignKey('users.id')),
-    Column('item_id', Integer, ForeignKey('items.id'))
-)
-
 guild_members = Table(
     'guild_members', Base.metadata,
     Column('user_id', Integer, ForeignKey('users.id')),
@@ -68,24 +62,32 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     username = Column(String, unique=True, nullable=False)
-    email = Column(String, unique=True, nullable=False)
-    password_hash = Column(String, nullable=False)
-    role = Column(SQLEnum(UserRole), default=UserRole.PLAYER)
-    level = Column(Integer, default=1)
-    experience = Column(Integer, default=0)
-    gold = Column(Integer, default=0)
-    crystals = Column(Integer, default=0)
+    password = Column(String, nullable=False)
+    salt = Column(String, nullable=False)
+    role = Column(String, default='user')
     created_at = Column(DateTime, default=datetime.utcnow)
-    last_login = Column(DateTime)
-    is_active = Column(Boolean, default=True)
-    settings = Column(JSON)
 
     # Relationships
-    inventory = relationship("Inventory", back_populates="user")
+    wallet = relationship("Wallet", back_populates="user", uselist=False)
+    inventory = relationship("Inventory", back_populates="user", uselist=False)
     achievements = relationship("Achievement", secondary=user_achievements)
-    guild_memberships = relationship("Guild", secondary=guild_members)
-    party_memberships = relationship("Party", secondary=party_members)
-    wallet = relationship("Wallet", back_populates="user")
+    guilds = relationship("Guild", secondary=guild_members)
+    parties = relationship("Party", secondary=party_members)
+
+class Wallet(Base):
+    __tablename__ = 'wallets'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), unique=True)
+    address = Column(String, unique=True, nullable=False)
+    encrypted_privkey = Column(String, nullable=False)
+    iv = Column(String, nullable=False)
+    sol_balance = Column(Float, default=0)
+    crystals = Column(Integer, default=0)
+    exons = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="wallet")
 
 class Item(Base):
     __tablename__ = 'items'
@@ -97,33 +99,31 @@ class Item(Base):
     rarity = Column(SQLEnum(ItemRarity), nullable=False)
     level_requirement = Column(Integer, default=1)
     stats = Column(JSON)
-    tradeable = Column(Boolean, default=True)
-    stackable = Column(Boolean, default=False)
-    max_stack = Column(Integer, default=1)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Inventory(Base):
     __tablename__ = 'inventories'
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'))
+    user_id = Column(Integer, ForeignKey('users.id'), unique=True)
     max_slots = Column(Integer, default=100)
-    items = Column(JSON)  # {slot_id: {item_id, quantity}}
     created_at = Column(DateTime, default=datetime.utcnow)
-    last_updated = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="inventory")
+    items = relationship("InventoryItem", back_populates="inventory")
 
-class Wallet(Base):
-    __tablename__ = 'wallets'
+class InventoryItem(Base):
+    __tablename__ = 'inventory_items'
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'))
-    balance = Column(JSON)  # {currency: amount}
+    inventory_id = Column(Integer, ForeignKey('inventories.id'))
+    item_id = Column(Integer, ForeignKey('items.id'))
+    quantity = Column(Integer, default=1)
+    slot = Column(Integer)
     created_at = Column(DateTime, default=datetime.utcnow)
-    last_updated = Column(DateTime, default=datetime.utcnow)
 
-    user = relationship("User", back_populates="wallet")
+    inventory = relationship("Inventory", back_populates="items")
+    item = relationship("Item")
 
 class Guild(Base):
     __tablename__ = 'guilds'
@@ -133,10 +133,16 @@ class Guild(Base):
     description = Column(String)
     leader_id = Column(Integer, ForeignKey('users.id'))
     level = Column(Integer, default=1)
-    experience = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
-    members = relationship("User", secondary=guild_members)
-    settings = Column(JSON)
+
+class GuildMember(Base):
+    __tablename__ = 'guild_member_details'
+
+    id = Column(Integer, primary_key=True)
+    guild_id = Column(Integer, ForeignKey('guilds.id'))
+    user_id = Column(Integer, ForeignKey('users.id'))
+    role = Column(String, default='member')
+    joined_at = Column(DateTime, default=datetime.utcnow)
 
 class Party(Base):
     __tablename__ = 'parties'
@@ -145,18 +151,25 @@ class Party(Base):
     leader_id = Column(Integer, ForeignKey('users.id'))
     max_size = Column(Integer, default=4)
     created_at = Column(DateTime, default=datetime.utcnow)
-    members = relationship("User", secondary=party_members)
-    settings = Column(JSON)
 
-class Achievement(Base):
-    __tablename__ = 'achievements'
+class PartyMember(Base):
+    __tablename__ = 'party_member_details'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False)
-    description = Column(String)
-    requirements = Column(JSON)
-    rewards = Column(JSON)
+    party_id = Column(Integer, ForeignKey('parties.id'))
+    user_id = Column(Integer, ForeignKey('users.id'))
+    joined_at = Column(DateTime, default=datetime.utcnow)
+
+class PartyInvitation(Base):
+    __tablename__ = 'party_invitations'
+
+    id = Column(Integer, primary_key=True)
+    party_id = Column(Integer, ForeignKey('parties.id'))
+    inviter_id = Column(Integer, ForeignKey('users.id'))
+    invitee_id = Column(Integer, ForeignKey('users.id'))
+    status = Column(String, default='pending')
     created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime)
 
 class Gate(Base):
     __tablename__ = 'gates'
@@ -171,6 +184,16 @@ class Gate(Base):
     rewards = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class GateSession(Base):
+    __tablename__ = 'gate_sessions'
+
+    id = Column(Integer, primary_key=True)
+    gate_id = Column(Integer, ForeignKey('gates.id'))
+    party_id = Column(Integer, ForeignKey('parties.id'))
+    status = Column(String, default='active')
+    started_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime)
+
 class MagicBeast(Base):
     __tablename__ = 'magic_beasts'
 
@@ -181,6 +204,16 @@ class MagicBeast(Base):
     stats = Column(JSON)
     abilities = Column(JSON)
     drops = Column(JSON)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class Achievement(Base):
+    __tablename__ = 'achievements'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    description = Column(String)
+    requirements = Column(JSON)
+    rewards = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class AIBehavior(Base):
@@ -203,21 +236,8 @@ class Transaction(Base):
     amount = Column(Float, nullable=False)
     currency = Column(String, nullable=False)
     description = Column(String)
-    transaction_metadata = Column(JSON)  # Changed from metadata to transaction_metadata
+    transaction_metadata = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
-
-class MarketListing(Base):
-    __tablename__ = 'market_listings'
-
-    id = Column(Integer, primary_key=True)
-    seller_id = Column(Integer, ForeignKey('users.id'))
-    item_id = Column(Integer, ForeignKey('items.id'))
-    quantity = Column(Integer, default=1)
-    price = Column(Float, nullable=False)
-    currency = Column(String, nullable=False)
-    expires_at = Column(DateTime)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    status = Column(String, default='active')
 
 class ChatMessage(Base):
     __tablename__ = 'chat_messages'
@@ -227,48 +247,4 @@ class ChatMessage(Base):
     channel = Column(String, nullable=False)
     content = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
-    message_metadata = Column(JSON)  # Changed from metadata to message_metadata
-
-class UserSession(Base):
-    __tablename__ = 'user_sessions'
-
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'))
-    token = Column(String, nullable=False)
-    ip_address = Column(String)
-    user_agent = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    expires_at = Column(DateTime)
-    last_activity = Column(DateTime)
-
-class AuditLog(Base):
-    __tablename__ = 'audit_logs'
-
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'))
-    action = Column(String, nullable=False)
-    details = Column(JSON)
-    ip_address = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-class SystemMetric(Base):
-    __tablename__ = 'system_metrics'
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False)
-    value = Column(Float, nullable=False)
-    tags = Column(JSON)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-class GameEvent(Base):
-    __tablename__ = 'game_events'
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String, nullable=False)
-    description = Column(String)
-    start_time = Column(DateTime, nullable=False)
-    end_time = Column(DateTime, nullable=False)
-    rewards = Column(JSON)
-    requirements = Column(JSON)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    status = Column(String, default='scheduled')
+    message_metadata = Column(JSON)
