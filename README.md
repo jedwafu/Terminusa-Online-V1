@@ -29,8 +29,12 @@ cd terminusa-online
 
 2. Run the deployment script:
 ```bash
+# Linux/Unix
 chmod +x deploy.sh
 ./deploy.sh
+
+# Windows
+# Not supported - server must be deployed on Linux/Unix
 ```
 
 3. Start the server:
@@ -38,25 +42,32 @@ chmod +x deploy.sh
 ./start_server.sh
 ```
 
-The deployment script will:
-- Install system dependencies
-- Set up Python virtual environment
-- Install Python packages
-- Configure PostgreSQL database
-- Set up Redis
-- Configure Nginx
-- Set up Supervisor
-- Initialize the application
+### CLI Client Installation
 
-### CLI Client
+#### Windows
+1. Navigate to the client directory and run the installation script:
+```cmd
+cd client
+install_client.bat
+```
 
-1. Install client dependencies:
+2. Run the client:
+```cmd
+venv-client\Scripts\activate.bat
+python client.py
+```
+
+#### Linux/Unix
+1. Navigate to the client directory and run the installation script:
 ```bash
-pip install -r requirements-client.txt
+cd client
+chmod +x install_client.sh
+./install_client.sh
 ```
 
 2. Run the client:
 ```bash
+source venv-client/bin/activate
 python client.py
 ```
 
@@ -102,15 +113,23 @@ screen -r terminusa
 
 1. Create virtual environment:
 ```bash
+# Linux/Unix
+python3 -m venv venv
+source venv/bin/activate
+
+# Windows
 python -m venv venv
-source venv/bin/activate  # Linux/Mac
-venv\Scripts\activate     # Windows
+venv\Scripts\activate
 ```
 
 2. Install dependencies:
 ```bash
-pip install -r requirements-server.txt  # For server development
-pip install -r requirements-client.txt  # For client development
+# Server (Linux/Unix only)
+pip install -r requirements-server.txt
+
+# Client (Both platforms)
+cd client
+pip install -r requirements-client.txt
 ```
 
 3. Set up environment variables:
@@ -132,6 +151,25 @@ pytest --cov=. tests/
 black .
 flake8
 mypy .
+```
+
+## Project Structure
+
+```
+terminusa-online/
+├── client/                 # CLI client
+│   ├── client.py          # Client main script
+│   ├── install_client.bat # Windows installation script
+│   ├── install_client.sh  # Unix installation script
+│   └── requirements.txt   # Client dependencies
+├── game_systems/          # Game mechanics
+├── static/                # Static files
+├── templates/             # HTML templates
+├── tests/                 # Test suite
+├── app.py                 # Main application
+├── deploy.sh             # Server deployment script
+├── requirements-server.txt # Server dependencies
+└── start_server.sh       # Server startup script
 ```
 
 ## Architecture
