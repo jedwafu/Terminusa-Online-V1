@@ -20,6 +20,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Global variables for cleanup
+server_instance = None
+game_state_updater = None
+
 def is_port_in_use(port):
     """Check if a port is in use"""
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -42,25 +46,10 @@ def cleanup_port(port):
         logger.error(f"Error cleaning up port: {e}")
     return False
 
-class ServerThread(threading.Thread):
-    def __init__(self, app, host, port):
-        threading.Thread.__init__(self)
-        self.srv = make_server(host, port, app)
-        self.ctx = app.app_context()
-        self.ctx.push()
-
-    def run(self):
-        logger.info('Starting server')
-        self.srv.serve_forever()
-
-    def shutdown(self):
-        logger.info('Stopping server')
-        self.srv.shutdown()
-
 def start_game_state_updater(game_manager):
     """Start background thread to update game state"""
     def update_loop():
-        while True:
+        while getattr(threading.current_thread(), "do_run", True):
             try:
                 game_manager.update_game_state()
                 time.sleep(60)  # Update every minute
@@ -68,17 +57,35 @@ def start_game_state_updater(game_manager):
                 logger.error(f"Error in game state update: {str(e)}", exc_info=True)
     
     thread = threading.Thread(target=update_loop, daemon=True)
+    thread.do_run = True
     thread.start()
     return thread
 
 def signal_handler(sig, frame):
-    """Handle shutdown signals"""
-    logger.info("Shutdown signal received")
+    """Handle shutdown signals gracefully"""
+    logger.info("Shutdown signal received, cleaning up...")
+    
+    # Stop the game state updater
+    global game_state_updater
+    if game_state_updater:
+        game_state_updater.do_run = False
+        game_state_updater.join(timeout=5)
+        logger.info("Game state updater stopped")
+
+    # Import socketio here to avoid circular imports
+    try:
+        from app import socketio
+        logger.info("Stopping SocketIO...")
+        socketio.stop()
+    except Exception as e:
+        logger.error(f"Error stopping SocketIO: {e}")
+
+    logger.info("Shutdown complete")
     sys.exit(0)
 
 def main():
     try:
-        # Set up signal handlers
+        # Set up signal handlers for graceful shutdown
         signal.signal(signal.SIGINT, signal_handler)
         signal.signal(signal.SIGTERM, signal_handler)
 
@@ -99,7 +106,8 @@ def main():
         logger.info("Game manager initialized")
 
         # Start game state updater
-        state_updater = start_game_state_updater(game_manager)
+        global game_state_updater
+        game_state_updater = start_game_state_updater(game_manager)
         logger.info("Game state updater started")
 
         # Configure server
@@ -123,7 +131,15 @@ def main():
                     raise RuntimeError(f"Could not find available port in range {port}-{port+9}")
 
         logger.info(f"Starting server on port {port}")
-        socketio.run(app, host='0.0.0.0', port=port, debug=debug, use_reloader=False, allow_unsafe_werkzeug=True)
+        socketio.run(
+            app,
+            host='0.0.0.0',
+            port=port,
+            debug=debug,
+            use_reloader=False,
+            allow_unsafe_werkzeug=True,
+            log_output=True
+        )
 
     except Exception as e:
         logger.error(f"Error in main: {str(e)}", exc_info=True)
@@ -134,4 +150,6 @@ if __name__ == "__main__":
         main()
     except Exception as e:
         logger.error(f"Fatal error: {str(e)}", exc_info=True)
+        # Ensure cleanup on error
+        signal_handler(signal.SIGTERM, None)
         raise
