@@ -11,9 +11,9 @@ from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt, verify_j
 import logging
 from datetime import datetime, timedelta
 import bcrypt
-from email_service import email_service
 import os
 from functools import wraps
+import secrets
 
 # Root route
 @app.route('/')
@@ -96,14 +96,28 @@ def login():
         )
 
         app.logger.info(f"Login successful for user: {username}")
-        return jsonify({
-            'status': 'success',
-            'token': access_token,
-            'user': {
-                'username': user.username,
-                'role': user.role
-            }
-        }), 200
+        
+        # Check if request is from web browser
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({
+                'status': 'success',
+                'token': access_token,
+                'user': {
+                    'username': user.username,
+                    'role': user.role
+                },
+                'redirect': 'https://play.terminusa.online'
+            }), 200
+        else:
+            # CLI client response
+            return jsonify({
+                'status': 'success',
+                'token': access_token,
+                'user': {
+                    'username': user.username,
+                    'role': user.role
+                }
+            }), 200
 
     except Exception as e:
         app.logger.error(f"Login error: {str(e)}")
@@ -153,7 +167,7 @@ def register():
             password=password_hash.decode('utf-8'),
             salt=salt.decode('utf-8'),
             role='player',
-            is_email_verified=False,
+            is_email_verified=True,  # Set to True for now since email verification is not set up
             created_at=datetime.utcnow(),
             last_login=datetime.utcnow()
         )
@@ -192,17 +206,11 @@ def register():
 
         db.session.commit()
 
-        # Send verification email
-        if email_service.send_verification_email(user):
-            return jsonify({
-                'status': 'success',
-                'message': 'Registration successful. Please check your email to verify your account.'
-            }), 201
-        else:
-            return jsonify({
-                'status': 'error',
-                'message': 'Registration successful but failed to send verification email.'
-            }), 201
+        app.logger.info(f"User registered successfully: {username}")
+        return jsonify({
+            'status': 'success',
+            'message': 'Registration successful! You can now log in.'
+        }), 201
 
     except Exception as e:
         app.logger.error(f"Registration error: {str(e)}")
