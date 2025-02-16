@@ -14,7 +14,7 @@ class EmailService:
     def __init__(self):
         self.smtp_host = "localhost"  # Local SMTP server
         self.smtp_port = 25  # Default SMTP port
-        self.from_email = f"noreply@{os.getenv('DOMAIN_NAME', 'terminusa.online')}"
+        self.from_email = "noreply@terminusa.online"
         self.verification_url = os.getenv('VERIFICATION_URL', 'https://play.terminusa.online/verify')
 
     def send_email(self, to_email: str, subject: str, html_content: str) -> bool:
@@ -159,7 +159,7 @@ def init_email_service(app):
     try:
         # Test SMTP connection
         with smtplib.SMTP('localhost', 25) as server:
-            server.verify('test@terminusa.online')
+            server.verify('admin@terminusa.online')
         logger.info("SMTP server connection successful")
         return EmailService()
     except Exception as e:
