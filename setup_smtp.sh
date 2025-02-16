@@ -47,15 +47,36 @@ opendkim-genkey -D /etc/opendkim/keys/terminusa.online/ -d terminusa.online -s d
 chown opendkim:opendkim /etc/opendkim/keys/terminusa.online/default.private
 chmod 600 /etc/opendkim/keys/terminusa.online/default.private
 
+# Create OpenDKIM socket directory
+mkdir -p /var/run/opendkim
+chown opendkim:opendkim /var/run/opendkim
+chmod 755 /var/run/opendkim
+
 # Configure OpenDKIM
 cat > /etc/opendkim.conf << EOF
+# Logging
 Syslog          yes
+SyslogSuccess   yes
+LogWhy          yes
+
+# Daemon settings
+Mode            sv
+Canonicalization        relaxed/simple
+Socket          local:/var/run/opendkim/opendkim.sock
 UMask           002
+UserID          opendkim:opendkim
+PidFile         /var/run/opendkim/opendkim.pid
+
+# Signing
 Domain          terminusa.online
 KeyFile         /etc/opendkim/keys/terminusa.online/default.private
 Selector        default
-Socket          inet:8891@localhost
 EOF
+
+# Create OpenDKIM socket directory in chroot
+mkdir -p /var/spool/postfix/var/run/opendkim
+chown opendkim:postfix /var/spool/postfix/var/run/opendkim
+chmod 750 /var/spool/postfix/var/run/opendkim
 
 # Set Postfix compatibility level
 postconf compatibility_level=3.6
@@ -89,10 +110,11 @@ mynetworks = 127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
 relayhost =
 
 # DKIM Configuration
-milter_default_action = accept
 milter_protocol = 2
-smtpd_milters = inet:localhost:8891
-non_smtpd_milters = inet:localhost:8891
+milter_default_action = accept
+smtpd_milters = unix:/var/run/opendkim/opendkim.sock
+non_smtpd_milters = unix:/var/run/opendkim/opendkim.sock
+internal_mail_filter_classes = bounce
 
 # Mail Directory
 home_mailbox = Maildir/
@@ -170,6 +192,7 @@ postfix check
 echo -e "${YELLOW}Restarting services...${NC}"
 systemctl enable opendkim
 systemctl start opendkim
+sleep 2  # Wait for OpenDKIM to start
 systemctl enable postfix
 systemctl start postfix
 
