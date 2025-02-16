@@ -4,25 +4,26 @@ from sqlalchemy import (
     Column, Integer, String, Float, Boolean, DateTime,
     ForeignKey, Table, JSON, Enum as SQLEnum, Text
 )
-from database import db
+from sqlalchemy.orm import relationship
+from database import db, Base
 import enum
 
 # Association Tables
 user_achievements = Table(
-    'user_achievements', db.Model.metadata,
+    'user_achievements', Base.metadata,
     Column('user_id', Integer, ForeignKey('users.id')),
     Column('achievement_id', Integer, ForeignKey('achievements.id'))
 )
 
 guild_members = Table(
-    'guild_members', db.Model.metadata,
+    'guild_members', Base.metadata,
     Column('user_id', Integer, ForeignKey('users.id')),
     Column('guild_id', Integer, ForeignKey('guilds.id')),
     Column('role', String)
 )
 
 party_members = Table(
-    'party_members', db.Model.metadata,
+    'party_members', Base.metadata,
     Column('user_id', Integer, ForeignKey('users.id')),
     Column('party_id', Integer, ForeignKey('parties.id'))
 )
@@ -72,7 +73,7 @@ class DamageType(enum.Enum):
     ELEMENTAL = "elemental"
 
 # Models
-class User(db.Model):
+class User(Base, db.Model):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True)
@@ -89,14 +90,14 @@ class User(db.Model):
     last_active = Column(DateTime)
 
     # Relationships
-    wallet = db.relationship("Wallet", back_populates="user", uselist=False)
-    inventory = db.relationship("Inventory", back_populates="user", uselist=False)
-    character = db.relationship("PlayerCharacter", back_populates="user", uselist=False)
-    achievements = db.relationship("Achievement", secondary=user_achievements)
-    guilds = db.relationship("Guild", secondary=guild_members)
-    parties = db.relationship("Party", secondary=party_members)
+    wallet = relationship("Wallet", back_populates="user", uselist=False)
+    inventory = relationship("Inventory", back_populates="user", uselist=False)
+    character = relationship("PlayerCharacter", back_populates="user", uselist=False)
+    achievements = relationship("Achievement", secondary=user_achievements)
+    guilds = relationship("Guild", secondary=guild_members)
+    parties = relationship("Party", secondary=party_members)
 
-class PlayerCharacter(db.Model):
+class PlayerCharacter(Base, db.Model):
     __tablename__ = 'player_characters'
 
     id = Column(Integer, primary_key=True)
@@ -135,7 +136,7 @@ class PlayerCharacter(db.Model):
     debuffs = Column(JSON, default=dict)
     
     # Skills and Abilities
-    skills = db.relationship("PlayerSkill", back_populates="character")
+    skills = relationship("PlayerSkill", back_populates="character")
     equipped_skills = Column(JSON, default=dict)
     
     # Progress
@@ -147,9 +148,9 @@ class PlayerCharacter(db.Model):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, onupdate=datetime.utcnow)
     
-    user = db.relationship("User", back_populates="character")
+    user = relationship("User", back_populates="character")
 
-class PlayerSkill(db.Model):
+class PlayerSkill(Base, db.Model):
     __tablename__ = 'player_skills'
 
     id = Column(Integer, primary_key=True)
@@ -165,9 +166,9 @@ class PlayerSkill(db.Model):
     effects = Column(JSON)
     requirements = Column(JSON)
     
-    character = db.relationship("PlayerCharacter", back_populates="skills")
+    character = relationship("PlayerCharacter", back_populates="skills")
 
-class Wallet(db.Model):
+class Wallet(Base, db.Model):
     __tablename__ = 'wallets'
 
     id = Column(Integer, primary_key=True)
@@ -180,9 +181,9 @@ class Wallet(db.Model):
     exons = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    user = db.relationship("User", back_populates="wallet")
+    user = relationship("User", back_populates="wallet")
 
-class Item(db.Model):
+class Item(Base, db.Model):
     __tablename__ = 'items'
 
     id = Column(Integer, primary_key=True)
@@ -197,7 +198,7 @@ class Item(db.Model):
     max_durability = Column(Integer)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-class Inventory(db.Model):
+class Inventory(Base, db.Model):
     __tablename__ = 'inventories'
 
     id = Column(Integer, primary_key=True)
@@ -205,10 +206,10 @@ class Inventory(db.Model):
     max_slots = Column(Integer, default=20)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    user = db.relationship("User", back_populates="inventory")
-    items = db.relationship("InventoryItem", back_populates="inventory")
+    user = relationship("User", back_populates="inventory")
+    items = relationship("InventoryItem", back_populates="inventory")
 
-class InventoryItem(db.Model):
+class InventoryItem(Base, db.Model):
     __tablename__ = 'inventory_items'
 
     id = Column(Integer, primary_key=True)
@@ -220,10 +221,10 @@ class InventoryItem(db.Model):
     durability = Column(Integer)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    inventory = db.relationship("Inventory", back_populates="items")
-    item = db.relationship("Item")
+    inventory = relationship("Inventory", back_populates="items")
+    item = relationship("Item")
 
-class Guild(db.Model):
+class Guild(Base, db.Model):
     __tablename__ = 'guilds'
 
     id = Column(Integer, primary_key=True)
@@ -234,7 +235,7 @@ class Guild(db.Model):
     experience = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-class GuildMember(db.Model):
+class GuildMember(Base, db.Model):
     __tablename__ = 'guild_member_details'
 
     id = Column(Integer, primary_key=True)
@@ -244,7 +245,7 @@ class GuildMember(db.Model):
     contribution = Column(Integer, default=0)
     joined_at = Column(DateTime, default=datetime.utcnow)
 
-class Party(db.Model):
+class Party(Base, db.Model):
     __tablename__ = 'parties'
 
     id = Column(Integer, primary_key=True)
@@ -252,7 +253,7 @@ class Party(db.Model):
     max_size = Column(Integer, default=4)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-class PartyMember(db.Model):
+class PartyMember(Base, db.Model):
     __tablename__ = 'party_member_details'
 
     id = Column(Integer, primary_key=True)
@@ -260,7 +261,7 @@ class PartyMember(db.Model):
     user_id = Column(Integer, ForeignKey('users.id'))
     joined_at = Column(DateTime, default=datetime.utcnow)
 
-class PartyInvitation(db.Model):
+class PartyInvitation(Base, db.Model):
     __tablename__ = 'party_invitations'
 
     id = Column(Integer, primary_key=True)
@@ -271,7 +272,7 @@ class PartyInvitation(db.Model):
     created_at = Column(DateTime, default=datetime.utcnow)
     expires_at = Column(DateTime)
 
-class Gate(db.Model):
+class Gate(Base, db.Model):
     __tablename__ = 'gates'
 
     id = Column(Integer, primary_key=True)
@@ -288,7 +289,7 @@ class Gate(db.Model):
     clear_conditions = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-class GateSession(db.Model):
+class GateSession(Base, db.Model):
     __tablename__ = 'gate_sessions'
 
     id = Column(Integer, primary_key=True)
@@ -300,7 +301,7 @@ class GateSession(db.Model):
     clear_time = Column(Integer)  # in seconds
     rewards_claimed = Column(Boolean, default=False)
 
-class MagicBeast(db.Model):
+class MagicBeast(Base, db.Model):
     __tablename__ = 'magic_beasts'
 
     id = Column(Integer, primary_key=True)
@@ -313,7 +314,7 @@ class MagicBeast(db.Model):
     drops = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-class Achievement(db.Model):
+class Achievement(Base, db.Model):
     __tablename__ = 'achievements'
 
     id = Column(Integer, primary_key=True)
@@ -323,7 +324,7 @@ class Achievement(db.Model):
     rewards = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-class AIBehavior(db.Model):
+class AIBehavior(Base, db.Model):
     __tablename__ = 'ai_behaviors'
 
     id = Column(Integer, primary_key=True)
@@ -334,7 +335,7 @@ class AIBehavior(db.Model):
     priorities = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-class Transaction(db.Model):
+class Transaction(Base, db.Model):
     __tablename__ = 'transactions'
 
     id = Column(Integer, primary_key=True)
@@ -346,7 +347,7 @@ class Transaction(db.Model):
     transaction_metadata = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-class ChatMessage(db.Model):
+class ChatMessage(Base, db.Model):
     __tablename__ = 'chat_messages'
 
     id = Column(Integer, primary_key=True)
