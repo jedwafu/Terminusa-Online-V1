@@ -57,30 +57,22 @@ class DatabaseSetup:
         try:
             session = self.Session()
             
-            # Hash password
-            salt = bcrypt.gensalt()
+            # Generate salt and hash password
+            salt = os.urandom(16).hex()
             password_hash = bcrypt.hashpw(
                 password.encode('utf-8'),
-                salt
+                bcrypt.gensalt()
             ).decode('utf-8')
             
             # Create admin user
             admin = User(
                 username=username,
                 email=email,
-                password_hash=password_hash,
-                role=UserRole.ADMIN,
-                level=100,
-                gold=1000000,
-                crystals=10000,
-                created_at=datetime.utcnow(),
-                last_login=datetime.utcnow(),
-                is_active=True,
-                settings={
-                    'notifications': True,
-                    'theme': 'dark',
-                    'language': 'en'
-                }
+                password=password_hash,
+                salt=salt,
+                role='admin',
+                is_email_verified=True,
+                created_at=datetime.utcnow()
             )
             
             session.add(admin)
@@ -105,26 +97,20 @@ class DatabaseSetup:
             # Create test users
             test_users = []
             for i in range(1, 6):
+                salt = os.urandom(16).hex()
+                password_hash = bcrypt.hashpw(
+                    f"password{i}".encode('utf-8'),
+                    bcrypt.gensalt()
+                ).decode('utf-8')
+                
                 user = User(
                     username=f"test_user_{i}",
                     email=f"test{i}@example.com",
-                    password_hash=bcrypt.hashpw(
-                        f"password{i}".encode('utf-8'),
-                        bcrypt.gensalt()
-                    ).decode('utf-8'),
-                    role=UserRole.PLAYER,
-                    level=i * 10,
-                    experience=i * 1000,
-                    gold=i * 1000,
-                    crystals=i * 100,
-                    created_at=datetime.utcnow(),
-                    last_login=datetime.utcnow(),
-                    is_active=True,
-                    settings={
-                        'notifications': True,
-                        'theme': 'light',
-                        'language': 'en'
-                    }
+                    password=password_hash,
+                    salt=salt,
+                    role='player',
+                    is_email_verified=True,
+                    created_at=datetime.utcnow()
                 )
                 test_users.append(user)
             
@@ -161,7 +147,7 @@ class DatabaseSetup:
             
             # Check admin user
             admin = session.query(User).filter_by(
-                role=UserRole.ADMIN
+                role='admin'
             ).first()
             if not admin:
                 print("Admin user not found")
@@ -207,7 +193,7 @@ class DatabaseSetup:
 
 if __name__ == '__main__':
     # Get database URL from environment or use default
-    db_url = os.getenv('DB_URL', 'sqlite:///terminusa.db')
+    db_url = os.getenv('DATABASE_URL', 'sqlite:///terminusa.db')
     
     # Create database setup instance
     db_setup = DatabaseSetup(db_url)
