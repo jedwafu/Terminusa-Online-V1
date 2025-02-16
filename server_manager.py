@@ -14,6 +14,7 @@ from rich.panel import Panel
 from rich.layout import Layout
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
 from dotenv import load_dotenv
+from init_db import init_database
 
 # Load environment variables
 load_dotenv()
@@ -186,13 +187,22 @@ class ServiceManager:
             BarColumn(),
             TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
         ) as progress:
-            task = progress.add_task("Starting services...", total=len(self.services))
+            task = progress.add_task("Starting services...", total=len(self.services) + 1)  # +1 for database init
+            
+            # Initialize database first
+            self.console.print("[yellow]Initializing database...[/yellow]")
+            if not init_database():
+                self.console.print("[red]Failed to initialize database![/red]")
+                return False
+            progress.update(task, advance=1)
             
             # Start services in order
             for service_id in ['postgresql', 'postfix', 'opendkim', 'web_server', 'game_server']:
                 self.start_service(service_id)
                 progress.update(task, advance=1)
                 time.sleep(1)  # Give each service time to start
+
+            return True
 
     def stop_all(self):
         """Stop all services"""
@@ -236,10 +246,12 @@ def main():
         manager = ServiceManager()
 
         # Start all services
-        manager.start_all()
-
-        # Monitor services
-        manager.monitor()
+        if manager.start_all():
+            # Monitor services
+            manager.monitor()
+        else:
+            logger.error("Failed to start all services")
+            sys.exit(1)
 
     except KeyboardInterrupt:
         manager.shutdown()
