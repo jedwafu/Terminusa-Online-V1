@@ -1,4 +1,4 @@
-from flask import jsonify, request, render_template, send_from_directory, make_response
+from flask import jsonify, request, render_template, send_from_directory, make_response, redirect
 from app import app, db
 from models import User, Transaction, ChatMessage, Wallet, Inventory, Item, Gate, Guild
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt, verify_jwt_in_request, create_access_token
@@ -8,6 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from email_service import email_service
 import os
 from functools import wraps
+import secrets
 
 # Root route
 @app.route('/')
@@ -41,9 +42,8 @@ def register_page():
     return render_template('register.html')
 
 @app.route('/play')
-@jwt_required()
-def play_page():
-    return render_template('play.html')
+def play_redirect():
+    return redirect('https://play.terminusa.online', code=301)
 
 @app.route('/marketplace')
 @jwt_required()
@@ -60,21 +60,32 @@ def gates_page():
 def login():
     try:
         data = request.get_json()
+        if not data:
+            return jsonify({'status': 'error', 'message': 'No data provided'}), 400
+            
         username = data.get('username')
         password = data.get('password')
 
+        if not username or not password:
+            return jsonify({'status': 'error', 'message': 'Username and password are required'}), 400
+
+        app.logger.info(f"Login attempt for user: {username}")
         user = User.query.filter_by(username=username).first()
-        if not user or not check_password_hash(user.password, password):
-            return jsonify({
-                'status': 'error',
-                'message': 'Invalid credentials'
-            }), 401
+        
+        if not user:
+            app.logger.warning(f"Login failed - user not found: {username}")
+            return jsonify({'status': 'error', 'message': 'Invalid credentials'}), 401
+
+        if not check_password_hash(user.password, password):
+            app.logger.warning(f"Login failed - invalid password for user: {username}")
+            return jsonify({'status': 'error', 'message': 'Invalid credentials'}), 401
 
         access_token = create_access_token(
             identity=username,
             additional_claims={'role': user.role}
         )
 
+        app.logger.info(f"Login successful for user: {username}")
         return jsonify({
             'status': 'success',
             'token': access_token,
@@ -85,7 +96,7 @@ def login():
         }), 200
 
     except Exception as e:
-        logging.error(f"Login error: {str(e)}")
+        app.logger.error(f"Login error: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': 'Login failed'
@@ -95,10 +106,12 @@ def login():
 def register():
     try:
         data = request.get_json()
+        if not data:
+            return jsonify({'status': 'error', 'message': 'No data provided'}), 400
+
         username = data.get('username')
         email = data.get('email')
         password = data.get('password')
-        role = data.get('role', 'user')
 
         # Validate input
         if not all([username, email, password]):
@@ -125,11 +138,34 @@ def register():
             username=username,
             email=email,
             password=generate_password_hash(password),
-            role=role,
-            is_email_verified=False
+            role='user',
+            is_email_verified=False,
+            created_at=datetime.utcnow()
         )
+        
+        # Create wallet
+        wallet = Wallet(
+            user=user,
+            address=f"wallet_{secrets.token_hex(8)}",
+            encrypted_privkey=f"key_{secrets.token_hex(16)}",
+            iv=f"iv_{secrets.token_hex(8)}",
+            sol_balance=0.0,
+            crystals=100,  # Starting crystals
+            exons=10      # Starting exons
+        )
+
+        # Create inventory
+        inventory = Inventory(
+            user=user,
+            max_slots=100  # Starting inventory size
+        )
+
         db.session.add(user)
+        db.session.add(wallet)
+        db.session.add(inventory)
         db.session.commit()
+
+        app.logger.info(f"User registered successfully: {username}")
 
         # Send verification email
         if email_service.send_verification_email(user):
@@ -144,95 +180,12 @@ def register():
             }), 201
 
     except Exception as e:
-        logging.error(f"Registration error: {str(e)}")
+        app.logger.error(f"Registration error: {str(e)}")
         db.session.rollback()
         return jsonify({
             'status': 'error',
             'message': 'Registration failed'
         }), 500
-
-# Protected routes that require email verification
-def require_verified_email(f):
-    @jwt_required()
-    def decorated_function(*args, **kwargs):
-        current_user = User.query.filter_by(username=get_jwt_identity()).first()
-        if not current_user.is_email_verified:
-            return jsonify({
-                'status': 'error',
-                'message': 'Email verification required'
-            }), 403
-        return f(*args, **kwargs)
-    return decorated_function
-
-def require_admin():
-    def wrapper(fn):
-        @wraps(fn)
-        @jwt_required()
-        def wrapped(*args, **kwargs):
-            verify_jwt_in_request()
-            claims = get_jwt()
-            if claims.get('role') != 'admin':
-                return jsonify({'status': 'error', 'message': 'Admin access required'}), 403
-            return fn(*args, **kwargs)
-        return wrapped
-    return wrapper
-
-# Game routes
-@app.route('/api/game/profile', methods=['GET'])
-@jwt_required()
-@require_verified_email
-def get_profile():
-    try:
-        username = get_jwt_identity()
-        user = User.query.filter_by(username=username).first()
-        if not user:
-            return jsonify({'status': 'error', 'message': 'User not found'}), 404
-
-        wallet = Wallet.query.filter_by(user_id=user.id).first()
-        inventory = Inventory.query.filter_by(user_id=user.id).first()
-
-        return jsonify({
-            'status': 'success',
-            'profile': {
-                'username': user.username,
-                'email': user.email,
-                'role': user.role,
-                'wallet': {
-                    'address': wallet.address,
-                    'balance': wallet.sol_balance,
-                    'crystals': wallet.crystals,
-                    'exons': wallet.exons
-                },
-                'inventory': {
-                    'max_slots': inventory.max_slots,
-                    'used_slots': len(inventory.items)
-                }
-            }
-        }), 200
-    except Exception as e:
-        logging.error(f"Error getting profile: {str(e)}")
-        return jsonify({'status': 'error', 'message': 'Failed to get profile'}), 500
-
-# Admin routes
-@app.route('/api/admin/users', methods=['GET'])
-@require_admin()
-def admin_list_users():
-    try:
-        users = User.query.all()
-        user_list = []
-        for user in users:
-            user_list.append({
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
-                'role': user.role,
-                'is_verified': user.is_email_verified,
-                'created_at': user.created_at.isoformat() if user.created_at else None
-            })
-        return jsonify({'status': 'success', 'users': user_list}), 200
-    except Exception as e:
-        logging.error(f"Error listing users: {str(e)}")
-        return jsonify({'status': 'error', 'message': 'Failed to list users'}), 500
 
 # Error handlers
 @app.errorhandler(404)

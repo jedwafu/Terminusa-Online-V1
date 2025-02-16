@@ -27,6 +27,11 @@ class DatabaseSetup:
         self.Session = sessionmaker(bind=self.engine)
         self.metadata = MetaData()
 
+        # Get game configuration from environment
+        self.starting_crystals = int(os.getenv('STARTING_CRYSTALS', 20))
+        self.starting_exons = int(os.getenv('STARTING_EXONS', 0))
+        self.starting_inventory_slots = int(os.getenv('STARTING_INVENTORY_SLOTS', 20))
+
     def create_tables(self) -> bool:
         """Create all database tables"""
         try:
@@ -58,21 +63,22 @@ class DatabaseSetup:
             session = self.Session()
             
             # Generate salt and hash password
-            salt = os.urandom(16).hex()
+            salt = bcrypt.gensalt()
             password_hash = bcrypt.hashpw(
                 password.encode('utf-8'),
-                bcrypt.gensalt()
+                salt
             ).decode('utf-8')
             
-            # Create admin user with all required fields
-            admin = User()
-            admin.username = username
-            admin.email = email
-            admin.password = password_hash
-            admin.salt = salt
-            admin.role = 'admin'
-            admin.is_email_verified = True
-            admin.created_at = datetime.utcnow()
+            # Create admin user
+            admin = User(
+                username=username,
+                email=email,
+                password=password_hash,
+                salt=salt.decode('utf-8'),
+                role='admin',
+                is_email_verified=True,
+                created_at=datetime.utcnow()
+            )
             
             session.add(admin)
             session.flush()  # Get admin.id
@@ -80,12 +86,12 @@ class DatabaseSetup:
             # Create wallet for admin
             wallet = Wallet(
                 user_id=admin.id,
-                address="admin_wallet",
-                encrypted_privkey="admin_key",
-                iv="admin_iv",
+                address=f"admin_wallet_{os.urandom(4).hex()}",
+                encrypted_privkey=os.urandom(32).hex(),
+                iv=os.urandom(16).hex(),
                 sol_balance=1000.0,
-                crystals=100000,
-                exons=100000
+                crystals=10000,
+                exons=1000
             )
             session.add(wallet)
 
@@ -97,7 +103,6 @@ class DatabaseSetup:
             session.add(inventory)
 
             session.commit()
-            
             print(f"Admin user '{username}' created successfully")
             return admin
             
@@ -117,41 +122,42 @@ class DatabaseSetup:
             # Create test users
             for i in range(1, 6):
                 # Generate salt and hash password
-                salt = os.urandom(16).hex()
+                salt = bcrypt.gensalt()
                 password_hash = bcrypt.hashpw(
                     f"password{i}".encode('utf-8'),
-                    bcrypt.gensalt()
+                    salt
                 ).decode('utf-8')
                 
-                # Create user with all required fields
-                user = User()
-                user.username = f"test_user_{i}"
-                user.email = f"test{i}@example.com"
-                user.password = password_hash
-                user.salt = salt
-                user.role = 'player'
-                user.is_email_verified = True
-                user.created_at = datetime.utcnow()
+                # Create user
+                user = User(
+                    username=f"test_user_{i}",
+                    email=f"test{i}@terminusa.online",
+                    password=password_hash,
+                    salt=salt.decode('utf-8'),
+                    role='player',
+                    is_email_verified=True,
+                    created_at=datetime.utcnow()
+                )
                 
                 session.add(user)
                 session.flush()  # Get user.id
 
-                # Create wallet
+                # Create wallet with starting values
                 wallet = Wallet(
                     user_id=user.id,
-                    address=f"wallet_{i}",
-                    encrypted_privkey=f"key_{i}",
-                    iv=f"iv_{i}",
-                    sol_balance=float(i * 10),
-                    crystals=i * 1000,
-                    exons=i * 1000
+                    address=f"wallet_{os.urandom(4).hex()}",
+                    encrypted_privkey=os.urandom(32).hex(),
+                    iv=os.urandom(16).hex(),
+                    sol_balance=0.0,
+                    crystals=self.starting_crystals,
+                    exons=self.starting_exons
                 )
                 session.add(wallet)
 
                 # Create inventory
                 inventory = Inventory(
                     user_id=user.id,
-                    max_slots=100
+                    max_slots=self.starting_inventory_slots
                 )
                 session.add(inventory)
             
@@ -214,7 +220,7 @@ class DatabaseSetup:
             # Create admin user
             if not self.create_admin_user(
                 "admin",
-                "admin@terminusa.com",
+                "admin@terminusa.online",
                 "admin123"
             ):
                 return False
@@ -232,12 +238,12 @@ class DatabaseSetup:
 
 if __name__ == '__main__':
     # Get database URL from environment or use default
-    db_url = os.getenv('DATABASE_URL', 'postgresql://termini_admin:strongpassword@localhost/termini')
+    db_url = os.getenv('DATABASE_URL', 'sqlite:///terminusa.db')
     
     # Create database setup instance
     db_setup = DatabaseSetup(db_url)
     
-    # Reset database (drop all tables, recreate them, and add initial data)
+    # Reset database
     if db_setup.reset_database():
         print("Database setup completed successfully")
     else:

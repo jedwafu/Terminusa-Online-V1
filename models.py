@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any
 from sqlalchemy import (
     Column, Integer, String, Float, Boolean, DateTime,
-    ForeignKey, Table, JSON, Enum as SQLEnum
+    ForeignKey, Table, JSON, Enum as SQLEnum, Text
 )
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
@@ -42,6 +42,8 @@ class ItemType(enum.Enum):
     CONSUMABLE = "consumable"
     MATERIAL = "material"
     QUEST = "quest"
+    SKILL_BOOK = "skill_book"
+    RUNE = "rune"
 
 class ItemRarity(enum.Enum):
     COMMON = "common"
@@ -49,12 +51,28 @@ class ItemRarity(enum.Enum):
     RARE = "rare"
     EPIC = "epic"
     LEGENDARY = "legendary"
+    MYTHIC = "mythic"
+    DIVINE = "divine"
 
 class GateType(enum.Enum):
     NORMAL = "normal"
     ELITE = "elite"
     BOSS = "boss"
     EVENT = "event"
+    DUNGEON = "dungeon"
+    RAID = "raid"
+
+class SkillType(enum.Enum):
+    PASSIVE = "passive"
+    ACTIVE = "active"
+    ULTIMATE = "ultimate"
+    SPECIAL = "special"
+
+class DamageType(enum.Enum):
+    PHYSICAL = "physical"
+    MAGICAL = "magical"
+    TRUE = "true"
+    ELEMENTAL = "elemental"
 
 # Models
 class User(Base):
@@ -65,18 +83,92 @@ class User(Base):
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
     salt = Column(String, nullable=False)
-    role = Column(String, default='user')
+    role = Column(String, default='player')
     is_email_verified = Column(Boolean, default=False)
     email_verification_token = Column(String, unique=True)
     email_verification_sent_at = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)
+    last_login = Column(DateTime)
+    last_active = Column(DateTime)
 
     # Relationships
     wallet = relationship("Wallet", back_populates="user", uselist=False)
     inventory = relationship("Inventory", back_populates="user", uselist=False)
+    character = relationship("PlayerCharacter", back_populates="user", uselist=False)
     achievements = relationship("Achievement", secondary=user_achievements)
     guilds = relationship("Guild", secondary=guild_members)
     parties = relationship("Party", secondary=party_members)
+
+class PlayerCharacter(Base):
+    __tablename__ = 'player_characters'
+
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), unique=True)
+    level = Column(Integer, default=1)
+    experience = Column(Integer, default=0)
+    rank = Column(String, default='F')
+    title = Column(String)
+    
+    # Base Stats
+    strength = Column(Integer, default=10)
+    agility = Column(Integer, default=10)
+    intelligence = Column(Integer, default=10)
+    vitality = Column(Integer, default=10)
+    wisdom = Column(Integer, default=10)
+    
+    # Derived Stats
+    hp = Column(Integer, default=100)
+    mp = Column(Integer, default=100)
+    hp_regen = Column(Float, default=1.0)
+    mp_regen = Column(Float, default=1.0)
+    physical_attack = Column(Integer, default=10)
+    magical_attack = Column(Integer, default=10)
+    physical_defense = Column(Integer, default=10)
+    magical_defense = Column(Integer, default=10)
+    
+    # Combat Stats
+    critical_chance = Column(Float, default=5.0)
+    critical_damage = Column(Float, default=150.0)
+    dodge_chance = Column(Float, default=5.0)
+    hit_chance = Column(Float, default=95.0)
+    
+    # Status
+    status_effects = Column(JSON, default=dict)
+    buffs = Column(JSON, default=dict)
+    debuffs = Column(JSON, default=dict)
+    
+    # Skills and Abilities
+    skills = relationship("PlayerSkill", back_populates="character")
+    equipped_skills = Column(JSON, default=dict)
+    
+    # Progress
+    gates_cleared = Column(Integer, default=0)
+    bosses_defeated = Column(Integer, default=0)
+    quests_completed = Column(Integer, default=0)
+    
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, onupdate=datetime.utcnow)
+    
+    user = relationship("User", back_populates="character")
+
+class PlayerSkill(Base):
+    __tablename__ = 'player_skills'
+
+    id = Column(Integer, primary_key=True)
+    character_id = Column(Integer, ForeignKey('player_characters.id'))
+    name = Column(String, nullable=False)
+    description = Column(Text)
+    type = Column(SQLEnum(SkillType), nullable=False)
+    level = Column(Integer, default=1)
+    max_level = Column(Integer, default=10)
+    damage_type = Column(SQLEnum(DamageType))
+    cooldown = Column(Float)
+    mana_cost = Column(Integer)
+    effects = Column(JSON)
+    requirements = Column(JSON)
+    
+    character = relationship("PlayerCharacter", back_populates="skills")
 
 class Wallet(Base):
     __tablename__ = 'wallets'
@@ -103,6 +195,9 @@ class Item(Base):
     rarity = Column(SQLEnum(ItemRarity), nullable=False)
     level_requirement = Column(Integer, default=1)
     stats = Column(JSON)
+    effects = Column(JSON)
+    durability = Column(Integer)
+    max_durability = Column(Integer)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Inventory(Base):
@@ -110,7 +205,7 @@ class Inventory(Base):
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'), unique=True)
-    max_slots = Column(Integer, default=100)
+    max_slots = Column(Integer, default=20)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     user = relationship("User", back_populates="inventory")
@@ -124,6 +219,8 @@ class InventoryItem(Base):
     item_id = Column(Integer, ForeignKey('items.id'))
     quantity = Column(Integer, default=1)
     slot = Column(Integer)
+    is_equipped = Column(Boolean, default=False)
+    durability = Column(Integer)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     inventory = relationship("Inventory", back_populates="items")
@@ -137,6 +234,7 @@ class Guild(Base):
     description = Column(String)
     leader_id = Column(Integer, ForeignKey('users.id'))
     level = Column(Integer, default=1)
+    experience = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class GuildMember(Base):
@@ -146,6 +244,7 @@ class GuildMember(Base):
     guild_id = Column(Integer, ForeignKey('guilds.id'))
     user_id = Column(Integer, ForeignKey('users.id'))
     role = Column(String, default='member')
+    contribution = Column(Integer, default=0)
     joined_at = Column(DateTime, default=datetime.utcnow)
 
 class Party(Base):
@@ -183,9 +282,13 @@ class Gate(Base):
     description = Column(String)
     type = Column(SQLEnum(GateType), nullable=False)
     level_requirement = Column(Integer, default=1)
+    rank_requirement = Column(String, default='F')
     min_players = Column(Integer, default=1)
     max_players = Column(Integer, default=4)
     rewards = Column(JSON)
+    monster_level = Column(Integer, default=1)
+    monster_rank = Column(String, default='F')
+    clear_conditions = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class GateSession(Base):
@@ -197,6 +300,8 @@ class GateSession(Base):
     status = Column(String, default='active')
     started_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime)
+    clear_time = Column(Integer)  # in seconds
+    rewards_claimed = Column(Boolean, default=False)
 
 class MagicBeast(Base):
     __tablename__ = 'magic_beasts'
@@ -205,6 +310,7 @@ class MagicBeast(Base):
     name = Column(String, nullable=False)
     description = Column(String)
     level = Column(Integer, default=1)
+    rank = Column(String, default='F')
     stats = Column(JSON)
     abilities = Column(JSON)
     drops = Column(JSON)

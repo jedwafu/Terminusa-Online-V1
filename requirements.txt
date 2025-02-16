@@ -1,44 +1,44 @@
-# Testing Dependencies (required for running tests)
-pytest==7.4.2
-coverage==7.3.1
-pytest-cov==4.1.0
-pytest-asyncio==0.21.1
-pytest-env==1.0.1
-pytest-html==4.0.1
-
-# Core Web Framework
-Flask==2.3.3
+# Flask and extensions
+Flask==3.0.2
 Flask-SQLAlchemy==3.1.1
-fastapi==0.103.1
-uvicorn==0.23.2
-pydantic==2.3.0
-python-dotenv==1.0.0
-flask_cors==3.0.10
-flask-socketio==5.3.2
-flask-jwt-extended==4.5.2
-
-# Email Services
-requests==2.31.0
-python-http-client==3.3.7
+Flask-JWT-Extended==4.6.0
+Flask-Cors==4.0.0
+Flask-SocketIO==5.3.6
+Flask-Mail==0.9.1
+Flask-Migrate==4.0.5
 
 # Database
-SQLAlchemy==2.0.20
+SQLAlchemy==2.0.25
+alembic==1.13.1
 psycopg2-binary==2.9.9
-aiosqlite==0.19.0
-alembic==1.12.0
 
-# Security
-bcrypt==4.0.1
-cryptography==41.0.3
-python-jose==3.3.0
-itsdangerous==2.1.2
+# Authentication and Security
+bcrypt==4.1.2
+PyJWT==2.8.0
+python-dotenv==1.0.1
 
-# System Monitoring
-psutil==5.9.8  # Added for system monitoring
+# Web Server
+gunicorn==21.2.0
+eventlet==0.35.2
+gevent==23.9.1
 
 # Utilities
-python-dateutil==2.8.2
-PyYAML==6.0.1
-Jinja2==3.1.2
-structlog==23.1.0
-gunicorn==21.2.0
+requests==2.31.0
+rich==13.7.0
+prompt-toolkit==3.0.43
+asyncio==3.4.3
+aiohttp==3.9.1
+websockets==12.0
+python-socketio==5.10.0
+
+# Testing
+pytest==7.4.4
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+pytest-asyncio==0.23.3
+
+# Development
+black==24.1.1
+flake8==7.0.0
+mypy==1.8.0
+isort==5.13.2
