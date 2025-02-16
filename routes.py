@@ -10,11 +10,10 @@ from models import (
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt, verify_jwt_in_request, create_access_token
 import logging
 from datetime import datetime, timedelta
-from werkzeug.security import generate_password_hash, check_password_hash
+import bcrypt
 from email_service import email_service
 import os
 from functools import wraps
-import secrets
 
 # Root route
 @app.route('/')
@@ -82,7 +81,8 @@ def login():
             app.logger.warning(f"Login failed - user not found: {username}")
             return jsonify({'status': 'error', 'message': 'Invalid credentials'}), 401
 
-        if not check_password_hash(user.password, password):
+        # Verify password using bcrypt
+        if not bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
             app.logger.warning(f"Login failed - invalid password for user: {username}")
             return jsonify({'status': 'error', 'message': 'Invalid credentials'}), 401
 
@@ -144,10 +144,14 @@ def register():
             }), 400
 
         # Create user
+        salt = bcrypt.gensalt()
+        password_hash = bcrypt.hashpw(password.encode('utf-8'), salt)
+        
         user = User(
             username=username,
             email=email,
-            password=generate_password_hash(password),
+            password=password_hash.decode('utf-8'),
+            salt=salt.decode('utf-8'),
             role='player',
             is_email_verified=False,
             created_at=datetime.utcnow(),
@@ -167,12 +171,12 @@ def register():
         )
         db.session.add(character)
 
-        # Create wallet with starting values
+        # Create wallet
         wallet = Wallet(
             user_id=user.id,
-            address=f"wallet_{secrets.token_hex(8)}",
-            encrypted_privkey=secrets.token_hex(32),
-            iv=secrets.token_hex(16),
+            address=f"wallet_{os.urandom(8).hex()}",
+            encrypted_privkey=os.urandom(32).hex(),
+            iv=os.urandom(16).hex(),
             sol_balance=0.0,
             crystals=int(os.getenv('STARTING_CRYSTALS', 20)),
             exons=int(os.getenv('STARTING_EXONS', 0))
@@ -187,8 +191,6 @@ def register():
         db.session.add(inventory)
 
         db.session.commit()
-
-        app.logger.info(f"User registered successfully: {username}")
 
         # Send verification email
         if email_service.send_verification_email(user):
