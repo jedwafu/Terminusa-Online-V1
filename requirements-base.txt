@@ -10,7 +10,7 @@ itsdangerous==2.1.2
 click==8.1.7
 
 # Database
-Flask-SQLAlchemy==2.5.1  # Downgraded to work with SQLAlchemy 1.4
+Flask-SQLAlchemy==2.5.1  # Ensure compatibility with Flask 2.2.x
 SQLAlchemy==1.4.50  # Keep this version for typing-extensions compatibility
 alembic==1.13.1
 psycopg2-binary==2.9.9
