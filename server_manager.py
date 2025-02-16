@@ -13,6 +13,10 @@ from rich.live import Live
 from rich.panel import Panel
 from rich.layout import Layout
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(
@@ -54,13 +58,13 @@ class ServiceManager:
             },
             'game_server': {
                 'name': 'Game Server',
-                'port': 5000,
+                'port': int(os.getenv('SERVER_PORT', 5000)),
                 'start_cmd': 'python main.py',
                 'process_name': 'python'
             },
             'web_server': {
                 'name': 'Web Server',
-                'port': 3000,
+                'port': int(os.getenv('WEBAPP_PORT', 5001)),
                 'start_cmd': 'python web_app.py',
                 'process_name': 'python'
             }
@@ -145,7 +149,7 @@ class ServiceManager:
                 # Start system services
                 subprocess.run(service['start_cmd'].split(), check=True)
             
-            logger.info(f"Started {service['name']}")
+            logger.info(f"Started {service['name']} on port {service.get('port', 'N/A')}")
             return True
         except subprocess.CalledProcessError as e:
             logger.error(f"Failed to start {service['name']}: {e}")
