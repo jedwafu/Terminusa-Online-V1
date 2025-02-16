@@ -18,7 +18,7 @@ greenlet==1.1.2
 
 # Authentication
 bcrypt==3.2.0
-PyJWT==1.7.1
+PyJWT==2.1.0
 python-dotenv==0.15.0
 cryptography==3.3.2
 pyOpenSSL==20.0.1
