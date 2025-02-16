@@ -39,6 +39,10 @@ if ! id -u admin > /dev/null 2>&1; then
 fi
 usermod -aG mail admin
 
+# Update /etc/passwd for Postfix
+cp /etc/passwd /etc/postfix/passwd
+postmap /etc/postfix/passwd
+
 # Backup original configurations
 echo -e "${YELLOW}Backing up original configurations...${NC}"
 cp /etc/postfix/main.cf /etc/postfix/main.cf.backup
@@ -85,72 +89,32 @@ EOF
 # Set Postfix compatibility level
 postconf compatibility_level=3.6
 
-# Configure Postfix
-echo -e "${YELLOW}Configuring Postfix...${NC}"
-cat > /etc/postfix/main.cf << EOF
-# Basic Configuration
-compatibility_level = 3.6
-smtpd_banner = \$myhostname ESMTP Terminusa Mail Server
-biff = no
-append_dot_mydomain = no
-readme_directory = no
+# Configure Postfix main.cf
+postconf -e "myhostname = terminusa.online"
+postconf -e "mydomain = terminusa.online"
+postconf -e "myorigin = \$mydomain"
+postconf -e "inet_interfaces = all"
+postconf -e "inet_protocols = ipv4"
+postconf -e "mydestination = \$myhostname, localhost.\$mydomain, localhost, \$mydomain"
+postconf -e "mynetworks = 127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16"
+postconf -e "home_mailbox = Maildir/"
+postconf -e "virtual_alias_maps = hash:/etc/postfix/virtual"
+postconf -e "alias_maps = hash:/etc/aliases"
+postconf -e "alias_database = hash:/etc/aliases"
+postconf -e "local_recipient_maps = hash:/etc/postfix/passwd \$alias_maps"
+postconf -e "smtpd_milters = unix:/var/run/opendkim/opendkim.sock"
+postconf -e "non_smtpd_milters = unix:/var/run/opendkim/opendkim.sock"
+postconf -e "milter_default_action = accept"
+postconf -e "milter_protocol = 2"
 
-# TLS Configuration
-smtpd_tls_cert_file=/etc/ssl/certs/ssl-cert-snakeoil.pem
-smtpd_tls_key_file=/etc/ssl/private/ssl-cert-snakeoil.key
-smtpd_use_tls=yes
-smtpd_tls_auth_only = yes
-smtp_tls_security_level = may
-smtpd_tls_security_level = may
-
-# Network Configuration
-myhostname = terminusa.online
-mydomain = terminusa.online
-myorigin = \$mydomain
-inet_interfaces = all
-inet_protocols = ipv4
-mydestination = \$myhostname, localhost.\$mydomain, localhost, \$mydomain
-mynetworks = 127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
-relayhost =
-
-# DKIM Configuration
-milter_protocol = 2
-milter_default_action = accept
-smtpd_milters = unix:/var/run/opendkim/opendkim.sock
-non_smtpd_milters = unix:/var/run/opendkim/opendkim.sock
-
-# Mail Directory
-home_mailbox = Maildir/
-mail_spool_directory = /var/mail
-virtual_alias_maps = hash:/etc/postfix/virtual
-
-# Security
-smtpd_helo_required = yes
-disable_vrfy_command = yes
-smtpd_delay_reject = yes
-
-# Access Control
-smtpd_recipient_restrictions =
-    permit_mynetworks,
-    permit_sasl_authenticated,
-    reject_unauth_destination
-
-# Size Limits
-message_size_limit = 10485760
-mailbox_size_limit = 1073741824
-
-# Performance
-maximal_queue_lifetime = 1h
-bounce_queue_lifetime = 1h
-
-# Chroot configuration
-queue_directory = /var/spool/postfix
-command_directory = /usr/sbin
-daemon_directory = /usr/lib/postfix/sbin
-data_directory = /var/lib/postfix
-mail_owner = postfix
-setgid_group = postdrop
+# Configure aliases
+echo -e "${YELLOW}Configuring aliases...${NC}"
+cat > /etc/aliases << EOF
+postmaster: root
+root: admin
+admin: admin
 EOF
+newaliases
 
 # Configure virtual aliases
 echo -e "${YELLOW}Configuring virtual aliases...${NC}"
@@ -169,7 +133,7 @@ chown -R admin:mail /home/admin/Maildir
 chmod -R 700 /home/admin/Maildir
 
 # Set up Postfix directories
-mkdir -p /var/spool/postfix/{pid,public,private,etc,lib,usr}
+mkdir -p /var/spool/postfix/{pid,public,private,etc}
 
 # Set correct ownership and permissions
 chown -R root:root /var/spool/postfix
@@ -183,13 +147,11 @@ chmod 710 /var/spool/postfix/public
 chmod 700 /var/spool/postfix/private
 
 # Copy necessary files to chroot
-cp /etc/{services,resolv.conf,localtime,nsswitch.conf,hosts} /var/spool/postfix/etc/
+cp /etc/{services,resolv.conf,localtime,nsswitch.conf,hosts,passwd} /var/spool/postfix/etc/
 cp -r /etc/ssl /var/spool/postfix/etc/
 
 # Set correct ownership for chroot files
 chown -R root:root /var/spool/postfix/etc
-chown -R root:root /var/spool/postfix/lib
-chown -R root:root /var/spool/postfix/usr
 
 # Run Postfix's built-in permission fixer
 echo -e "${YELLOW}Running Postfix permission fixes...${NC}"
