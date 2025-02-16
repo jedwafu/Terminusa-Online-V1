@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-container">
+    <h2>Register for Terminusa Online</h2>
+    <form id="register-form" class="auth-form">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <div class="form-group">
+            <label for="confirm-password">Confirm Password</label>
+            <input type="password" id="confirm-password" name="confirm-password" required>
+        </div>
+        <div class="form-group">
+            <button type="submit" class="button primary">Register</button>
+        </div>
+        <div class="form-footer">
+            <p>Already have an account? <a href="/login">Login here</a></p>
+        </div>
+    </form>
+</div>
+
+<script>
+document.getElementById('register-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirm-password').value;
+
+    // Validate password match
+    if (password !== confirmPassword) {
+        alert('Passwords do not match');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, email, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            alert(data.message || 'Registration successful! Please check your email to verify your account.');
+            window.location.href = '/login';
+        } else {
+            alert(data.message || 'Registration failed');
+        }
+    } catch (error) {
+        console.error('Registration error:', error);
+        alert('An error occurred during registration');
+    }
+});
+</script>
+
+<style>
+.auth-container {
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.form-group input {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.form-footer {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.form-footer a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.form-footer a:hover {
+    text-decoration: underline;
+}
+
+.password-requirements {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 0.5rem;
+}
+
+.password-requirements ul {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+</style>
+{% endblock %}

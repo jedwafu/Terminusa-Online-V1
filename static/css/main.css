@@ -23,6 +23,7 @@ header {
     background-color: #2c3e50;
     color: white;
     padding: 1rem 0;
+    margin-bottom: 2rem;
 }
 
 header h1 {
@@ -34,20 +35,20 @@ nav ul {
     display: flex;
     justify-content: center;
     list-style: none;
-}
-
-nav ul li {
-    margin: 0 1rem;
+    gap: 1rem;
 }
 
 nav ul li a {
     color: white;
     text-decoration: none;
     font-weight: bold;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    transition: background-color 0.3s;
 }
 
 nav ul li a:hover {
-    color: #3498db;
+    background-color: #34495e;
 }
 
 /* Hero section */
@@ -71,12 +72,6 @@ nav ul li a:hover {
 }
 
 /* Button styles */
-.cta-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-}
-
 .button {
     display: inline-block;
     padding: 0.8rem 2rem;
@@ -84,6 +79,8 @@ nav ul li a:hover {
     text-decoration: none;
     font-weight: bold;
     transition: background-color 0.3s;
+    border: none;
+    cursor: pointer;
 }
 
 .button.primary {
@@ -121,6 +118,11 @@ nav ul li a:hover {
     padding: 2rem;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
 }
 
 .feature-card h3 {
@@ -128,7 +130,69 @@ nav ul li a:hover {
     margin-bottom: 1rem;
 }
 
-/* Footer styles */
+/* Auth forms */
+.auth-container {
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-group label {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.form-group input {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.form-footer {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.form-footer a {
+    color: #3498db;
+    text-decoration: none;
+}
+
+.form-footer a:hover {
+    text-decoration: underline;
+}
+
+/* Navigation auth controls */
+.auth-controls {
+    margin-left: auto;
+}
+
+.auth-controls a {
+    margin-left: 1rem;
+}
+
+.username {
+    color: #2ecc71;
+    margin-right: 1rem;
+}
+
+/* Footer */
 footer {
     text-align: center;
     padding: 2rem 0;
@@ -158,5 +222,9 @@ footer {
 
     .feature-grid {
         grid-template-columns: 1fr;
+    }
+
+    .auth-container {
+        margin: 1rem;
     }
 }
