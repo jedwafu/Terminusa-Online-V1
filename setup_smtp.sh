@@ -33,14 +33,14 @@ systemctl stop postfix opendkim
 
 # Create admin user for mail
 echo -e "${YELLOW}Creating mail users...${NC}"
-if ! id -u admin > /dev/null 2>&1; then
-    useradd -m -s /bin/bash admin
-    echo "admin:password" | chpasswd  # Set a default password
+if ! getent passwd admin > /dev/null; then
+    useradd -m -s /bin/bash -G mail admin
+    echo "admin:password" | chpasswd
 fi
-usermod -aG mail admin
 
-# Update /etc/passwd for Postfix
-cp /etc/passwd /etc/postfix/passwd
+# Create passwd lookup table for Postfix
+echo -e "${YELLOW}Creating Postfix passwd lookup...${NC}"
+echo "admin    unix:$(getent passwd admin | cut -d: -f3):$(getent passwd admin | cut -d: -f4)" > /etc/postfix/passwd
 postmap /etc/postfix/passwd
 
 # Backup original configurations
@@ -101,7 +101,7 @@ postconf -e "home_mailbox = Maildir/"
 postconf -e "virtual_alias_maps = hash:/etc/postfix/virtual"
 postconf -e "alias_maps = hash:/etc/aliases"
 postconf -e "alias_database = hash:/etc/aliases"
-postconf -e "local_recipient_maps = hash:/etc/postfix/passwd \$alias_maps"
+postconf -e "local_recipient_maps = hash:/etc/postfix/passwd"
 postconf -e "smtpd_milters = unix:/var/run/opendkim/opendkim.sock"
 postconf -e "non_smtpd_milters = unix:/var/run/opendkim/opendkim.sock"
 postconf -e "milter_default_action = accept"
@@ -129,7 +129,7 @@ postmap /etc/postfix/virtual
 echo -e "${YELLOW}Setting up mail directories...${NC}"
 mkdir -p /var/mail
 mkdir -p /home/admin/Maildir/{new,cur,tmp}
-chown -R admin:mail /home/admin/Maildir
+chown -R admin:mail /home/admin
 chmod -R 700 /home/admin/Maildir
 
 # Set up Postfix directories
@@ -147,7 +147,7 @@ chmod 710 /var/spool/postfix/public
 chmod 700 /var/spool/postfix/private
 
 # Copy necessary files to chroot
-cp /etc/{services,resolv.conf,localtime,nsswitch.conf,hosts,passwd} /var/spool/postfix/etc/
+cp /etc/{services,resolv.conf,localtime,nsswitch.conf,hosts} /var/spool/postfix/etc/
 cp -r /etc/ssl /var/spool/postfix/etc/
 
 # Set correct ownership for chroot files
