@@ -19,18 +19,40 @@ echo -e "${YELLOW}Installing Postfix and dependencies...${NC}"
 if [ -f /etc/debian_version ]; then
     # Debian/Ubuntu
     apt-get update
-    DEBIAN_FRONTEND=noninteractive apt-get install -y postfix mailutils
+    DEBIAN_FRONTEND=noninteractive apt-get install -y postfix opendkim opendkim-tools mailutils
 elif [ -f /etc/redhat-release ]; then
     # RHEL/CentOS
-    yum install -y postfix mailx
+    yum install -y postfix opendkim mailx
 else
     echo -e "${RED}Unsupported distribution. Please install Postfix manually.${NC}"
     exit 1
 fi
 
-# Backup original Postfix configuration
-echo -e "${YELLOW}Backing up original configuration...${NC}"
+# Backup original configurations
+echo -e "${YELLOW}Backing up original configurations...${NC}"
 cp /etc/postfix/main.cf /etc/postfix/main.cf.backup
+cp /etc/opendkim.conf /etc/opendkim.conf.backup
+
+# Configure OpenDKIM
+echo -e "${YELLOW}Configuring OpenDKIM...${NC}"
+mkdir -p /etc/opendkim/keys/terminusa.online
+chown -R opendkim:opendkim /etc/opendkim
+chmod -R 750 /etc/opendkim
+
+# Generate DKIM keys
+opendkim-genkey -D /etc/opendkim/keys/terminusa.online/ -d terminusa.online -s default
+chown opendkim:opendkim /etc/opendkim/keys/terminusa.online/default.private
+chmod 600 /etc/opendkim/keys/terminusa.online/default.private
+
+# Configure OpenDKIM
+cat > /etc/opendkim.conf << EOF
+Syslog          yes
+UMask           002
+Domain          terminusa.online
+KeyFile         /etc/opendkim/keys/terminusa.online/default.private
+Selector        default
+Socket          inet:8891@localhost
+EOF
 
 # Configure Postfix
 echo -e "${YELLOW}Configuring Postfix...${NC}"
@@ -59,6 +81,12 @@ mydestination = \$myhostname, localhost.\$mydomain, localhost, \$mydomain
 mynetworks = 127.0.0.0/8, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
 relayhost =
 
+# DKIM Configuration
+milter_default_action = accept
+milter_protocol = 2
+smtpd_milters = inet:localhost:8891
+non_smtpd_milters = inet:localhost:8891
+
 # Mail Directory
 home_mailbox = Maildir/
 mail_spool_directory = /var/mail
@@ -83,14 +111,23 @@ maximal_queue_lifetime = 1h
 bounce_queue_lifetime = 1h
 EOF
 
-# Create required directories
-echo -e "${YELLOW}Creating mail directories...${NC}"
+# Fix permissions
+echo -e "${YELLOW}Fixing permissions...${NC}"
+chown -R root:root /var/spool/postfix/etc/ssl/certs/
+chown -R root:root /var/spool/postfix/lib
+chown -R root:root /var/spool/postfix/usr
+postfix set-permissions
+
+# Create required directories with correct permissions
 mkdir -p /var/spool/postfix
 mkdir -p /var/mail
 chmod 755 /var/mail
+chown -R postfix:postfix /var/spool/postfix
 
-# Restart Postfix
-echo -e "${YELLOW}Restarting Postfix...${NC}"
+# Restart services
+echo -e "${YELLOW}Restarting services...${NC}"
+systemctl enable opendkim
+systemctl restart opendkim
 systemctl enable postfix
 systemctl restart postfix
 
@@ -103,18 +140,9 @@ else
     exit 1
 fi
 
-# Open firewall ports
-echo -e "${YELLOW}Configuring firewall...${NC}"
-if command -v ufw > /dev/null; then
-    # Ubuntu/Debian with UFW
-    ufw allow 25/tcp
-    ufw allow 587/tcp
-elif command -v firewall-cmd > /dev/null; then
-    # RHEL/CentOS with firewalld
-    firewall-cmd --permanent --add-service=smtp
-    firewall-cmd --permanent --add-port=587/tcp
-    firewall-cmd --reload
-fi
+# Display DKIM record
+echo -e "${YELLOW}Add this TXT record to your DNS:${NC}"
+cat /etc/opendkim/keys/terminusa.online/default.txt
 
 # Create test script
 echo -e "${YELLOW}Creating test script...${NC}"
@@ -127,3 +155,11 @@ chmod +x /usr/local/bin/test-smtp
 echo -e "${GREEN}SMTP Server setup complete!${NC}"
 echo -e "${YELLOW}To test the server, run: test-smtp your@email.com${NC}"
 echo -e "${YELLOW}Check mail.log for any errors: tail -f /var/log/mail.log${NC}"
+
+# Test mail setup
+echo -e "${YELLOW}Testing mail setup...${NC}"
+echo "Test email" | mail -s "Test Email" admin@terminusa.online
+
+# Show mail log
+echo -e "${YELLOW}Checking mail log...${NC}"
+tail -n 20 /var/log/mail.log
