@@ -6,9 +6,8 @@ from flask_socketio import SocketIO
 from dotenv import load_dotenv
 import logging
 from logging.handlers import RotatingFileHandler
-
-from db_setup import init_db, db
-from email_service import init_email_service
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 
 # Load environment variables
 print("[DEBUG] Loading environment variables")
@@ -27,13 +26,9 @@ missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_vars:
     raise ValueError(f"Missing required environment variables: {missing_vars}")
 
-# Initialize Flask app with explicit template and static folders
+# Initialize Flask app
 print("[DEBUG] Creating Flask app")
-app = Flask(__name__, 
-    template_folder=os.path.abspath('templates'),
-    static_folder=os.path.abspath('static'),
-    static_url_path='/static'
-)
+app = Flask(__name__)
 
 # Configure app
 print("[DEBUG] Configuring Flask app")
@@ -51,6 +46,19 @@ print("[DEBUG] Initializing extensions")
 jwt = JWTManager(app)
 cors = CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Initialize SQLAlchemy
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+
+# Import models to register them with SQLAlchemy
+from models import (
+    User, PlayerCharacter, PlayerSkill, Wallet, Item, 
+    Inventory, InventoryItem, Guild, GuildMember, Party, 
+    PartyMember, PartyInvitation, Gate, GateSession, 
+    MagicBeast, Achievement, AIBehavior, Transaction, 
+    ChatMessage
+)
 
 # Configure logging
 if not os.path.exists('logs'):
@@ -70,13 +78,9 @@ app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
 app.logger.info('Terminusa Online startup')
 
-# Initialize database
-print("[DEBUG] Initializing database")
-init_db(app)
-
-# Initialize email service
-print("[DEBUG] Initializing email service")
-email_service = init_email_service(app)
+# Create database tables
+with app.app_context():
+    db.create_all()
 
 # Import routes after app initialization to avoid circular imports
 print("[DEBUG] Importing routes")
