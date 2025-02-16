@@ -35,6 +35,11 @@ class ServerManager:
         self.logger.addHandler(handler)
         self.logger.setLevel(logging.INFO)
 
+        # Also log to console
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(formatter)
+        self.logger.addHandler(console_handler)
+
     def check_dependencies(self) -> bool:
         """Check if all required dependencies are installed"""
         try:
@@ -78,10 +83,15 @@ class ServerManager:
             monitor_process = subprocess.Popen(
                 [sys.executable, 'email_monitor.py'],
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                stderr=subprocess.PIPE,
+                universal_newlines=True
             )
             self.processes['email_monitor'] = monitor_process
             self.status['email_monitor'] = 'running'
+            
+            # Log process output
+            threading.Thread(target=self.log_process_output, 
+                           args=(monitor_process, 'email_monitor')).start()
         except Exception as e:
             self.logger.error(f"Failed to start email monitor: {e}")
 
@@ -89,15 +99,50 @@ class ServerManager:
         """Start the main game server"""
         try:
             self.logger.info("Starting game server...")
+            env = os.environ.copy()
+            env["PYTHONUNBUFFERED"] = "1"  # Ensure Python output is unbuffered
+            
             server_process = subprocess.Popen(
                 [sys.executable, 'main.py'],
                 stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+                env=env
             )
             self.processes['game_server'] = server_process
             self.status['game_server'] = 'running'
+            
+            # Log process output
+            threading.Thread(target=self.log_process_output, 
+                           args=(server_process, 'game_server')).start()
+            
+            # Wait a bit to ensure server starts
+            time.sleep(5)
+            
+            # Check if process is still running
+            if server_process.poll() is not None:
+                self.logger.error("Game server failed to start!")
+                return False
+                
+            self.logger.info("Game server started successfully")
+            return True
         except Exception as e:
             self.logger.error(f"Failed to start game server: {e}")
+            return False
+
+    def log_process_output(self, process: subprocess.Popen, name: str):
+        """Log process output in real-time"""
+        while True:
+            if process.poll() is not None:
+                break
+                
+            output = process.stdout.readline()
+            if output:
+                self.logger.info(f"[{name}] {output.strip()}")
+                
+            error = process.stderr.readline()
+            if error:
+                self.logger.error(f"[{name}] {error.strip()}")
 
     def monitor_processes(self):
         """Monitor running processes"""
@@ -161,7 +206,9 @@ class ServerManager:
             return False
 
         self.start_email_monitor()
-        self.start_game_server()
+        if not self.start_game_server():
+            self.logger.error("Failed to start game server. Aborting startup.")
+            return False
 
         # Start process monitor
         self.monitor_thread = threading.Thread(target=self.monitor_processes)
