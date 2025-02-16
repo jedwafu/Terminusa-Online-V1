@@ -6,6 +6,7 @@ from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 import subprocess
 from rich.console import Console
 from rich.panel import Panel
+from urllib.parse import urlparse
 
 console = Console()
 
@@ -20,29 +21,15 @@ def init_database():
         return False
 
     try:
-        # Parse the DATABASE_URL
-        if db_url.startswith('postgresql://'):
-            db_url = db_url[len('postgresql://'):]
-
-        user_pass, host_port_db = db_url.split('@')
-        if ':' in user_pass:
-            user, password = user_pass.split(':')
-        else:
-            user = user_pass
-            password = ''
-
-        if '/' in host_port_db:
-            host_port, db_name = host_port_db.split('/')
-        else:
-            host_port = host_port_db
-            db_name = 'terminusa'
-
-        if ':' in host_port:
-            host, port = host_port.split(':')
-            port = int(port)
-        else:
-            host = host_port
-            port = 5432
+        # Parse the DATABASE_URL using urlparse
+        parsed = urlparse(db_url)
+        
+        # Extract components
+        user = parsed.username
+        password = parsed.password
+        host = parsed.hostname
+        port = parsed.port or 5432
+        db_name = parsed.path[1:] if parsed.path else 'terminusa'
 
         # Connect to PostgreSQL server
         console.print("[yellow]Connecting to PostgreSQL server...[/yellow]")

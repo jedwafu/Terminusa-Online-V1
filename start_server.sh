@@ -71,13 +71,13 @@ if ! command -v postfix &> /dev/null; then
     fi
 fi
 
-# Check if .env file exists
-if [ ! -f ".env" ]; then
-    echo -e "${YELLOW}Creating .env file from example...${NC}"
-    cp .env.example .env
-    echo -e "${GREEN}Created .env file. Please update it with your configuration.${NC}"
-    echo -e "${YELLOW}Press any key to continue after updating .env file...${NC}"
-    read -n 1 -s
+# Set up database user and permissions
+echo -e "${YELLOW}Setting up database user and permissions...${NC}"
+chmod +x setup_db_user.sh
+./setup_db_user.sh
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Database user setup failed! Please check the logs.${NC}"
+    exit 1
 fi
 
 # Create required directories
@@ -95,6 +95,13 @@ python init_db.py
 if [ $? -ne 0 ]; then
     echo -e "${RED}Database initialization failed! Please check the logs.${NC}"
     exit 1
+fi
+
+# Run SMTP setup if needed
+if [ ! -f "/etc/postfix/local_recipients" ]; then
+    echo -e "${YELLOW}Running SMTP setup...${NC}"
+    chmod +x setup_smtp.sh
+    ./setup_smtp.sh
 fi
 
 # Start the server manager
