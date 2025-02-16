@@ -25,11 +25,11 @@ pyOpenSSL==20.0.1
 
 # Web Server
 gunicorn==20.0.4
-eventlet==0.30.2  # Downgraded to last stable version before Python 3.10 changes
 gevent==21.12.0
-python-engineio>=4.0.0
-python-socketio>=5.0.0
-dnspython<2.0.0  # Added to ensure compatibility
+gevent-websocket==0.10.1
+Flask-SocketIO==5.1.1
+python-engineio==4.3.1
+python-socketio==5.5.1
 
 # Utilities
 six==1.15.0
