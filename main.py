@@ -8,12 +8,16 @@ from werkzeug.serving import make_server
 
 from server import app as server_app
 from web_app import app as web_app
-from game_manager import MainGameManager
+from game_systems import GameManager
 
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('logs/terminusa.log'),
+        logging.StreamHandler()
+    ]
 )
 logger = logging.getLogger(__name__)
 
@@ -48,12 +52,16 @@ def start_game_state_updater(game_manager):
 
 def main():
     try:
+        # Create logs directory if it doesn't exist
+        if not os.path.exists('logs'):
+            os.makedirs('logs')
+
         # Load environment variables
         load_dotenv(override=True)
         logger.info("Environment variables loaded")
 
         # Initialize game manager
-        game_manager = MainGameManager()
+        game_manager = GameManager()
         logger.info("Game manager initialized")
 
         # Start game state updater
