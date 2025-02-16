@@ -15,18 +15,27 @@ def init_db(app):
     db.init_app(app)
     migrate = Migrate(app, db)
     
-    # Bind the base to SQLAlchemy engine
-    Base.metadata.bind = db.engine
-    
     with app.app_context():
         # Import models to register them with SQLAlchemy
         import models
         
+        # Bind the base to SQLAlchemy engine
+        Base.metadata.bind = db.engine
+        
         # Create tables
         db.create_all()
         
-        # Stamp the database with the latest migration
-        from alembic.config import Config
-        from alembic import command
-        config = Config("alembic.ini")
-        command.stamp(config, "head")
+        try:
+            # Stamp the database with the latest migration
+            from alembic.config import Config
+            from alembic import command
+            config = Config("alembic.ini")
+            command.stamp(config, "head")
+        except Exception as e:
+            app.logger.warning(f"Could not stamp database version: {str(e)}")
+            # Continue anyway as this is not critical
+            pass
+
+def get_db():
+    """Get database instance"""
+    return db

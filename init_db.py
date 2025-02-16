@@ -6,7 +6,8 @@ from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 import subprocess
 from rich.console import Console
 from rich.panel import Panel
-from urllib.parse import urlparse
+from app import app
+from database import db, init_db
 
 console = Console()
 
@@ -22,14 +23,28 @@ def init_database():
 
     try:
         # Parse the DATABASE_URL using urlparse
-        parsed = urlparse(db_url)
-        
-        # Extract components
-        user = parsed.username
-        password = parsed.password
-        host = parsed.hostname
-        port = parsed.port or 5432
-        db_name = parsed.path[1:] if parsed.path else 'terminusa'
+        if db_url.startswith('postgresql://'):
+            db_url = db_url[len('postgresql://'):]
+
+        user_pass, host_port_db = db_url.split('@')
+        if ':' in user_pass:
+            user, password = user_pass.split(':')
+        else:
+            user = user_pass
+            password = ''
+
+        if '/' in host_port_db:
+            host_port, db_name = host_port_db.split('/')
+        else:
+            host_port = host_port_db
+            db_name = 'terminusa'
+
+        if ':' in host_port:
+            host, port = host_port.split(':')
+            port = int(port)
+        else:
+            host = host_port
+            port = 5432
 
         # Connect to PostgreSQL server
         console.print("[yellow]Connecting to PostgreSQL server...[/yellow]")
@@ -57,28 +72,15 @@ def init_database():
         cur.close()
         conn.close()
 
-        # Connect to the new database
-        conn = psycopg2.connect(
-            host=host,
-            port=port,
-            user=user,
-            password=password,
-            dbname=db_name
-        )
-        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        cur = conn.cursor()
-
-        # Create extensions if they don't exist
-        cur.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
-        cur.execute('CREATE EXTENSION IF NOT EXISTS "pgcrypto"')
-
-        cur.close()
-        conn.close()
-
-        # Run database migrations
-        console.print("[yellow]Running database migrations...[/yellow]")
-        subprocess.run(['flask', 'db', 'upgrade'], check=True)
-        console.print("[green]Database migrations completed successfully[/green]")
+        # Initialize Flask app and database
+        with app.app_context():
+            # Initialize database
+            init_db(app)
+            
+            # Create all tables
+            db.create_all()
+            
+            console.print("[green]Database tables created successfully[/green]")
 
         return True
 
