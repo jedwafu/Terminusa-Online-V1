@@ -1,288 +1,206 @@
-# Terminusa Online Testing Suite
+# Terminusa Online
 
-This directory contains the comprehensive testing suite for Terminusa Online, including unit tests, integration tests, and end-to-end tests for all game systems and components.
+A Solo-leveling inspired MMORPG with CLI and web interfaces.
 
-## Table of Contents
+## System Requirements
 
-- [Overview](#overview)
-- [Test Structure](#test-structure)
-- [Setup](#setup)
-- [Running Tests](#running-tests)
-- [Test Categories](#test-categories)
-- [Writing Tests](#writing-tests)
-- [CI/CD Integration](#cicd-integration)
-- [Contributing](#contributing)
+### Server Requirements
+- Ubuntu 20.04 or later
+- Python 3.10 or later
+- PostgreSQL 12 or later
+- Redis 6 or later
+- Nginx
+- Screen
+- Supervisor
 
-## Overview
+### Client Requirements
+- Python 3.8 or later
+- Terminal with ANSI color support
 
-The testing suite is designed to ensure the reliability, performance, and correctness of all Terminusa Online systems. It includes:
+## Quick Start
 
-- Unit tests for individual components
-- Integration tests for system interactions
-- Performance tests for optimization
-- Security tests for vulnerability detection
-- End-to-end tests for complete features
+### Server Deployment
 
-## Test Structure
-
-```
-tests/
-├── conftest.py              # Shared test fixtures and utilities
-├── .env.test               # Test environment configuration
-├── test_ai_behavior.py     # AI and NPC behavior tests
-├── test_analytics.py       # Game analytics tests
-├── test_audit.py          # Audit system tests
-├── test_backup.py         # Backup system tests
-├── test_combat.py         # Combat system tests
-├── test_economy.py        # Economy system tests
-├── test_encryption.py     # Encryption and security tests
-├── test_game_systems.py   # Core game systems tests
-├── test_gates.py          # Gate/dungeon system tests
-├── test_guild.py          # Guild system tests
-├── test_logging.py        # Logging system tests
-├── test_marketplace.py    # Marketplace system tests
-├── test_metrics.py        # Metrics system tests
-├── test_party.py          # Party system tests
-├── test_permissions.py    # Permissions system tests
-├── test_plugins.py        # Plugin system tests
-├── test_progression.py    # Progression system tests
-├── test_ranking.py        # Ranking system tests
-├── test_resources.py      # Resource system tests
-├── test_rewards.py        # Reward system tests
-├── test_sessions.py       # Session management tests
-├── test_telemetry.py      # Telemetry system tests
-├── test_validation.py     # Input validation tests
-└── test_web_api.py        # Web API tests
-```
-
-## Setup
-
-1. Create a virtual environment:
+1. Clone the repository:
 ```bash
-python install_dependencies.py --dev
+git clone https://github.com/jedwafu/terminusa-online.git
+cd terminusa-online
 ```
 
-2. Activate the virtual environment:
-- Windows:
+2. Run the deployment script:
 ```bash
-.\.venv\Scripts\activate
+chmod +x deploy.sh
+./deploy.sh
 ```
-- Unix/MacOS:
+
+3. Start the server:
 ```bash
-source .venv/bin/activate
+./start_server.sh
 ```
 
-3. Install test dependencies:
+The deployment script will:
+- Install system dependencies
+- Set up Python virtual environment
+- Install Python packages
+- Configure PostgreSQL database
+- Set up Redis
+- Configure Nginx
+- Set up Supervisor
+- Initialize the application
+
+### CLI Client
+
+1. Install client dependencies:
 ```bash
-pip install -r requirements.txt
+pip install -r requirements-client.txt
 ```
 
-## Running Tests
-
-### Run all tests:
+2. Run the client:
 ```bash
-python run_tests.py
+python client.py
 ```
 
-### Run specific test categories:
+## Server Management
+
+### Screen Session Layout
+
+The server runs in a Screen session with the following windows:
+1. Main Server (0)
+2. Game Manager (1)
+3. Email Monitor (2)
+4. System Monitor (3)
+5. Log Viewer (4)
+
+### Screen Commands
+- `Ctrl+a c`: Create new window
+- `Ctrl+a n`: Next window
+- `Ctrl+a p`: Previous window
+- `Ctrl+a d`: Detach from screen
+- `Ctrl+a ?`: Help
+
+To reattach to a detached session:
 ```bash
-python run_tests.py tests/test_combat.py
-python run_tests.py tests/test_economy.py
+screen -r terminusa
 ```
 
-### Run with coverage:
+### Server Monitoring
+
+- Main logs: `logs/main.log`
+- Game logs: `logs/game.log`
+- Email logs: `logs/email.log`
+- Supervisor logs: `logs/supervisor.*.log`
+
+### Database Management
+
+- Reset database: `python reset_db.py`
+- Run migrations: `flask db upgrade`
+- Create migration: `flask db migrate -m "description"`
+
+## Development
+
+### Setup Development Environment
+
+1. Create virtual environment:
 ```bash
-python run_tests.py --coverage
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate     # Windows
 ```
 
-### Run in parallel:
+2. Install dependencies:
 ```bash
-python run_tests.py -n auto
+pip install -r requirements-server.txt  # For server development
+pip install -r requirements-client.txt  # For client development
 ```
 
-### Generate HTML report:
+3. Set up environment variables:
 ```bash
-python run_tests.py --html
+cp .env.example .env
+# Edit .env with your configuration
 ```
 
-## Test Categories
+### Running Tests
 
-- **Unit Tests**: Test individual components in isolation
-- **Integration Tests**: Test interactions between components
-- **Functional Tests**: Test complete features
-- **Performance Tests**: Test system performance and optimization
-- **Security Tests**: Test security measures and vulnerabilities
-- **API Tests**: Test HTTP endpoints and API functionality
-- **Game Tests**: Test game mechanics and logic
-- **Network Tests**: Test network communication
-- **Database Tests**: Test data storage and retrieval
-- **Async Tests**: Test asynchronous operations
-
-## Writing Tests
-
-### Test File Structure:
-```python
-import unittest
-from unittest.mock import Mock, patch
-
-class TestComponent(unittest.TestCase):
-    def setUp(self):
-        """Set up test environment"""
-        pass
-
-    def tearDown(self):
-        """Clean up after test"""
-        pass
-
-    def test_feature(self):
-        """Test specific feature"""
-        # Arrange
-        # Act
-        # Assert
+```bash
+pytest
+pytest --cov=. tests/
 ```
 
-### Using Fixtures:
-```python
-import pytest
+### Code Style
 
-@pytest.fixture
-def mock_database():
-    """Database fixture for testing"""
-    return MockDatabase()
-
-def test_with_fixture(mock_database):
-    """Test using fixture"""
-    result = mock_database.query()
-    assert result is not None
+```bash
+black .
+flake8
+mypy .
 ```
 
-### Async Tests:
-```python
-import pytest
+## Architecture
 
-@pytest.mark.asyncio
-async def test_async_feature():
-    """Test async feature"""
-    result = await async_function()
-    assert result is not None
+### Components
+
+1. Main Server
+   - Flask web application
+   - REST API endpoints
+   - WebSocket server
+   - Authentication
+
+2. Game Manager
+   - Game state management
+   - Combat system
+   - Gate system
+   - Economy system
+
+3. Email Monitor
+   - Email verification
+   - Password reset
+   - Notifications
+
+### Database Schema
+
+- Users
+- PlayerCharacters
+- Items
+- Inventory
+- Gates
+- Guilds
+- Parties
+- Transactions
+
+## API Documentation
+
+### Authentication
+
+```
+POST /api/login
+POST /api/register
+POST /api/verify-email
+POST /api/request-password-reset
 ```
 
-## CI/CD Integration
+### Game
 
-The test suite is integrated with our CI/CD pipeline:
+```
+GET /api/game/profile
+GET /api/game/gates
+POST /api/game/gates/{id}/enter
+GET /api/game/inventory
+```
 
-1. Tests run automatically on push/PR
-2. Coverage reports are generated
-3. Test results are published
-4. Failed tests block merging
+### Admin
+
+```
+GET /api/admin/users
+POST /api/admin/users/{id}/ban
+```
 
 ## Contributing
 
-1. Create a new test file for new features
-2. Follow existing test patterns
-3. Include docstrings and comments
-4. Ensure tests are isolated
-5. Add appropriate markers
-6. Update documentation
-
-### Test Checklist:
-
-- [ ] Tests are isolated
-- [ ] Mocks are used appropriately
-- [ ] Edge cases are covered
-- [ ] Error cases are tested
-- [ ] Documentation is updated
-- [ ] Coverage is maintained
-
-## Available Test Markers
-
-- @pytest.mark.slow
-- @pytest.mark.integration
-- @pytest.mark.unit
-- @pytest.mark.api
-- @pytest.mark.db
-- @pytest.mark.async
-- @pytest.mark.security
-- @pytest.mark.performance
-- @pytest.mark.game
-- @pytest.mark.network
-
-## Test Configuration
-
-Configuration is managed through:
-
-1. pytest.ini - Test suite configuration
-2. .env.test - Environment variables
-3. conftest.py - Shared fixtures
-
-## Debugging Tests
-
-1. Use pytest's -s flag to see print output:
-```bash
-python run_tests.py -s
-```
-
-2. Use pytest's --pdb flag for debugger:
-```bash
-python run_tests.py --pdb
-```
-
-3. Use logging for detailed output:
-```python
-import logging
-logging.debug("Debug message")
-```
-
-## Performance Testing
-
-1. Run performance tests:
-```bash
-python run_tests.py --benchmark
-```
-
-2. Profile tests:
-```bash
-python run_tests.py --profile
-```
-
-## Security Testing
-
-1. Run security tests:
-```bash
-python run_tests.py -m security
-```
-
-2. Run vulnerability scan:
-```bash
-bandit -r .
-```
-
-## Maintenance
-
-1. Clean test cache:
-```bash
-python run_tests.py --cache-clear
-```
-
-2. Update test dependencies:
-```bash
-python install_dependencies.py --upgrade
-```
-
-3. Verify test environment:
-```bash
-python run_tests.py --verify
-```
-
-## Support
-
-For questions or issues:
-
-1. Check existing test documentation
-2. Review test logs
-3. Contact the development team
-4. Submit an issue
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
-This test suite is part of Terminusa Online and is subject to the same license terms.
+This project is licensed under the MIT License - see the LICENSE file for details.
