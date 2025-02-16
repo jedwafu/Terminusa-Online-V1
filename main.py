@@ -73,7 +73,7 @@ def main():
         debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
 
         logger.info(f"Starting server on port {port}")
-        socketio.run(app, host='0.0.0.0', port=port, debug=debug)
+        socketio.run(app, host='0.0.0.0', port=port, debug=debug, allow_unsafe_werkzeug=True)
 
     except Exception as e:
         logger.error(f"Error in main: {str(e)}", exc_info=True)
