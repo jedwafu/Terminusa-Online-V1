@@ -62,9 +62,13 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     username = Column(String, unique=True, nullable=False)
+    email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
     salt = Column(String, nullable=False)
     role = Column(String, default='user')
+    is_email_verified = Column(Boolean, default=False)
+    email_verification_token = Column(String, unique=True)
+    email_verification_sent_at = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
