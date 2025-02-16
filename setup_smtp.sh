@@ -52,10 +52,10 @@ opendkim-genkey -D /etc/opendkim/keys/terminusa.online/ -d terminusa.online -s d
 chown opendkim:opendkim /etc/opendkim/keys/terminusa.online/default.private
 chmod 600 /etc/opendkim/keys/terminusa.online/default.private
 
-# Create OpenDKIM socket directory
-mkdir -p /var/run/opendkim
-chown opendkim:postfix /var/run/opendkim
-chmod 775 /var/run/opendkim
+# Configure OpenDKIM socket directory
+mkdir -p /var/spool/postfix/opendkim
+chown opendkim:postfix /var/spool/postfix/opendkim
+chmod 750 /var/spool/postfix/opendkim
 
 # Configure OpenDKIM
 cat > /etc/opendkim.conf << EOF
@@ -67,7 +67,7 @@ LogWhy          yes
 # Daemon settings
 Mode            sv
 Canonicalization        relaxed/simple
-Socket          unix:/var/run/opendkim/opendkim.sock
+Socket          unix:/var/spool/postfix/opendkim/opendkim.sock
 UMask           002
 UserID          opendkim:postfix
 PidFile         /var/run/opendkim/opendkim.pid
@@ -78,11 +78,6 @@ Domain          terminusa.online
 KeyFile         /etc/opendkim/keys/terminusa.online/default.private
 Selector        default
 EOF
-
-# Create OpenDKIM socket directory in chroot
-mkdir -p /var/spool/postfix/var/run/opendkim
-chown opendkim:postfix /var/spool/postfix/var/run/opendkim
-chmod 775 /var/spool/postfix/var/run/opendkim
 
 # Set Postfix compatibility level
 postconf compatibility_level=3.6
@@ -118,8 +113,8 @@ relayhost =
 # DKIM Configuration
 milter_protocol = 2
 milter_default_action = accept
-smtpd_milters = unix:/var/run/opendkim/opendkim.sock
-non_smtpd_milters = unix:/var/run/opendkim/opendkim.sock
+smtpd_milters = unix:/opendkim/opendkim.sock
+non_smtpd_milters = unix:/opendkim/opendkim.sock
 internal_mail_filter_classes = bounce
 
 # Mail Directory
@@ -154,10 +149,11 @@ data_directory = /var/lib/postfix
 mail_owner = postfix
 setgid_group = postdrop
 
-# Disable NIS
+# Local delivery
+local_transport = local:$myhostname
 alias_maps = hash:/etc/aliases
 alias_database = hash:/etc/aliases
-local_recipient_maps = unix:passwd.byname \$alias_maps
+local_recipient_maps = proxy:unix:passwd.byname \$alias_maps
 EOF
 
 # Configure aliases
@@ -165,6 +161,7 @@ echo -e "${YELLOW}Configuring aliases...${NC}"
 cat > /etc/aliases << EOF
 postmaster: root
 root: admin
+admin: admin
 EOF
 newaliases
 
@@ -172,6 +169,8 @@ newaliases
 echo -e "${YELLOW}Configuring virtual aliases...${NC}"
 cat > /etc/postfix/virtual << EOF
 admin@terminusa.online    admin
+postmaster@terminusa.online    admin
+root@terminusa.online    admin
 EOF
 postmap /etc/postfix/virtual
 
@@ -210,12 +209,9 @@ echo -e "${YELLOW}Running Postfix permission fixes...${NC}"
 postfix set-permissions
 postfix check
 
-# Create socket directory link
-rm -f /var/spool/postfix/var/run/opendkim/opendkim.sock
-ln -sf /var/run/opendkim/opendkim.sock /var/spool/postfix/var/run/opendkim/opendkim.sock
-
-# Add postfix user to opendkim group
+# Add postfix user to opendkim group and vice versa
 usermod -aG opendkim postfix
+usermod -aG postfix opendkim
 
 # Restart services
 echo -e "${YELLOW}Restarting services...${NC}"
