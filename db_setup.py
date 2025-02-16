@@ -1,23 +1,18 @@
 from typing import Optional, Dict, Any
 from sqlalchemy.exc import SQLAlchemyError
-from app import db
+from database import db
 from models import (
     User, PlayerCharacter, PlayerSkill, Wallet, Item, 
     Inventory, InventoryItem, Guild, GuildMember, Party, 
     PartyMember, PartyInvitation, Gate, GateSession, 
     MagicBeast, Achievement, AIBehavior, Transaction, 
-    ChatMessage
+    ChatMessage, GateType
 )
 import bcrypt
 from datetime import datetime
 import os
 import sys
 import secrets
-
-def init_db(app):
-    """Initialize the database with the Flask app"""
-    with app.app_context():
-        db.create_all()
 
 class DatabaseSetup:
     """Database setup and initialization"""
@@ -183,7 +178,7 @@ class DatabaseSetup:
                     {
                         'name': 'Training Ground',
                         'description': 'A basic gate for novice hunters',
-                        'type': 'NORMAL',
+                        'type': GateType.NORMAL,
                         'level_requirement': 1,
                         'rank_requirement': 'F',
                         'monster_level': 1,
@@ -197,7 +192,7 @@ class DatabaseSetup:
                     {
                         'name': 'Forest of Trials',
                         'description': 'A mysterious forest gate',
-                        'type': 'ELITE',
+                        'type': GateType.ELITE,
                         'level_requirement': 5,
                         'rank_requirement': 'F',
                         'monster_level': 5,
@@ -211,7 +206,7 @@ class DatabaseSetup:
                     {
                         'name': 'Demon\'s Lair',
                         'description': 'A dangerous gate with powerful enemies',
-                        'type': 'BOSS',
+                        'type': GateType.BOSS,
                         'level_requirement': 10,
                         'rank_requirement': 'E',
                         'monster_level': 10,
@@ -309,16 +304,3 @@ class DatabaseSetup:
         except Exception as e:
             print(f"Error resetting database: {e}")
             return False
-
-if __name__ == '__main__':
-    from app import app
-    
-    # Create database setup instance
-    db_setup = DatabaseSetup(app)
-    
-    # Reset database
-    if db_setup.reset_database():
-        print("Database setup completed successfully")
-    else:
-        print("Database setup failed")
-        sys.exit(1)

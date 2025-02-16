@@ -4,7 +4,7 @@ from sqlalchemy import (
     Column, Integer, String, Float, Boolean, DateTime,
     ForeignKey, Table, JSON, Enum as SQLEnum, Text
 )
-from app import db
+from database import db
 import enum
 
 # Association Tables

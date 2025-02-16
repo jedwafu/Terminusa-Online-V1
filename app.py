@@ -6,8 +6,7 @@ from flask_socketio import SocketIO
 from dotenv import load_dotenv
 import logging
 from logging.handlers import RotatingFileHandler
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
+from database import db, init_db
 
 # Load environment variables
 print("[DEBUG] Loading environment variables")
@@ -47,18 +46,8 @@ jwt = JWTManager(app)
 cors = CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Initialize SQLAlchemy
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
-
-# Import models to register them with SQLAlchemy
-from models import (
-    User, PlayerCharacter, PlayerSkill, Wallet, Item, 
-    Inventory, InventoryItem, Guild, GuildMember, Party, 
-    PartyMember, PartyInvitation, Gate, GateSession, 
-    MagicBeast, Achievement, AIBehavior, Transaction, 
-    ChatMessage
-)
+# Initialize database
+init_db(app)
 
 # Configure logging
 if not os.path.exists('logs'):
@@ -78,13 +67,12 @@ app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
 app.logger.info('Terminusa Online startup')
 
-# Create database tables
-with app.app_context():
-    db.create_all()
+# Import models to register them with SQLAlchemy
+import models
 
 # Import routes after app initialization to avoid circular imports
 print("[DEBUG] Importing routes")
-from routes import *
+import routes
 
 # WebSocket event handlers
 @socketio.on('connect')
