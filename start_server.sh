@@ -8,6 +8,12 @@ NC='\033[0m' # No Color
 
 echo -e "${YELLOW}Starting Terminusa Online Server...${NC}"
 
+# Check if running as root
+if [ "$EUID" -ne 0 ]; then 
+    echo -e "${RED}Please run as root${NC}"
+    exit 1
+fi
+
 # Check if Python is installed
 if ! command -v python3 &> /dev/null; then
     echo -e "${RED}Python is not installed! Please install Python 3.10 or later.${NC}"
@@ -31,12 +37,12 @@ if ! command -v psql &> /dev/null; then
     echo -e "${YELLOW}Installing PostgreSQL...${NC}"
     if [ -f /etc/debian_version ]; then
         # Debian/Ubuntu
-        sudo apt-get update
-        sudo apt-get install -y postgresql postgresql-contrib
+        apt-get update
+        apt-get install -y postgresql postgresql-contrib
     elif [ -f /etc/redhat-release ]; then
         # RHEL/CentOS
-        sudo yum install -y postgresql-server postgresql-contrib
-        sudo postgresql-setup initdb
+        yum install -y postgresql-server postgresql-contrib
+        postgresql-setup initdb
     else
         echo -e "${RED}Unsupported distribution. Please install PostgreSQL manually.${NC}"
         exit 1
@@ -46,15 +52,41 @@ fi
 # Ensure PostgreSQL is running
 if ! systemctl is-active --quiet postgresql; then
     echo -e "${YELLOW}Starting PostgreSQL service...${NC}"
-    sudo systemctl start postgresql
+    systemctl start postgresql
 fi
 
-# Make script executable
-chmod +x run_server.py
+# Check if Postfix is installed
+if ! command -v postfix &> /dev/null; then
+    echo -e "${RED}Postfix is not installed!${NC}"
+    echo -e "${YELLOW}Installing Postfix...${NC}"
+    if [ -f /etc/debian_version ]; then
+        # Debian/Ubuntu
+        DEBIAN_FRONTEND=noninteractive apt-get install -y postfix
+    elif [ -f /etc/redhat-release ]; then
+        # RHEL/CentOS
+        yum install -y postfix
+    else
+        echo -e "${RED}Unsupported distribution. Please install Postfix manually.${NC}"
+        exit 1
+    fi
+fi
 
-# Start the server
-echo -e "${GREEN}Starting server...${NC}"
-python run_server.py
+# Run SMTP setup if needed
+if [ ! -f "/etc/postfix/local_recipients" ]; then
+    echo -e "${YELLOW}Running SMTP setup...${NC}"
+    ./setup_smtp.sh
+fi
+
+# Create required directories
+mkdir -p logs
+mkdir -p instance
+
+# Set proper permissions
+chmod +x server_manager.py
+
+# Start the server manager
+echo -e "${GREEN}Starting server manager...${NC}"
+./server_manager.py
 
 # Keep the terminal open if there's an error
 read -p "Press enter to continue..."
