@@ -1,22 +1,24 @@
+import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 import secrets
-from models import EmailVerification, User
+from models import User
 from db_setup import db
 import logging
-import os
+
+logger = logging.getLogger(__name__)
 
 class EmailService:
     def __init__(self):
-        self.smtp_host = "localhost"  # Local Postfix server
+        self.smtp_host = "localhost"  # Local SMTP server
         self.smtp_port = 25  # Default SMTP port
         self.from_email = f"noreply@{os.getenv('DOMAIN_NAME', 'terminusa.online')}"
         self.verification_url = os.getenv('VERIFICATION_URL', 'https://play.terminusa.online/verify')
 
     def send_email(self, to_email: str, subject: str, html_content: str) -> bool:
-        """Send email using local Postfix server"""
+        """Send email using local SMTP server"""
         try:
             msg = MIMEMultipart('alternative')
             msg['Subject'] = subject
@@ -27,15 +29,15 @@ class EmailService:
             html_part = MIMEText(html_content, 'html')
             msg.attach(html_part)
 
-            # Connect to local Postfix server
+            # Connect to local SMTP server
             with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
                 server.send_message(msg)
                 
-            logging.info(f"Email sent successfully to {to_email}")
+            logger.info(f"Email sent successfully to {to_email}")
             return True
 
         except Exception as e:
-            logging.error(f"Error sending email: {str(e)}")
+            logger.error(f"Error sending email: {str(e)}")
             return False
 
     def send_verification_email(self, user: User) -> bool:
@@ -45,15 +47,6 @@ class EmailService:
             token = secrets.token_urlsafe(32)
             expires_at = datetime.utcnow() + timedelta(hours=24)
 
-            # Create verification record
-            verification = EmailVerification(
-                user_id=user.id,
-                email=user.email,
-                token=token,
-                expires_at=expires_at
-            )
-            db.session.add(verification)
-            
             # Update user's verification status
             user.email_verification_token = token
             user.email_verification_sent_at = datetime.utcnow()
@@ -81,65 +74,55 @@ class EmailService:
             )
 
         except Exception as e:
-            logging.error(f"Error sending verification email: {str(e)}")
+            logger.error(f"Error sending verification email: {str(e)}")
             db.session.rollback()
             return False
 
     def verify_email(self, token: str) -> bool:
         """Verify user's email using token"""
         try:
-            verification = EmailVerification.query.filter_by(
-                token=token,
-                verified_at=None
-            ).first()
-
-            if not verification:
-                logging.warning(f"Invalid verification token: {token}")
+            user = User.query.filter_by(email_verification_token=token).first()
+            if not user:
+                logger.warning(f"Invalid verification token: {token}")
                 return False
 
-            if verification.expires_at < datetime.utcnow():
-                logging.warning(f"Expired verification token: {token}")
+            if user.email_verification_sent_at + timedelta(hours=24) < datetime.utcnow():
+                logger.warning(f"Expired verification token: {token}")
                 return False
 
-            # Update verification record
-            verification.verified_at = datetime.utcnow()
-            
             # Update user's verification status
-            user = User.query.get(verification.user_id)
-            if user:
-                user.is_email_verified = True
-                user.email_verification_token = None
-                
-                # Send welcome email
-                welcome_html = f"""
-                <h2>Welcome to Terminusa Online!</h2>
-                <p>Your email has been successfully verified. You now have full access to all features of Terminusa Online.</p>
-                <p>Get started by:</p>
-                <ul>
-                    <li>Customizing your profile</li>
-                    <li>Joining a guild</li>
-                    <li>Exploring the game world</li>
-                </ul>
-                <p>If you have any questions, our support team is here to help!</p>
-                <br>
-                <p>Best regards,</p>
-                <p>The Terminusa Online Team</p>
-                """
-                
-                self.send_email(
-                    user.email,
-                    "Welcome to Terminusa Online!",
-                    welcome_html
-                )
-                
-                db.session.commit()
-                logging.info(f"Email verified for user {user.email}")
-                return True
+            user.is_email_verified = True
+            user.email_verification_token = None
             
-            return False
+            db.session.commit()
+            logger.info(f"Email verified for user {user.email}")
+
+            # Send welcome email
+            welcome_html = f"""
+            <h2>Welcome to Terminusa Online!</h2>
+            <p>Your email has been successfully verified. You now have full access to all features of Terminusa Online.</p>
+            <p>Get started by:</p>
+            <ul>
+                <li>Customizing your profile</li>
+                <li>Joining a guild</li>
+                <li>Exploring the game world</li>
+            </ul>
+            <p>If you have any questions, our support team is here to help!</p>
+            <br>
+            <p>Best regards,</p>
+            <p>The Terminusa Online Team</p>
+            """
+            
+            self.send_email(
+                user.email,
+                "Welcome to Terminusa Online!",
+                welcome_html
+            )
+            
+            return True
 
         except Exception as e:
-            logging.error(f"Error verifying email: {str(e)}")
+            logger.error(f"Error verifying email: {str(e)}")
             db.session.rollback()
             return False
 
@@ -168,12 +151,20 @@ class EmailService:
             )
 
         except Exception as e:
-            logging.error(f"Error sending password reset email: {str(e)}")
+            logger.error(f"Error sending password reset email: {str(e)}")
             return False
 
-def init_email_service():
+def init_email_service(app):
     """Initialize email service"""
-    return EmailService()
+    try:
+        # Test SMTP connection
+        with smtplib.SMTP('localhost', 25) as server:
+            server.verify('test@terminusa.online')
+        logger.info("SMTP server connection successful")
+        return EmailService()
+    except Exception as e:
+        logger.warning(f"Failed to connect to SMTP server: {str(e)}")
+        return None
 
 # Initialize email service
-email_service = init_email_service()
+email_service = None  # Will be initialized by init_email_service
