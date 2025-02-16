@@ -43,13 +43,15 @@ app.config.update(
 # Initialize extensions
 print("[DEBUG] Initializing extensions")
 jwt = JWTManager(app)
-cors = CORS(app)
+cors = CORS(app, resources={r"/api/*": {"origins": "*"}})  # Enable CORS for API routes
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
-    async_mode='threading',  # Use threading mode instead of eventlet
+    async_mode='threading',
     logger=True,
-    engineio_logger=True
+    engineio_logger=True,
+    ping_timeout=60,
+    ping_interval=25
 )
 
 # Initialize database
@@ -137,4 +139,11 @@ def internal_error(error):
 if __name__ == '__main__':
     port = int(os.getenv('SERVER_PORT', 5000))
     debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-    socketio.run(app, host='0.0.0.0', port=port, debug=debug, use_reloader=False)  # Disabled reloader
+    socketio.run(
+        app,
+        host='0.0.0.0',
+        port=port,
+        debug=debug,
+        use_reloader=False,
+        allow_unsafe_werkzeug=True
+    )
