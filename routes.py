@@ -1,117 +1,207 @@
-from flask import jsonify, request
+from flask import jsonify, request, render_template
 from app import app, db
-from models import User, Transaction, ChatMessage
+from models import User, Transaction, ChatMessage, EmailVerification
 from flask_jwt_extended import jwt_required, get_jwt_identity
 import logging
+from datetime import datetime, timedelta
+from werkzeug.security import generate_password_hash
+from email_service import email_service
 
 # Health check route
 @app.route('/health')
 def health_check():
     return jsonify({'status': 'healthy'})
 
-# User routes
-@app.route('/api/users', methods=['GET'])
-@jwt_required()
-def get_users():
-    try:
-        users = User.query.all()
-        return jsonify([{
-            'id': user.id,
-            'username': user.username,
-            'email': user.email,
-            'role': user.role.value,
-            'level': user.level,
-            'is_active': user.is_active
-        } for user in users])
-    except Exception as e:
-        logging.error(f"Error getting users: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-@app.route('/api/users/<int:user_id>', methods=['GET'])
-@jwt_required()
-def get_user(user_id):
-    try:
-        user = User.query.get(user_id)
-        if not user:
-            return jsonify({'error': 'User not found'}), 404
-            
-        return jsonify({
-            'id': user.id,
-            'username': user.username,
-            'email': user.email,
-            'role': user.role.value,
-            'level': user.level,
-            'is_active': user.is_active
-        })
-    except Exception as e:
-        logging.error(f"Error getting user {user_id}: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-# Transaction routes
-@app.route('/api/transactions', methods=['GET'])
-@jwt_required()
-def get_transactions():
-    try:
-        user_id = get_jwt_identity()
-        transactions = Transaction.query.filter_by(user_id=user_id).all()
-        return jsonify([{
-            'id': tx.id,
-            'type': tx.type,
-            'amount': tx.amount,
-            'currency': tx.currency,
-            'description': tx.description,
-            'transaction_metadata': tx.transaction_metadata,
-            'created_at': tx.created_at.isoformat()
-        } for tx in transactions])
-    except Exception as e:
-        logging.error(f"Error getting transactions: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-# Chat routes
-@app.route('/api/messages', methods=['GET'])
-@jwt_required()
-def get_messages():
-    try:
-        channel = request.args.get('channel', 'global')
-        messages = ChatMessage.query.filter_by(channel=channel).order_by(ChatMessage.created_at.desc()).limit(50).all()
-        return jsonify([{
-            'id': msg.id,
-            'sender_id': msg.sender_id,
-            'channel': msg.channel,
-            'content': msg.content,
-            'message_metadata': msg.message_metadata,
-            'created_at': msg.created_at.isoformat()
-        } for msg in messages])
-    except Exception as e:
-        logging.error(f"Error getting messages: {e}")
-        return jsonify({'error': 'Internal server error'}), 500
-
-@app.route('/api/messages', methods=['POST'])
-@jwt_required()
-def send_message():
+# Authentication routes
+@app.route('/register', methods=['POST'])
+def register():
     try:
         data = request.get_json()
-        user_id = get_jwt_identity()
-        
-        message = ChatMessage(
-            sender_id=user_id,
-            channel=data.get('channel', 'global'),
-            content=data['content'],
-            message_metadata=data.get('metadata', {})
+        username = data.get('username')
+        email = data.get('email')
+        password = data.get('password')
+        role = data.get('role', 'user')
+
+        # Validate input
+        if not all([username, email, password]):
+            return jsonify({
+                'status': 'error',
+                'message': 'Missing required fields'
+            }), 400
+
+        # Check if user already exists
+        if User.query.filter_by(username=username).first():
+            return jsonify({
+                'status': 'error',
+                'message': 'Username already exists'
+            }), 400
+
+        if User.query.filter_by(email=email).first():
+            return jsonify({
+                'status': 'error',
+                'message': 'Email already registered'
+            }), 400
+
+        # Create user
+        user = User(
+            username=username,
+            email=email,
+            password=generate_password_hash(password),
+            role=role,
+            is_email_verified=False
         )
-        
-        db.session.add(message)
+        db.session.add(user)
         db.session.commit()
-        
-        return jsonify({
-            'id': message.id,
-            'sender_id': message.sender_id,
-            'channel': message.channel,
-            'content': message.content,
-            'message_metadata': message.message_metadata,
-            'created_at': message.created_at.isoformat()
-        })
+
+        # Send verification email
+        if email_service.send_verification_email(user):
+            return jsonify({
+                'status': 'success',
+                'message': 'Registration successful. Please check your email to verify your account.'
+            }), 201
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Registration successful but failed to send verification email.'
+            }), 201
+
     except Exception as e:
-        logging.error(f"Error sending message: {e}")
+        logging.error(f"Registration error: {str(e)}")
         db.session.rollback()
-        return jsonify({'error': 'Internal server error'}), 500
+        return jsonify({
+            'status': 'error',
+            'message': 'Registration failed'
+        }), 500
+
+@app.route('/verify-email', methods=['GET'])
+def verify_email():
+    token = request.args.get('token')
+    if not token:
+        return jsonify({
+            'status': 'error',
+            'message': 'Verification token is required'
+        }), 400
+
+    if email_service.verify_email(token):
+        return jsonify({
+            'status': 'success',
+            'message': 'Email verified successfully'
+        }), 200
+    else:
+        return jsonify({
+            'status': 'error',
+            'message': 'Invalid or expired verification token'
+        }), 400
+
+@app.route('/resend-verification', methods=['POST'])
+def resend_verification():
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        
+        if not email:
+            return jsonify({
+                'status': 'error',
+                'message': 'Email is required'
+            }), 400
+
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            return jsonify({
+                'status': 'error',
+                'message': 'User not found'
+            }), 404
+
+        if user.is_email_verified:
+            return jsonify({
+                'status': 'error',
+                'message': 'Email is already verified'
+            }), 400
+
+        # Check if we should wait before sending another email
+        if user.email_verification_sent_at:
+            time_since_last = datetime.utcnow() - user.email_verification_sent_at
+            if time_since_last < timedelta(minutes=5):
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Please wait 5 minutes before requesting another verification email'
+                }), 429
+
+        if email_service.send_verification_email(user):
+            return jsonify({
+                'status': 'success',
+                'message': 'Verification email sent'
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to send verification email'
+            }), 500
+
+    except Exception as e:
+        logging.error(f"Resend verification error: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to resend verification email'
+        }), 500
+
+@app.route('/request-password-reset', methods=['POST'])
+def request_password_reset():
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        
+        if not email:
+            return jsonify({
+                'status': 'error',
+                'message': 'Email is required'
+            }), 400
+
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            # Don't reveal that the email doesn't exist
+            return jsonify({
+                'status': 'success',
+                'message': 'If your email is registered, you will receive a password reset link'
+            }), 200
+
+        if email_service.send_password_reset_email(user):
+            return jsonify({
+                'status': 'success',
+                'message': 'Password reset email sent'
+            }), 200
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': 'Failed to send password reset email'
+            }), 500
+
+    except Exception as e:
+        logging.error(f"Password reset request error: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Failed to process password reset request'
+        }), 500
+
+# Protected routes that require email verification
+def require_verified_email(f):
+    @jwt_required()
+    def decorated_function(*args, **kwargs):
+        current_user = User.query.filter_by(username=get_jwt_identity()).first()
+        if not current_user.is_email_verified:
+            return jsonify({
+                'status': 'error',
+                'message': 'Email verification required'
+            }), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/api/protected-resource', methods=['GET'])
+@require_verified_email
+def protected_resource():
+    return jsonify({
+        'status': 'success',
+        'message': 'Access granted to protected resource'
+    }), 200
+
+# [Previous routes remain the same...]
