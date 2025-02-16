@@ -50,7 +50,7 @@ app.config.update(
 # Initialize extensions
 print("[DEBUG] Initializing extensions")
 jwt = JWTManager(app)
-cors = CORS(app, resources={r"/*": {"origins": "*"}})  # Allow all origins for development
+cors = CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
 # Configure logging
@@ -77,7 +77,7 @@ init_db(app)
 
 # Initialize email service
 print("[DEBUG] Initializing email service")
-init_email_service(app)
+email_service = init_email_service(app)
 
 # Import routes after app initialization to avoid circular imports
 print("[DEBUG] Importing routes")
@@ -154,10 +154,9 @@ if __name__ == '__main__':
     port = int(os.getenv('SERVER_PORT', 5000))
     debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
     
-    print(f"[DEBUG] Starting server on port {port}")
     if ssl_context:
-        print(f"[DEBUG] Starting server with SSL")
-        socketio.run(app, host='0.0.0.0', port=port, ssl_context=ssl_context, debug=debug, allow_unsafe_werkzeug=True)
+        print(f"[DEBUG] Starting server with SSL on port {port}")
+        socketio.run(app, host='0.0.0.0', port=port, ssl_context=ssl_context, debug=debug)
     else:
-        print(f"[DEBUG] Starting server without SSL")
-        socketio.run(app, host='0.0.0.0', port=port, debug=debug, allow_unsafe_werkzeug=True)
+        print(f"[DEBUG] Starting server without SSL on port {port}")
+        socketio.run(app, host='0.0.0.0', port=port, debug=debug)
