@@ -18,8 +18,8 @@ flask-socketio==5.3.2
 flask-jwt-extended==4.5.2
 
 # Email Services
-requests==2.31.0  # Required for Mailgun API
-python-http-client==3.3.7  # Required for email APIs
+requests==2.31.0
+python-http-client==3.3.7
 
 # Database
 SQLAlchemy==2.0.20
@@ -32,6 +32,9 @@ bcrypt==4.0.1
 cryptography==41.0.3
 python-jose==3.3.0
 itsdangerous==2.1.2
+
+# System Monitoring
+psutil==5.9.8  # Added for system monitoring
 
 # Utilities
 python-dateutil==2.8.2
