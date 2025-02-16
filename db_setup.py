@@ -1,5 +1,6 @@
 from typing import Optional, Dict, Any
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import inspect
 from database import db
 from models import (
     User, PlayerCharacter, PlayerSkill, Wallet, Item, 
@@ -245,8 +246,9 @@ class DatabaseSetup:
         """Verify database setup"""
         try:
             with self.app.app_context():
-                # Check tables
-                tables = db.engine.table_names()
+                # Check tables using SQLAlchemy inspect
+                inspector = inspect(db.engine)
+                tables = inspector.get_table_names()
                 expected_tables = [
                     'users', 'player_characters', 'player_skills',
                     'wallets', 'items', 'inventories', 'inventory_items',
