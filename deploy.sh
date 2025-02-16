@@ -31,11 +31,25 @@ fi
 # Install system dependencies
 echo "Installing system dependencies..."
 apt-get update
-apt-get install -y python3 python3-pip postfix opendkim opendkim-tools mailutils libsasl2-2 libsasl2-modules fail2ban
+apt-get install -y python3 python3-pip postfix opendkim opendkim-tools mailutils \
+    libsasl2-2 libsasl2-modules fail2ban net-tools ufw curl wget
 
 # Install/update Python dependencies
 echo "Installing/updating dependencies..."
 pip3 install -r requirements.txt
+
+# Configure firewall
+echo "Configuring firewall..."
+ufw --force enable
+ufw allow 22/tcp
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw allow 5000/tcp
+ufw allow 5001/tcp
+ufw allow 25/tcp
+ufw allow 465/tcp
+ufw allow 587/tcp
+ufw reload
 
 # Create logs directory
 echo "Creating logs directory..."
@@ -77,6 +91,7 @@ systemd-analyze verify /etc/systemd/system/${SERVICE_NAME}.service
 echo "Making scripts executable..."
 chmod +x ${INSTALL_DIR}/start_server.py
 chmod +x ${INSTALL_DIR}/deploy.sh
+chmod +x ${INSTALL_DIR}/setup_firewall.sh
 
 # Reload systemd and restart services
 echo "Reloading systemd..."
@@ -94,6 +109,12 @@ systemctl start ${SERVICE_NAME}
 
 echo "Checking service status..."
 systemctl status ${SERVICE_NAME}
+
+echo "Checking port status..."
+netstat -tulpn | grep 5000
+
+echo "Testing local connection..."
+curl -v http://localhost:5000/health
 
 echo "Deployment completed!"
 echo "To view logs:"
