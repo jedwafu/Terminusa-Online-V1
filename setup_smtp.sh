@@ -71,6 +71,7 @@ Socket          unix:/var/run/opendkim/opendkim.sock
 UMask           002
 UserID          opendkim:postfix
 PidFile         /var/run/opendkim/opendkim.pid
+InternalHosts   127.0.0.1, localhost, terminusa.online
 
 # Signing
 Domain          terminusa.online
@@ -152,7 +153,20 @@ daemon_directory = /usr/lib/postfix/sbin
 data_directory = /var/lib/postfix
 mail_owner = postfix
 setgid_group = postdrop
+
+# Disable NIS
+alias_maps = hash:/etc/aliases
+alias_database = hash:/etc/aliases
+local_recipient_maps = unix:passwd.byname \$alias_maps
 EOF
+
+# Configure aliases
+echo -e "${YELLOW}Configuring aliases...${NC}"
+cat > /etc/aliases << EOF
+postmaster: root
+root: admin
+EOF
+newaliases
 
 # Configure virtual aliases
 echo -e "${YELLOW}Configuring virtual aliases...${NC}"
@@ -164,17 +178,12 @@ postmap /etc/postfix/virtual
 # Create mail directories
 echo -e "${YELLOW}Setting up mail directories...${NC}"
 mkdir -p /var/mail
-mkdir -p /home/admin/Maildir
+mkdir -p /home/admin/Maildir/{new,cur,tmp}
 chown -R admin:mail /home/admin/Maildir
 chmod -R 700 /home/admin/Maildir
 
 # Set up Postfix directories
-mkdir -p /var/spool/postfix/pid
-mkdir -p /var/spool/postfix/public
-mkdir -p /var/spool/postfix/private
-mkdir -p /var/spool/postfix/etc
-mkdir -p /var/spool/postfix/lib
-mkdir -p /var/spool/postfix/usr
+mkdir -p /var/spool/postfix/{pid,public,private,etc,lib,usr}
 
 # Set correct ownership and permissions
 chown -R root:root /var/spool/postfix
@@ -188,13 +197,8 @@ chmod 710 /var/spool/postfix/public
 chmod 700 /var/spool/postfix/private
 
 # Copy necessary files to chroot
-cp /etc/services /var/spool/postfix/etc/
-cp /etc/resolv.conf /var/spool/postfix/etc/
+cp /etc/{services,resolv.conf,localtime,nsswitch.conf,hosts} /var/spool/postfix/etc/
 cp -r /etc/ssl /var/spool/postfix/etc/
-cp /etc/localtime /var/spool/postfix/etc/
-cp /etc/nsswitch.conf /var/spool/postfix/etc/
-cp /etc/hosts /var/spool/postfix/etc/
-cp /etc/passwd /var/spool/postfix/etc/
 
 # Set correct ownership for chroot files
 chown -R root:root /var/spool/postfix/etc
@@ -207,7 +211,11 @@ postfix set-permissions
 postfix check
 
 # Create socket directory link
+rm -f /var/spool/postfix/var/run/opendkim/opendkim.sock
 ln -sf /var/run/opendkim/opendkim.sock /var/spool/postfix/var/run/opendkim/opendkim.sock
+
+# Add postfix user to opendkim group
+usermod -aG opendkim postfix
 
 # Restart services
 echo -e "${YELLOW}Restarting services...${NC}"
