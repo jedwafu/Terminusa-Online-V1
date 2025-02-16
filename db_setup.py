@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
-from models import Base, User, UserRole
+from models import Base, User, UserRole, Wallet, Inventory
 import bcrypt
 from datetime import datetime
 import json
@@ -77,6 +77,27 @@ class DatabaseSetup:
             
             session.add(admin)
             session.commit()
+
+            # Create wallet for admin
+            wallet = Wallet(
+                user_id=admin.id,
+                address="admin_wallet",
+                encrypted_privkey="admin_key",
+                iv="admin_iv",
+                sol_balance=1000.0,
+                crystals=100000,
+                exons=100000
+            )
+            session.add(wallet)
+
+            # Create inventory for admin
+            inventory = Inventory(
+                user_id=admin.id,
+                max_slots=1000
+            )
+            session.add(inventory)
+
+            session.commit()
             
             print(f"Admin user '{username}' created successfully")
             return admin
@@ -112,9 +133,28 @@ class DatabaseSetup:
                     is_email_verified=True,
                     created_at=datetime.utcnow()
                 )
-                test_users.append(user)
+                session.add(user)
+                session.flush()  # Get user.id
+
+                # Create wallet
+                wallet = Wallet(
+                    user_id=user.id,
+                    address=f"wallet_{i}",
+                    encrypted_privkey=f"key_{i}",
+                    iv=f"iv_{i}",
+                    sol_balance=float(i * 10),
+                    crystals=i * 1000,
+                    exons=i * 1000
+                )
+                session.add(wallet)
+
+                # Create inventory
+                inventory = Inventory(
+                    user_id=user.id,
+                    max_slots=100
+                )
+                session.add(inventory)
             
-            session.add_all(test_users)
             session.commit()
             
             print("Test data created successfully")
@@ -193,7 +233,7 @@ class DatabaseSetup:
 
 if __name__ == '__main__':
     # Get database URL from environment or use default
-    db_url = os.getenv('DATABASE_URL', 'sqlite:///terminusa.db')
+    db_url = os.getenv('DATABASE_URL', 'postgresql://termini_admin:strongpassword@localhost/termini')
     
     # Create database setup instance
     db_setup = DatabaseSetup(db_url)
