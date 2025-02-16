@@ -28,6 +28,9 @@ missing_vars = [var for var in required_env_vars if not os.getenv(var)]
 if missing_vars:
     raise ValueError(f"Missing required environment variables: {missing_vars}")
 
+# Export required variables
+SOLANA_RPC_URL = os.getenv('SOLANA_RPC_URL')
+
 # Initialize Flask app
 print("[DEBUG] Creating Flask app")
 app = Flask(__name__)
