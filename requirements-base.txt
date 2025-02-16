@@ -1,6 +1,5 @@
 # Core Flask
 Flask==3.0.2
-Flask-SQLAlchemy==3.1.1
 Flask-JWT-Extended==4.6.0
 Flask-Cors==4.0.0
 Flask-Mail==0.9.1
@@ -11,7 +10,8 @@ itsdangerous==2.1.2
 click==8.1.7
 
 # Database
-SQLAlchemy==1.4.50  # Downgraded to avoid typing-extensions conflict
+Flask-SQLAlchemy==2.5.1  # Downgraded to work with SQLAlchemy 1.4
+SQLAlchemy==1.4.50  # Keep this version for typing-extensions compatibility
 alembic==1.13.1
 psycopg2-binary==2.9.9
 greenlet==3.0.3
