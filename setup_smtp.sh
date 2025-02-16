@@ -34,14 +34,19 @@ systemctl stop postfix opendkim
 # Create admin user for mail
 echo -e "${YELLOW}Creating mail users...${NC}"
 if ! getent passwd admin > /dev/null; then
-    useradd -m -s /bin/bash -G mail admin
+    useradd -m -s /bin/bash admin
     echo "admin:password" | chpasswd
 fi
+usermod -aG mail admin
 
-# Create passwd lookup table for Postfix
-echo -e "${YELLOW}Creating Postfix passwd lookup...${NC}"
-echo "admin    unix:$(getent passwd admin | cut -d: -f3):$(getent passwd admin | cut -d: -f4)" > /etc/postfix/passwd
-postmap /etc/postfix/passwd
+# Create local recipient table
+echo -e "${YELLOW}Creating local recipient table...${NC}"
+cat > /etc/postfix/local_recipients << EOF
+admin    ok
+root    ok
+postmaster    ok
+EOF
+postmap /etc/postfix/local_recipients
 
 # Backup original configurations
 echo -e "${YELLOW}Backing up original configurations...${NC}"
@@ -59,10 +64,11 @@ opendkim-genkey -D /etc/opendkim/keys/terminusa.online/ -d terminusa.online -s d
 chown opendkim:opendkim /etc/opendkim/keys/terminusa.online/default.private
 chmod 600 /etc/opendkim/keys/terminusa.online/default.private
 
-# Create OpenDKIM socket directory
-mkdir -p /var/run/opendkim
-chown opendkim:postfix /var/run/opendkim
-chmod 775 /var/run/opendkim
+# Configure OpenDKIM socket directory
+DKIM_SOCKET_DIR="/var/spool/postfix/opendkim"
+mkdir -p "$DKIM_SOCKET_DIR"
+chown opendkim:postfix "$DKIM_SOCKET_DIR"
+chmod 750 "$DKIM_SOCKET_DIR"
 
 # Configure OpenDKIM
 cat > /etc/opendkim.conf << EOF
@@ -74,10 +80,10 @@ LogWhy          yes
 # Daemon settings
 Mode            sv
 Canonicalization        relaxed/simple
-Socket          unix:/var/run/opendkim/opendkim.sock
-UMask           002
+Socket          local:$DKIM_SOCKET_DIR/opendkim.sock
+UMask           117
 UserID          opendkim:postfix
-PidFile         /var/run/opendkim/opendkim.pid
+PidFile         /run/opendkim/opendkim.pid
 InternalHosts   127.0.0.1, localhost, terminusa.online
 
 # Signing
@@ -86,8 +92,10 @@ KeyFile         /etc/opendkim/keys/terminusa.online/default.private
 Selector        default
 EOF
 
-# Set Postfix compatibility level
-postconf compatibility_level=3.6
+# Create OpenDKIM run directory
+mkdir -p /run/opendkim
+chown opendkim:opendkim /run/opendkim
+chmod 755 /run/opendkim
 
 # Configure Postfix main.cf
 postconf -e "myhostname = terminusa.online"
@@ -101,9 +109,9 @@ postconf -e "home_mailbox = Maildir/"
 postconf -e "virtual_alias_maps = hash:/etc/postfix/virtual"
 postconf -e "alias_maps = hash:/etc/aliases"
 postconf -e "alias_database = hash:/etc/aliases"
-postconf -e "local_recipient_maps = hash:/etc/postfix/passwd"
-postconf -e "smtpd_milters = unix:/var/run/opendkim/opendkim.sock"
-postconf -e "non_smtpd_milters = unix:/var/run/opendkim/opendkim.sock"
+postconf -e "local_recipient_maps = hash:/etc/postfix/local_recipients"
+postconf -e "smtpd_milters = local:opendkim/opendkim.sock"
+postconf -e "non_smtpd_milters = local:opendkim/opendkim.sock"
 postconf -e "milter_default_action = accept"
 postconf -e "milter_protocol = 2"
 
