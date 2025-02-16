@@ -10,22 +10,22 @@ from database import db, init_db
 def create_admin_account():
     """Create the admin account with default credentials"""
     with app.app_context():
-        # Initialize database and create tables
-        init_db(app)
-        db.create_all()
-        
-        # Check if admin already exists
-        if User.query.filter_by(username='admin').first():
-            print("Admin account already exists!")
-            return
-
         try:
-            # Create password hash
+            # Initialize database and create tables
+            init_db(app)
+            
+            # Explicitly create tables
+            print("Creating database tables...")
+            db.drop_all()  # Drop existing tables
+            db.create_all()  # Create fresh tables
+            print("Database tables created successfully")
+            
+            # Create admin user
+            print("Creating admin user...")
             password = "admin123"  # Default password
             salt = bcrypt.gensalt()
             password_hash = bcrypt.hashpw(password.encode('utf-8'), salt)
 
-            # Create admin user
             admin = User(
                 username='admin',
                 email='admin@terminusa.online',
@@ -41,6 +41,7 @@ def create_admin_account():
             db.session.flush()  # Get admin.id
 
             # Create admin character
+            print("Creating admin character...")
             character = PlayerCharacter(
                 user_id=admin.id,
                 level=100,
@@ -62,6 +63,7 @@ def create_admin_account():
             db.session.add(character)
 
             # Create admin wallet
+            print("Creating admin wallet...")
             wallet = Wallet(
                 user_id=admin.id,
                 address=f"wallet_{os.urandom(8).hex()}",
@@ -74,6 +76,7 @@ def create_admin_account():
             db.session.add(wallet)
 
             # Create admin inventory
+            print("Creating admin inventory...")
             inventory = Inventory(
                 user_id=admin.id,
                 max_slots=1000
@@ -82,12 +85,19 @@ def create_admin_account():
 
             # Commit changes
             db.session.commit()
-
-            print("Admin account created successfully!")
+            print("\nAdmin account created successfully!")
+            print("----------------------------------------")
             print("Username: admin")
             print("Password: admin123")
             print("Email: admin@terminusa.online")
-            print("\nPlease change the password after first login!")
+            print("Role: Administrator")
+            print("Level: 100")
+            print("Rank: S")
+            print("Crystals: 100,000")
+            print("Exons: 100,000")
+            print("Inventory Slots: 1,000")
+            print("----------------------------------------")
+            print("IMPORTANT: Change the password after first login!")
             
         except Exception as e:
             db.session.rollback()
