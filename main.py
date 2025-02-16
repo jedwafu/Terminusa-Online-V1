@@ -36,7 +36,7 @@ def cleanup_port(port):
         # On Linux, you can use fuser to find and kill processes
         if os.name != 'nt':  # Not Windows
             os.system(f'fuser -k {port}/tcp')
-            time.sleep(1)  # Give the system time to release the port
+            time.sleep(2)  # Increased delay to ensure port is released
             return not is_port_in_use(port)
     except Exception as e:
         logger.error(f"Error cleaning up port: {e}")
@@ -111,6 +111,7 @@ def main():
             logger.warning(f"Port {port} is already in use")
             if cleanup_port(port):
                 logger.info(f"Successfully cleaned up port {port}")
+                time.sleep(1)  # Additional delay after cleanup
             else:
                 alternative_port = port + 1
                 while is_port_in_use(alternative_port) and alternative_port < port + 10:
@@ -122,7 +123,7 @@ def main():
                     raise RuntimeError(f"Could not find available port in range {port}-{port+9}")
 
         logger.info(f"Starting server on port {port}")
-        socketio.run(app, host='0.0.0.0', port=port, debug=debug, allow_unsafe_werkzeug=True)
+        socketio.run(app, host='0.0.0.0', port=port, debug=debug, use_reloader=False, allow_unsafe_werkzeug=True)
 
     except Exception as e:
         logger.error(f"Error in main: {str(e)}", exc_info=True)
