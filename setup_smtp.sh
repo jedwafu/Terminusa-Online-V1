@@ -7,6 +7,11 @@ systemctl stop postfix opendkim
 cp /etc/postfix/main.cf /etc/postfix/main.cf.backup
 cp /etc/opendkim.conf /etc/opendkim.conf.backup
 
+# Update hostname
+CURRENT_HOSTNAME=$(hostname)
+hostnamectl set-hostname terminusa.online
+echo "127.0.0.1 terminusa.online" >> /etc/hosts
+
 # Create mail directories
 mkdir -p /var/mail/vhosts/terminusa.online
 mkdir -p /var/mail/vhosts/admin
@@ -25,11 +30,13 @@ EOL
 cat > /etc/postfix/virtual_alias_maps << EOL
 postmaster@terminusa.online    admin@terminusa.online
 abuse@terminusa.online         admin@terminusa.online
+root@terminusa.online          admin@terminusa.online
+@vmi2429108.contaboserver.net  admin@terminusa.online
 EOL
 
 # Create mail user and group
-groupadd -g 5000 vmail
-useradd -g vmail -u 5000 vmail -d /var/mail/vhosts -m -s /sbin/nologin
+groupadd -g 5000 vmail 2>/dev/null || true
+useradd -g vmail -u 5000 vmail -d /var/mail/vhosts -m -s /sbin/nologin 2>/dev/null || true
 
 # Set permissions
 chown -R vmail:vmail /var/mail/vhosts
@@ -53,6 +60,11 @@ virtual_minimum_uid = 5000
 virtual_uid_maps = static:5000
 virtual_gid_maps = static:5000
 virtual_transport = virtual
+
+# Local Settings
+mydestination = localhost
+local_transport = virtual
+local_recipient_maps = \$virtual_mailbox_maps
 
 # Network Settings
 mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128
