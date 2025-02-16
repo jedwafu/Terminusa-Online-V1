@@ -109,20 +109,46 @@ mailbox_size_limit = 1073741824
 # Performance
 maximal_queue_lifetime = 1h
 bounce_queue_lifetime = 1h
+
+# Chroot configuration
+queue_directory = /var/spool/postfix
+command_directory = /usr/sbin
+daemon_directory = /usr/lib/postfix/sbin
+data_directory = /var/lib/postfix
+mail_owner = postfix
 EOF
 
-# Fix permissions
-echo -e "${YELLOW}Fixing permissions...${NC}"
-chown -R root:root /var/spool/postfix/etc/ssl/certs/
-chown -R root:root /var/spool/postfix/lib
-chown -R root:root /var/spool/postfix/usr
+# Fix chroot environment
+echo -e "${YELLOW}Setting up chroot environment...${NC}"
 postfix set-permissions
+postfix check
+
+# Fix permissions for chroot environment
+echo -e "${YELLOW}Fixing permissions in chroot environment...${NC}"
+CHROOT="/var/spool/postfix"
+# Copy necessary files to chroot
+cp /etc/services $CHROOT/etc/
+cp /etc/resolv.conf $CHROOT/etc/
+cp -r /etc/ssl $CHROOT/etc/
+cp /etc/localtime $CHROOT/etc/
+cp /etc/nsswitch.conf $CHROOT/etc/
+cp /etc/hosts $CHROOT/etc/
+
+# Set correct ownership
+chown -R root:root $CHROOT/etc
+chown -R root:root $CHROOT/lib
+chown -R root:root $CHROOT/usr
+chown -R postfix:postfix $CHROOT/pid
+chown -R postfix:postfix $CHROOT/private
+chown -R postfix:root $CHROOT/public
+chmod -R 644 $CHROOT/etc/*
+chmod -R 755 $CHROOT/usr
+chmod -R 755 $CHROOT/lib
 
 # Create required directories with correct permissions
-mkdir -p /var/spool/postfix
 mkdir -p /var/mail
 chmod 755 /var/mail
-chown -R postfix:postfix /var/spool/postfix
+chown -R vmail:vmail /var/mail 2>/dev/null || true
 
 # Restart services
 echo -e "${YELLOW}Restarting services...${NC}"
