@@ -297,10 +297,11 @@ start_service() {
                 source venv/bin/activate
             fi
             
-            # Start Gunicorn with basic configuration
+            # Start Gunicorn with eventlet worker
             gunicorn web_app:app \
                 --bind 0.0.0.0:$WEBAPP_PORT \
-                --workers 4 \
+                --worker-class eventlet \
+                --workers 1 \
                 --timeout 120 \
                 --daemon \
                 --access-logfile logs/gunicorn-access.log \
