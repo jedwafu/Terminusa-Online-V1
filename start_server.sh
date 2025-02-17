@@ -288,17 +288,30 @@ start_service() {
             sleep 1
             
             mkdir -p logs
-            gunicorn -w 4 -b 0.0.0.0:$WEBAPP_PORT web_app:app --daemon \
+            
+            # Activate virtual environment if it exists
+            if [ -f "venv/bin/activate" ]; then
+                source venv/bin/activate
+            fi
+            
+            # Start Gunicorn with proper configuration
+            gunicorn web_app:app \
+                --bind 0.0.0.0:$WEBAPP_PORT \
+                --workers 4 \
+                --timeout 120 \
+                --daemon \
                 --access-logfile logs/gunicorn-access.log \
                 --error-logfile logs/gunicorn-error.log \
-                --pid logs/gunicorn.pid
+                --pid logs/gunicorn.pid \
+                --worker-class eventlet \
+                --log-level debug
             
             sleep 2  # Give it time to start
             
             if check_service gunicorn; then
                 success_log "Gunicorn started successfully on port $WEBAPP_PORT"
             else
-                error_log "Failed to start Gunicorn" "Check logs/gunicorn-error.log"
+                error_log "Failed to start Gunicorn" "$(tail -n 10 logs/gunicorn-error.log)"
                 return 1
             fi
             ;;
