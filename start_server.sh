@@ -5,6 +5,7 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Debug mode flag
@@ -12,44 +13,186 @@ DEBUG=false
 
 # Service status tracking
 declare -A SERVICE_STATUS
+declare -A SERVICE_PIDS
+declare -A SERVICE_PORTS
+declare -A SERVICE_LOGS
+
+# Initialize arrays
+SERVICE_PORTS=(
+    ["postgresql"]="5432"
+    ["nginx"]="80"
+    ["gunicorn"]="8000"
+    ["game-server"]="5000"
+    ["postfix"]="25"
+    ["redis"]="6379"
+    ["elasticsearch"]="9200"
+)
+
+SERVICE_LOGS=(
+    ["postgresql"]="/var/log/postgresql/postgresql-main.log"
+    ["nginx"]="/var/log/nginx/error.log"
+    ["gunicorn"]="logs/gunicorn.log"
+    ["game-server"]="logs/game-server.log"
+    ["postfix"]="/var/log/mail.log"
+    ["redis"]="/var/log/redis/redis-server.log"
+    ["elasticsearch"]="/var/log/elasticsearch/elasticsearch.log"
+)
+
+# Monitoring variables
+MONITOR_INTERVAL=5  # seconds
+MONITOR_RUNNING=true
 
 # Debug logging function
 debug_log() {
     if [ "$DEBUG" = true ]; then
-        echo -e "${BLUE}[DEBUG] $1${NC}"
+        echo -e "${BLUE}[DEBUG] $(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
     fi
 }
 
 # Error logging function
 error_log() {
-    echo -e "${RED}[ERROR] $1${NC}"
-    if [ "$DEBUG" = true ]; then
+    echo -e "${RED}[ERROR] $(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
+    if [ "$DEBUG" = true ] && [ ! -z "$2" ]; then
         echo -e "${RED}[ERROR DETAILS] $2${NC}"
     fi
+    logger -t "terminusa" "ERROR: $1"
 }
 
 # Success logging function
 success_log() {
-    echo -e "${GREEN}[SUCCESS] $1${NC}"
+    echo -e "${GREEN}[SUCCESS] $(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
+    logger -t "terminusa" "SUCCESS: $1"
 }
 
 # Info logging function
 info_log() {
-    echo -e "${YELLOW}[INFO] $1${NC}"
+    echo -e "${YELLOW}[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
+    logger -t "terminusa" "INFO: $1"
+}
+
+# Get service resource usage
+get_service_resources() {
+    local service=$1
+    local pid=${SERVICE_PIDS[$service]}
+    
+    if [ ! -z "$pid" ] && kill -0 $pid 2>/dev/null; then
+        local cpu=$(ps -p $pid -o %cpu | tail -n 1)
+        local mem=$(ps -p $pid -o %mem | tail -n 1)
+        local vsz=$(ps -p $pid -o vsz | tail -n 1)
+        echo "$cpu $mem $vsz"
+    else
+        echo "0 0 0"
+    fi
+}
+
+# Monitor services function
+monitor_services() {
+    local header_printed=false
+    
+    while [ "$MONITOR_RUNNING" = true ]; do
+        clear
+        echo -e "${CYAN}=== Terminusa Online Service Monitor ===${NC}"
+        echo -e "Time: $(date '+%Y-%m-%d %H:%M:%S')\n"
+        
+        # Print header
+        printf "%-15s %-10s %-10s %-10s %-10s %-10s %-20s\n" \
+            "Service" "Status" "PID" "CPU%" "MEM%" "Port" "Connections"
+        echo "--------------------------------------------------------------------------------"
+        
+        # Check each service
+        for service in "${!SERVICE_PORTS[@]}"; do
+            local status="STOPPED"
+            local pid=${SERVICE_PIDS[$service]}
+            local port=${SERVICE_PORTS[$service]}
+            local connections=0
+            
+            # Get resource usage
+            read cpu mem vsz <<< $(get_service_resources "$service")
+            
+            # Check if service is running
+            if [ ! -z "$pid" ] && kill -0 $pid 2>/dev/null; then
+                status="${GREEN}RUNNING${NC}"
+                # Count connections if port is specified
+                if [ ! -z "$port" ]; then
+                    connections=$(netstat -an | grep ":$port " | grep ESTABLISHED | wc -l)
+                fi
+            else
+                status="${RED}STOPPED${NC}"
+                cpu=0
+                mem=0
+            fi
+            
+            # Print service status
+            printf "%-15s %-10b %-10s %-10.1f %-10.1f %-10s %-20s\n" \
+                "$service" "$status" "$pid" "$cpu" "$mem" "$port" "$connections"
+        done
+        
+        echo -e "\n${CYAN}=== System Resources ===${NC}"
+        echo "CPU Usage: $(top -bn1 | grep "Cpu(s)" | awk '{print $2}')%"
+        echo "Memory Usage: $(free -m | awk 'NR==2{printf "%.2f%%", $3*100/$2}')"
+        echo "Disk Usage: $(df -h / | awk 'NR==2{print $5}')"
+        
+        # Show recent log entries if in debug mode
+        if [ "$DEBUG" = true ]; then
+            echo -e "\n${CYAN}=== Recent Log Entries ===${NC}"
+            for service in "${!SERVICE_LOGS[@]}"; do
+                local log_file=${SERVICE_LOGS[$service]}
+                if [ -f "$log_file" ]; then
+                    echo -e "\n${YELLOW}$service logs:${NC}"
+                    tail -n 3 "$log_file"
+                fi
+            done
+        fi
+        
+        sleep $MONITOR_INTERVAL
+    done
 }
 
 # Check service status
 check_service() {
     local service=$1
-    if systemctl is-active --quiet $service; then
-        SERVICE_STATUS[$service]="running"
-        debug_log "$service is running"
-        return 0
-    else
-        SERVICE_STATUS[$service]="stopped"
-        debug_log "$service is stopped"
-        return 1
-    fi
+    local port=${SERVICE_PORTS[$service]}
+    
+    case $service in
+        "postgresql"|"nginx"|"postfix"|"redis"|"elasticsearch")
+            if systemctl is-active --quiet $service; then
+                SERVICE_STATUS[$service]="running"
+                SERVICE_PIDS[$service]=$(systemctl show -p MainPID $service | cut -d= -f2)
+                debug_log "$service is running with PID ${SERVICE_PIDS[$service]}"
+                return 0
+            else
+                SERVICE_STATUS[$service]="stopped"
+                debug_log "$service is stopped"
+                return 1
+            fi
+            ;;
+        "gunicorn")
+            local pid=$(pgrep -f "gunicorn.*web_app:app")
+            if [ ! -z "$pid" ]; then
+                SERVICE_STATUS[$service]="running"
+                SERVICE_PIDS[$service]=$pid
+                debug_log "$service is running with PID $pid"
+                return 0
+            else
+                SERVICE_STATUS[$service]="stopped"
+                debug_log "$service is stopped"
+                return 1
+            fi
+            ;;
+        "game-server")
+            local pid=$(pgrep -f "python.*main.py")
+            if [ ! -z "$pid" ]; then
+                SERVICE_STATUS[$service]="running"
+                SERVICE_PIDS[$service]=$pid
+                debug_log "$service is running with PID $pid"
+                return 0
+            else
+                SERVICE_STATUS[$service]="stopped"
+                debug_log "$service is stopped"
+                return 1
+            fi
+            ;;
+    esac
 }
 
 # Start a specific service
@@ -68,11 +211,45 @@ start_service() {
             fi
             ;;
         "nginx")
+            # Verify nginx configuration
+            nginx -t
+            if [ $? -ne 0 ]; then
+                error_log "Nginx configuration test failed"
+                return 1
+            fi
+            
             systemctl start nginx
             if check_service nginx; then
                 success_log "Nginx started successfully"
             else
                 error_log "Failed to start Nginx" "$(systemctl status nginx)"
+                return 1
+            fi
+            ;;
+        "gunicorn")
+            debug_log "Starting Gunicorn with web_app.py"
+            mkdir -p logs
+            gunicorn -w 4 -b 0.0.0.0:8000 web_app:app --daemon \
+                --access-logfile logs/gunicorn-access.log \
+                --error-logfile logs/gunicorn-error.log \
+                --pid logs/gunicorn.pid
+            
+            if check_service gunicorn; then
+                success_log "Gunicorn started successfully"
+            else
+                error_log "Failed to start Gunicorn" "Check logs/gunicorn-error.log"
+                return 1
+            fi
+            ;;
+        "game-server")
+            debug_log "Starting game server with main.py"
+            mkdir -p logs
+            nohup python main.py > logs/game-server.log 2>&1 &
+            
+            if check_service game-server; then
+                success_log "Game server started successfully"
+            else
+                error_log "Failed to start game server" "Check logs/game-server.log"
                 return 1
             fi
             ;;
@@ -85,23 +262,21 @@ start_service() {
                 return 1
             fi
             ;;
-        "gunicorn")
-            debug_log "Starting Gunicorn with web_app.py"
-            gunicorn -w 4 -b 0.0.0.0:8000 web_app:app --daemon
-            if [ $? -eq 0 ]; then
-                success_log "Gunicorn started successfully"
+        "redis")
+            systemctl start redis-server
+            if check_service redis; then
+                success_log "Redis started successfully"
             else
-                error_log "Failed to start Gunicorn" "Check logs/gunicorn.log for details"
+                error_log "Failed to start Redis" "$(systemctl status redis-server)"
                 return 1
             fi
             ;;
-        "game-server")
-            debug_log "Starting game server with main.py"
-            python main.py &
-            if [ $? -eq 0 ]; then
-                success_log "Game server started successfully"
+        "elasticsearch")
+            systemctl start elasticsearch
+            if check_service elasticsearch; then
+                success_log "Elasticsearch started successfully"
             else
-                error_log "Failed to start game server" "Check logs/game-server.log for details"
+                error_log "Failed to start Elasticsearch" "$(systemctl status elasticsearch)"
                 return 1
             fi
             ;;
@@ -118,48 +293,36 @@ stop_service() {
     info_log "Stopping $service..."
     
     case $service in
-        "postgresql")
-            systemctl stop postgresql
-            if ! check_service postgresql; then
-                success_log "PostgreSQL stopped successfully"
+        "postgresql"|"nginx"|"postfix"|"redis"|"elasticsearch")
+            systemctl stop $service
+            if ! check_service $service; then
+                success_log "$service stopped successfully"
             else
-                error_log "Failed to stop PostgreSQL" "$(systemctl status postgresql)"
-                return 1
-            fi
-            ;;
-        "nginx")
-            systemctl stop nginx
-            if ! check_service nginx; then
-                success_log "Nginx stopped successfully"
-            else
-                error_log "Failed to stop Nginx" "$(systemctl status nginx)"
-                return 1
-            fi
-            ;;
-        "postfix")
-            systemctl stop postfix
-            if ! check_service postfix; then
-                success_log "Postfix stopped successfully"
-            else
-                error_log "Failed to stop Postfix" "$(systemctl status postfix)"
+                error_log "Failed to stop $service" "$(systemctl status $service)"
                 return 1
             fi
             ;;
         "gunicorn")
-            pkill gunicorn
-            if [ $? -eq 0 ]; then
+            if [ -f logs/gunicorn.pid ]; then
+                kill -TERM $(cat logs/gunicorn.pid)
+                rm -f logs/gunicorn.pid
+            else
+                pkill -f "gunicorn.*web_app:app"
+            fi
+            
+            if ! check_service gunicorn; then
                 success_log "Gunicorn stopped successfully"
             else
-                error_log "Failed to stop Gunicorn" "Process may not be running"
+                error_log "Failed to stop Gunicorn"
                 return 1
             fi
             ;;
         "game-server")
-            pkill -f "python main.py"
-            if [ $? -eq 0 ]; then
+            pkill -f "python.*main.py"
+            if ! check_service game-server; then
                 success_log "Game server stopped successfully"
             else
-                error_log "Failed to stop game server" "Process may not be running"
+                error_log "Failed to stop game server"
                 return 1
             fi
             ;;
@@ -176,26 +339,77 @@ show_status() {
     printf "${YELLOW}%-20s %-10s %-20s${NC}\n" "Service" "Status" "Details"
     echo "----------------------------------------------------"
     
-    check_service postgresql
-    printf "%-20s %-10s %-20s\n" "PostgreSQL" "${SERVICE_STATUS[postgresql]}" "Database Server"
+    for service in "${!SERVICE_PORTS[@]}"; do
+        check_service $service
+        local status=${SERVICE_STATUS[$service]}
+        local pid=${SERVICE_PIDS[$service]}
+        local port=${SERVICE_PORTS[$service]}
+        
+        if [ "$status" = "running" ]; then
+            local details="PID: $pid, Port: $port"
+            printf "%-20s ${GREEN}%-10s${NC} %-20s\n" "$service" "$status" "$details"
+        else
+            printf "%-20s ${RED}%-10s${NC} %-20s\n" "$service" "$status" "Not running"
+        fi
+    done
+}
+
+# Initialize services
+initialize_services() {
+    info_log "Initializing services..."
     
-    check_service nginx
-    printf "%-20s %-10s %-20s\n" "Nginx" "${SERVICE_STATUS[nginx]}" "Web Server"
+    # Create required directories
+    mkdir -p logs
+    mkdir -p instance
+    mkdir -p static/downloads
     
-    check_service postfix
-    printf "%-20s %-10s %-20s\n" "Postfix" "${SERVICE_STATUS[postfix]}" "Mail Server"
+    # Set proper permissions
+    chmod -R 755 static
+    chmod +x *.py
     
-    if pgrep gunicorn >/dev/null; then
-        printf "%-20s %-10s %-20s\n" "Gunicorn" "running" "Application Server"
-    else
-        printf "%-20s %-10s %-20s\n" "Gunicorn" "stopped" "Application Server"
+    # Initialize database if needed
+    if ! check_service postgresql; then
+        info_log "Initializing database..."
+        python init_db.py
+        if [ $? -ne 0 ]; then
+            error_log "Database initialization failed"
+            return 1
+        fi
     fi
     
-    if pgrep -f "python main.py" >/dev/null; then
-        printf "%-20s %-10s %-20s\n" "Game Server" "running" "Game Service"
-    else
-        printf "%-20s %-10s %-20s\n" "Game Server" "stopped" "Game Service"
+    # Configure Nginx
+    if [ ! -f "/etc/nginx/sites-available/terminusa" ]; then
+        info_log "Configuring Nginx..."
+        cat > /etc/nginx/sites-available/terminusa << 'EOL'
+server {
+    listen 80;
+    server_name play.terminusa.online;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /static {
+        alias /root/Terminusa/static;
+    }
+
+    location /socket.io {
+        proxy_pass http://127.0.0.1:8000/socket.io;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+EOL
+        ln -sf /etc/nginx/sites-available/terminusa /etc/nginx/sites-enabled/
+        rm -f /etc/nginx/sites-enabled/default
     fi
+    
+    return 0
 }
 
 # Show help message
@@ -211,13 +425,16 @@ show_help() {
     echo "  stop           Stop all services or specific service"
     echo "  restart        Restart all services or specific service"
     echo "  status         Show service status"
+    echo "  monitor        Show real-time service monitoring"
     echo
     echo "Services:"
     echo "  postgresql     Database server"
     echo "  nginx         Web server"
-    echo "  postfix       Mail server"
     echo "  gunicorn      Application server"
     echo "  game-server   Game server"
+    echo "  postfix       Mail server"
+    echo "  redis         Cache server"
+    echo "  elasticsearch Search server"
     echo "  all           All services"
     echo
     echo "Examples:"
@@ -226,6 +443,19 @@ show_help() {
     echo "  $0 stop nginx          # Stop only Nginx"
     echo "  $0 status              # Show all service status"
     echo "  $0 -d start           # Start all services with debug output"
+    echo "  $0 monitor            # Show real-time monitoring"
+}
+
+# Cleanup function
+cleanup() {
+    MONITOR_RUNNING=false
+    info_log "Cleaning up..."
+    stop_service game-server
+    stop_service gunicorn
+    stop_service nginx
+    stop_service postfix
+    stop_service postgresql
+    success_log "Cleanup complete"
 }
 
 # Main script execution
@@ -241,11 +471,11 @@ main() {
                 DEBUG=true
                 shift
                 ;;
-            start|stop|restart|status)
+            start|stop|restart|status|monitor)
                 ACTION=$1
                 shift
                 ;;
-            postgresql|nginx|postfix|gunicorn|game-server|all)
+            postgresql|nginx|gunicorn|game-server|postfix|redis|elasticsearch|all)
                 SERVICE=$1
                 shift
                 ;;
@@ -263,8 +493,13 @@ main() {
         exit 1
     fi
 
-    # Create logs directory
-    mkdir -p logs
+    # Set up trap for cleanup
+    trap cleanup SIGINT SIGTERM
+
+    # Initialize if needed
+    if [ "$ACTION" = "start" ]; then
+        initialize_services || exit 1
+    fi
 
     # Process the action
     case $ACTION in
@@ -272,6 +507,8 @@ main() {
             if [ "$SERVICE" = "all" ] || [ -z "$SERVICE" ]; then
                 info_log "Starting all services..."
                 start_service postgresql
+                start_service redis
+                start_service elasticsearch
                 start_service nginx
                 start_service postfix
                 start_service gunicorn
@@ -287,6 +524,8 @@ main() {
                 stop_service gunicorn
                 stop_service nginx
                 stop_service postfix
+                stop_service elasticsearch
+                stop_service redis
                 stop_service postgresql
             else
                 stop_service $SERVICE
@@ -299,9 +538,13 @@ main() {
                 stop_service gunicorn
                 stop_service nginx
                 stop_service postfix
+                stop_service elasticsearch
+                stop_service redis
                 stop_service postgresql
                 sleep 2
                 start_service postgresql
+                start_service redis
+                start_service elasticsearch
                 start_service postfix
                 start_service nginx
                 start_service gunicorn
@@ -314,6 +557,9 @@ main() {
             ;;
         status)
             show_status
+            ;;
+        monitor)
+            monitor_services
             ;;
         *)
             show_help
