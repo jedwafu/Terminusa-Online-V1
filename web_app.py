@@ -59,6 +59,7 @@ jwt = JWTManager(app)
 init_db(app)
 
 @app.route('/')
+@app.route('/index')
 def index():
     """Main landing page"""
     try:
@@ -106,8 +107,29 @@ def index():
     except Exception as e:
         logger.error(f"Error rendering index page: {str(e)}")
         logger.exception(e)  # Log full traceback
-        return render_template('error.html', 
-                             error_message='An error occurred while loading the page. Please try again later.'), 500
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
+@app.route('/play')
+def play_page():
+    """Play page"""
+    return redirect('https://play.terminusa.online')
+
+@app.route('/register')
+def register_page():
+    """Registration page"""
+    try:
+        return render_template('register.html', 
+                             title='Register',
+                             is_authenticated=False)
+    except Exception as e:
+        logger.error(f"Error rendering register page: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
 
 @app.route('/login')
 def login_page():
