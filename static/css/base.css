@@ -17,7 +17,6 @@ body {
     background-color: var(--background-color);
     color: var(--text-color);
     line-height: 1.5;
-    overflow-x: hidden;
 }
 
 .container {
@@ -116,23 +115,9 @@ body {
     padding-top: var(--header-height);
 }
 
-/* Hero Section */
-.hero {
-    position: relative;
-    height: calc(100vh - var(--header-height));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)),
-                url('https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5');
-    background-size: cover;
-    background-position: center;
-}
-
 /* Section Styles */
 .section {
-    padding: 100px 0;
+    padding: 80px 0;
     position: relative;
 }
 

@@ -6,7 +6,6 @@
     <title>{{ title }} - Terminusa Online</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
-    {% block head %}{% endblock %}
 </head>
 <body>
     <header class="header">
@@ -51,28 +50,13 @@
     </footer>
 
     <script>
-        // Toast notification system
-        function showToast(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
-        }
-
-        // Authentication functions
         function logout() {
             localStorage.removeItem('token');
-            showToast('Logged out successfully');
+            alert('Logged out successfully');
             setTimeout(() => {
                 window.location.href = 'https://terminusa.online';
             }, 1000);
         }
     </script>
-
-    {% block scripts %}{% endblock %}
 </body>
 </html>
