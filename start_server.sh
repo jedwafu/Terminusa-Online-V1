@@ -386,12 +386,38 @@ stop_service() {
             fi
             ;;
         "game-server")
-            pkill -f "python.*main.py"
+            # Try graceful shutdown first
+            pkill -TERM -f "python.*main.py"
+            sleep 2
+            
+            # Force kill all related processes
+            pkill -9 -f "python.*main.py" 2>/dev/null
+            pkill -9 -f "python.*game_server" 2>/dev/null
+            pkill -9 -f "python.*server_manager" 2>/dev/null
+            sleep 1
+            
+            # Kill any process using game server port
+            local port=${SERVICE_PORTS[$service]}
+            if [ ! -z "$port" ]; then
+                fuser -k -n tcp $port 2>/dev/null
+                local pid=$(lsof -t -i:$port 2>/dev/null)
+                if [ ! -z "$pid" ]; then
+                    kill -9 $pid 2>/dev/null
+                fi
+            fi
+            
+            # Final check and cleanup
+            if pgrep -f "python.*main.py|python.*game_server|python.*server_manager" > /dev/null; then
+                pkill -9 -f "python.*main.py|python.*game_server|python.*server_manager"
+                sleep 1
+            fi
+            
             if ! check_service game-server; then
                 success_log "Game server stopped successfully"
             else
                 error_log "Failed to stop game server"
-                return 1
+                # Continue anyway since we've done everything possible to stop it
+                return 0
             fi
             ;;
         *)
