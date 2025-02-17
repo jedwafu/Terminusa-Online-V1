@@ -1,0 +1,229 @@
+/* Announcements Section */
+.announcements-section {
+    padding: 48px 0;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+}
+
+.section-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 36px;
+    color: var(--primary-color);
+    margin: 0;
+}
+
+/* Form Styles */
+#announcement-form-container {
+    margin-bottom: 48px;
+}
+
+#announcement-form {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.card-header {
+    background: rgba(0, 255, 65, 0.05);
+    padding: 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.card-header h2 {
+    margin: 0;
+    color: var(--primary-color);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 24px;
+}
+
+.card-body {
+    padding: 24px;
+}
+
+.form-group {
+    margin-bottom: 24px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-color);
+    font-size: 16px;
+    transition: all var(--transition-speed) ease;
+}
+
+.form-group textarea {
+    min-height: 150px;
+    resize: vertical;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px var(--shadow-color);
+}
+
+.form-buttons {
+    display: flex;
+    gap: 16px;
+    margin-top: 24px;
+}
+
+/* Announcements Grid */
+.announcements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 24px;
+}
+
+.announcement-card {
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all var(--transition-speed) ease;
+}
+
+.announcement-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px var(--shadow-color);
+}
+
+.announcement-card .card-header {
+    padding: 20px 24px;
+    background: rgba(0, 255, 65, 0.05);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.announcement-title {
+    margin: 0 0 8px 0;
+    font-size: 20px;
+    color: var(--primary-color);
+    font-family: 'Orbitron', sans-serif;
+}
+
+.announcement-date {
+    font-size: 14px;
+    color: var(--text-muted);
+    display: block;
+}
+
+.announcement-card .card-body {
+    padding: 24px;
+}
+
+.announcement-content {
+    margin: 0;
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+.announcement-card .card-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.btn-danger {
+    background: transparent;
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+}
+
+.btn-danger:hover {
+    background: rgba(255, 0, 255, 0.1);
+}
+
+/* Animations */
+.announcement-card {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.5s ease forwards;
+}
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.announcement-card:nth-child(n) {
+    animation-delay: calc(n * 0.1s);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .announcements-section {
+        padding: 32px 0;
+    }
+
+    .section-header {
+        flex-direction: column;
+        gap: 16px;
+        align-items: stretch;
+        text-align: center;
+    }
+
+    .section-title {
+        font-size: 28px;
+    }
+
+    .announcements-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .announcement-card .card-footer {
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+    }
+}
+
+/* Loading States */
+.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    height: 24px;
+    margin: -12px 0 0 -12px;
+    border: 2px solid var(--primary-color);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

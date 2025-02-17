@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Terminusa Online</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base_new.css') }}">
+    {% if extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/' + extra_css) }}">
+    {% endif %}
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="page-wrapper">
+        <header class="header">
+            <div class="container header-content">
+                <a href="https://terminusa.online" class="logo">
+                    <i class="fas fa-terminal"></i>
+                    <span>Terminusa Online</span>
+                </a>
+                <nav class="nav-menu">
+                    <a href="https://terminusa.online" class="nav-link">
+                        <i class="fas fa-home"></i>
+                        <span>Home</span>
+                    </a>
+                    <a href="{{ url_for('marketplace_page') }}" class="nav-link">
+                        <i class="fas fa-store"></i>
+                        <span>Marketplace</span>
+                    </a>
+                    <a href="{{ url_for('leaderboard_page') }}" class="nav-link">
+                        <i class="fas fa-trophy"></i>
+                        <span>Leaderboard</span>
+                    </a>
+                    <a href="{{ url_for('announcements_page') }}" class="nav-link">
+                        <i class="fas fa-bullhorn"></i>
+                        <span>Announcements</span>
+                    </a>
+                    {% if is_authenticated %}
+                        <a href="https://play.terminusa.online" class="nav-link">
+                            <i class="fas fa-gamepad"></i>
+                            <span>Play Now</span>
+                        </a>
+                    {% endif %}
+                </nav>
+                <div class="auth-buttons">
+                    {% if is_authenticated %}
+                        <div class="user-menu">
+                            <button class="user-menu-btn">
+                                <i class="fas fa-user-circle"></i>
+                                <span>{{ current_user.username }}</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            <div class="user-dropdown">
+                                <a href="#" class="dropdown-item">
+                                    <i class="fas fa-user"></i>
+                                    <span>Profile</span>
+                                </a>
+                                <a href="#" class="dropdown-item">
+                                    <i class="fas fa-cog"></i>
+                                    <span>Settings</span>
+                                </a>
+                                <button onclick="logout()" class="dropdown-item">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>Logout</span>
+                                </button>
+                            </div>
+                        </div>
+                        <a href="https://play.terminusa.online" class="btn btn-primary">
+                            <i class="fas fa-play"></i>
+                            <span>Play Now</span>
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('login_page') }}" class="btn btn-secondary">
+                            <i class="fas fa-sign-in-alt"></i>
+                            <span>Login</span>
+                        </a>
+                        <a href="{{ url_for('register_page') }}" class="btn btn-primary">
+                            <i class="fas fa-user-plus"></i>
+                            <span>Register</span>
+                        </a>
+                    {% endif %}
+                </div>
+                <button class="mobile-menu-btn">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </header>
+
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="footer">
+            <div class="container footer-content">
+                <div class="footer-grid">
+                    <div class="footer-section">
+                        <h3 class="footer-title">About Terminusa</h3>
+                        <p class="footer-description">
+                            Experience the future of gaming in our cyberpunk-themed MMORPG. Battle, trade, and rise through the ranks in a world where code is power.
+                        </p>
+                    </div>
+                    <div class="footer-section">
+                        <h3 class="footer-title">Quick Links</h3>
+                        <ul class="footer-links">
+                            <li><a href="#" class="footer-link">About</a></li>
+                            <li><a href="#" class="footer-link">News</a></li>
+                            <li><a href="#" class="footer-link">Careers</a></li>
+                            <li><a href="#" class="footer-link">Contact</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h3 class="footer-title">Legal</h3>
+                        <ul class="footer-links">
+                            <li><a href="#" class="footer-link">Terms of Service</a></li>
+                            <li><a href="#" class="footer-link">Privacy Policy</a></li>
+                            <li><a href="#" class="footer-link">Cookie Policy</a></li>
+                            <li><a href="#" class="footer-link">EULA</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h3 class="footer-title">Connect</h3>
+                        <div class="social-links">
+                            <a href="#" class="social-link"><i class="fab fa-discord"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-youtube"></i></a>
+                            <a href="#" class="social-link"><i class="fab fa-reddit"></i></a>
+                        </div>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <div class="copyright">
+                        © 2025 Terminusa Online. All rights reserved.
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <div id="notification-container"></div>
+
+    <script>
+        // Mobile menu toggle
+        const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+        const navMenu = document.querySelector('.nav-menu');
+        
+        mobileMenuBtn.addEventListener('click', () => {
+            navMenu.classList.toggle('active');
+        });
+
+        // User menu dropdown
+        const userMenuBtn = document.querySelector('.user-menu-btn');
+        if (userMenuBtn) {
+            userMenuBtn.addEventListener('click', () => {
+                const dropdown = document.querySelector('.user-dropdown');
+                dropdown.classList.toggle('active');
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.user-menu')) {
+                    const dropdown = document.querySelector('.user-dropdown');
+                    if (dropdown) {
+                        dropdown.classList.remove('active');
+                    }
+                }
+            });
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            const container = document.getElementById('notification-container');
+            container.appendChild(notification);
+
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            showNotification('Logged out successfully');
+            setTimeout(() => {
+                window.location.href = 'https://terminusa.online';
+            }, 1000);
+        }
+
+        {% block extra_js %}{% endblock %}
+    </script>
+</body>
+</html>

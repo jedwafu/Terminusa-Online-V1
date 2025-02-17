@@ -1,4 +1,4 @@
-from flask import jsonify, request, render_template, send_from_directory, make_response, redirect
+from flask import jsonify, request, render_template, send_from_directory, make_response, redirect, g
 from app import app, db
 from models import (
     User, PlayerCharacter, PlayerSkill, Wallet, Item, 
@@ -16,11 +16,39 @@ from functools import wraps
 import secrets
 
 # Root route
+@app.before_request
+def load_user():
+    """Load user info before each request"""
+    try:
+        verify_jwt_in_request(optional=True)
+        claims = get_jwt()
+        if claims:
+            user = User.query.filter_by(username=claims.get('sub')).first()
+            g.current_user = user
+            g.is_authenticated = True
+        else:
+            g.current_user = None
+            g.is_authenticated = False
+    except Exception:
+        g.current_user = None
+        g.is_authenticated = False
+
+@app.context_processor
+def inject_user():
+    """Make user info available to all templates"""
+    return {
+        'current_user': g.current_user,
+        'is_authenticated': g.is_authenticated
+    }
+
 @app.route('/')
 def index():
     """Main landing page"""
     try:
-        response = make_response(render_template('index.html'))
+        response = make_response(render_template(
+            'index.html',
+            title='Home'
+        ))
         response.headers['Content-Type'] = 'text/html'
         return response
     except Exception as e:
@@ -56,7 +84,12 @@ def admin_required():
 def announcements_page():
     """Render announcements page"""
     announcements = Announcement.query.order_by(Announcement.created_at.desc()).all()
-    return render_template('announcements_new.html', announcements=announcements)
+    return render_template(
+        'announcements_updated.html',
+        title='Announcements',
+        announcements=announcements,
+        extra_css='announcements_updated.css'
+    )
 
 @app.route('/api/announcements', methods=['GET'])
 def get_announcements():
