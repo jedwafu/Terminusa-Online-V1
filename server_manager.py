@@ -6,6 +6,7 @@ import signal
 import psutil
 import logging
 import subprocess
+import bcrypt
 from datetime import datetime
 from rich.console import Console
 from rich.table import Table
@@ -14,7 +15,9 @@ from rich.panel import Panel
 from rich.layout import Layout
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
 from dotenv import load_dotenv
-from init_db import init_database
+from app import app
+from models import User, PlayerCharacter, Wallet, Inventory
+from database import db, init_db
 
 # Load environment variables
 load_dotenv()
@@ -29,6 +32,87 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
+
+def ensure_admin_exists():
+    """Ensure admin account exists, create if it doesn't"""
+    with app.app_context():
+        try:
+            # Check if admin exists
+            admin = User.query.filter_by(username='admin').first()
+            if admin:
+                logger.info("Admin account already exists")
+                return True
+
+            # Create admin user
+            logger.info("Creating admin account...")
+            password = "admin123"
+            salt = bcrypt.gensalt()
+            password_hash = bcrypt.hashpw(password.encode('utf-8'), salt)
+
+            admin = User(
+                username='admin',
+                email='admin@terminusa.online',
+                password=password_hash.decode('utf-8'),
+                salt=salt.decode('utf-8'),
+                role='admin',
+                is_email_verified=True,
+                created_at=datetime.utcnow(),
+                last_login=datetime.utcnow()
+            )
+            
+            db.session.add(admin)
+            db.session.commit()  # Commit to get admin.id
+
+            # Create admin character
+            character = PlayerCharacter(
+                user_id=admin.id,
+                level=100,
+                experience=0,
+                rank='S',
+                title='Administrator',
+                strength=100,
+                agility=100,
+                intelligence=100,
+                vitality=100,
+                wisdom=100,
+                hp=1000,
+                mp=1000,
+                physical_attack=100,
+                magical_attack=100,
+                physical_defense=100,
+                magical_defense=100
+            )
+            db.session.add(character)
+            db.session.commit()
+
+            # Create admin wallet
+            wallet = Wallet(
+                user_id=admin.id,
+                address=f"wallet_{os.urandom(8).hex()}",
+                encrypted_privkey=os.urandom(32).hex(),
+                iv=os.urandom(16).hex(),
+                sol_balance=1000.0,
+                crystals=100000,
+                exons=100000
+            )
+            db.session.add(wallet)
+            db.session.commit()
+
+            # Create admin inventory
+            inventory = Inventory(
+                user_id=admin.id,
+                max_slots=1000
+            )
+            db.session.add(inventory)
+            db.session.commit()
+
+            logger.info("Admin account created successfully")
+            return True
+
+        except Exception as e:
+            logger.error(f"Error ensuring admin account: {str(e)}")
+            db.session.rollback()
+            return False
 
 class ServiceManager:
     def __init__(self):
@@ -187,14 +271,19 @@ class ServiceManager:
             BarColumn(),
             TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
         ) as progress:
-            task = progress.add_task("Starting services...", total=len(self.services) + 1)  # +1 for database init
+            task = progress.add_task("Starting services...", total=len(self.services) + 2)  # +2 for db init and admin check
             
             # Initialize database first
             self.console.print("[yellow]Initializing database...[/yellow]")
-            if not init_database():
-                self.console.print("[red]Failed to initialize database![/red]")
-                return False
-            progress.update(task, advance=1)
+            with app.app_context():
+                # Initialize database
+                init_db(app)
+                
+                # Ensure admin account exists
+                if not ensure_admin_exists():
+                    self.console.print("[red]Failed to ensure admin account exists![/red]")
+                    return False
+            progress.update(task, advance=2)
             
             # Start services in order
             for service_id in ['postgresql', 'postfix', 'opendkim', 'web_server', 'game_server']:
