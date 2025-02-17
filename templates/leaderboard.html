@@ -1,282 +1,200 @@
-{% extends "base_new.html" %}
+{% extends "base.html" %}
 
 {% block head %}
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
-.leaderboard-section {
-    padding: 4rem 2rem;
-    background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), url('/static/images/leaderboard-bg.jpg');
-    background-size: cover;
-    background-position: center;
-    min-height: calc(100vh - 60px);
+.leaderboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
 }
 
-.leaderboard-header {
-    text-align: center;
-    margin-bottom: 3rem;
+.leaderboard-section {
+    margin-bottom: 4rem;
 }
 
 .leaderboard-title {
-    font-size: 3rem;
-    color: var(--accent-color);
-    text-transform: uppercase;
-    margin-bottom: 1rem;
-    text-shadow: 0 0 10px rgba(108, 49, 255, 0.5);
-}
-
-.leaderboard-subtitle {
-    font-size: 1.2rem;
-    color: #888;
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.leaderboard-tabs {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 2rem;
-    gap: 1rem;
-}
-
-.tab-button {
-    padding: 1rem 2rem;
-    background: rgba(0, 0, 0, 0.8);
-    border: 1px solid var(--accent-color);
-    border-radius: 5px;
-    color: white;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.tab-button.active {
-    background: var(--accent-color);
-}
-
-.leaderboard-table-container {
-    background: rgba(0, 0, 0, 0.8);
-    border: 1px solid var(--accent-color);
-    border-radius: 10px;
-    overflow: hidden;
+    text-align: center;
+    color: var(--primary-color);
+    font-size: 2.5rem;
     margin-bottom: 2rem;
 }
 
 .leaderboard-table {
     width: 100%;
     border-collapse: collapse;
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    overflow: hidden;
 }
 
 .leaderboard-table th,
 .leaderboard-table td {
     padding: 1rem;
     text-align: left;
-    border-bottom: 1px solid rgba(108, 49, 255, 0.2);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .leaderboard-table th {
     background: rgba(108, 49, 255, 0.1);
-    color: var(--accent-color);
+    color: var(--primary-color);
     font-weight: bold;
     text-transform: uppercase;
 }
 
 .leaderboard-table tr:hover {
-    background: rgba(108, 49, 255, 0.05);
+    background: var(--hover-color);
 }
 
 .rank {
-    font-size: 1.2rem;
     font-weight: bold;
     color: var(--accent-color);
 }
 
-.rank-1 { color: gold; }
-.rank-2 { color: silver; }
-.rank-3 { color: #cd7f32; }
-
-.hunter-name,
-.guild-name {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+.rank-S {
+    color: #FFD700;
 }
 
-.hunter-rank,
-.guild-rank {
-    padding: 0.2rem 0.5rem;
-    border-radius: 3px;
-    font-size: 0.8rem;
-    background: rgba(108, 49, 255, 0.2);
+.rank-A {
+    color: #C0C0C0;
 }
 
-.rank-S { color: gold; }
-.rank-A { color: #ff5555; }
-.rank-B { color: #5555ff; }
-.rank-C { color: #55ff55; }
-.rank-D { color: #ffff55; }
-.rank-E { color: #aaaaaa; }
-.rank-F { color: #ffffff; }
+.rank-B {
+    color: #CD7F32;
+}
 
 .stats {
     display: flex;
     gap: 1rem;
-    color: #888;
+    color: var(--text-color);
 }
 
 .stat {
     display: flex;
     align-items: center;
-    gap: 0.3rem;
+    gap: 0.5rem;
 }
 
 .stat-icon {
-    width: 16px;
-    height: 16px;
+    color: var(--accent-color);
 }
 
-.tab-content {
-    display: none;
+.guild-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
-.tab-content.active {
-    display: block;
+.guild-name {
+    font-weight: bold;
+    color: var(--primary-color);
 }
 
-@media (max-width: 768px) {
-    .leaderboard-tabs {
-        flex-direction: column;
-    }
-    
-    .tab-button {
-        width: 100%;
-    }
-    
-    .stats {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-    
-    .leaderboard-table th,
-    .leaderboard-table td {
-        padding: 0.5rem;
-    }
+.guild-stats {
+    display: flex;
+    gap: 2rem;
+}
+
+.tabs {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+    gap: 1rem;
+}
+
+.tab {
+    padding: 0.8rem 2rem;
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.tab:hover,
+.tab.active {
+    background: var(--primary-color);
+    color: white;
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<section class="leaderboard-section">
-    <div class="container">
-        <div class="leaderboard-header">
-            <h1 class="leaderboard-title">Leaderboard</h1>
-            <p class="leaderboard-subtitle">The strongest hunters and most powerful guilds in Terminusa Online</p>
-        </div>
-
-        <div class="leaderboard-tabs">
-            <button class="tab-button active" onclick="showTab('hunters')">Top Hunters</button>
-            <button class="tab-button" onclick="showTab('guilds')">Top Guilds</button>
-        </div>
-
-        <div id="hunters-tab" class="tab-content active">
-            <div class="leaderboard-table-container">
-                <table class="leaderboard-table">
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Hunter</th>
-                            <th>Level</th>
-                            <th>Stats</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for hunter in hunters %}
-                        <tr>
-                            <td><span class="rank rank-{{ loop.index }}">{{ loop.index }}</span></td>
-                            <td>
-                                <div class="hunter-name">
-                                    {{ hunter.user.username }}
-                                    <span class="hunter-rank rank-{{ hunter.rank }}">{{ hunter.rank }}</span>
-                                </div>
-                            </td>
-                            <td>{{ hunter.level }}</td>
-                            <td>
-                                <div class="stats">
-                                    <div class="stat">
-                                        <img src="{{ url_for('static', filename='images/gate.png') }}" alt="Gates" class="stat-icon">
-                                        {{ hunter.gates_cleared }} Gates
-                                    </div>
-                                    <div class="stat">
-                                        <img src="{{ url_for('static', filename='images/monster.png') }}" alt="Monsters" class="stat-icon">
-                                        {{ hunter.monsters_defeated }} Monsters
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div id="guilds-tab" class="tab-content">
-            <div class="leaderboard-table-container">
-                <table class="leaderboard-table">
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Guild</th>
-                            <th>Level</th>
-                            <th>Stats</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for guild in guilds %}
-                        <tr>
-                            <td><span class="rank rank-{{ loop.index }}">{{ loop.index }}</span></td>
-                            <td>
-                                <div class="guild-name">
-                                    {{ guild.name }}
-                                    <span class="guild-rank">Level {{ guild.level }}</span>
-                                </div>
-                            </td>
-                            <td>{{ guild.level }}</td>
-                            <td>
-                                <div class="stats">
-                                    <div class="stat">
-                                        <img src="{{ url_for('static', filename='images/members.png') }}" alt="Members" class="stat-icon">
-                                        {{ guild.member_count }} Members
-                                    </div>
-                                    <div class="stat">
-                                        <img src="{{ url_for('static', filename='images/trophy.png') }}" alt="Achievements" class="stat-icon">
-                                        {{ guild.achievement_count }} Achievements
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+<div class="leaderboard-container">
+    <h1 class="leaderboard-title">Leaderboard</h1>
+    
+    <div class="tabs">
+        <div class="tab active" onclick="showTab('hunters')">Hunter Rankings</div>
+        <div class="tab" onclick="showTab('guilds')">Guild Rankings</div>
     </div>
-</section>
-{% endblock %}
+    
+    <div id="hunters-tab" class="leaderboard-section">
+        <table class="leaderboard-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Hunter</th>
+                    <th>Level</th>
+                    <th>Gates Cleared</th>
+                    <th>Rating</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for player in hunters %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ player.user.username }}</td>
+                    <td>{{ player.level }}</td>
+                    <td>{{ player.gates_cleared }}</td>
+                    <td class="rank rank-{{ player.rank }}">{{ player.rank }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div id="guilds-tab" class="leaderboard-section" style="display: none;">
+        <table class="leaderboard-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Guild</th>
+                    <th>Level</th>
+                    <th>Members</th>
+                    <th>Achievements</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for guild in guilds %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ guild.name }}</td>
+                    <td>{{ guild.level }}</td>
+                    <td>{{ guild.member_count }}</td>
+                    <td>{{ guild.achievement_count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
-{% block scripts %}
 <script>
 function showTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.leaderboard-section').forEach(tab => {
+        tab.style.display = 'none';
+    });
+    
+    // Show selected tab
+    document.getElementById(`${tabName}-tab`).style.display = 'block';
+    
     // Update tab buttons
-    document.querySelectorAll('.tab-button').forEach(button => {
-        button.classList.remove('active');
-        if (button.textContent.toLowerCase().includes(tabName)) {
-            button.classList.add('active');
-        }
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
     });
-
-    // Update tab content
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.classList.remove('active');
-    });
-    document.getElementById(`${tabName}-tab`).classList.add('active');
+    document.querySelector(`.tab[onclick="showTab('${tabName}')"]`).classList.add('active');
 }
 </script>
 {% endblock %}

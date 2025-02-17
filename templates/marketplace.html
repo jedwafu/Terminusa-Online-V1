@@ -1,282 +1,37 @@
-{% extends "base_new.html" %}
+{% extends "base.html" %}
 
 {% block head %}
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
-<style>
-.marketplace-section {
-    padding: 4rem 2rem;
-    background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), url('/static/images/marketplace-bg.jpg');
-    background-size: cover;
-    background-position: center;
-    min-height: calc(100vh - 60px);
-}
-
-.marketplace-header {
-    text-align: center;
-    margin-bottom: 3rem;
-}
-
-.marketplace-title {
-    font-size: 3rem;
-    color: var(--accent-color);
-    text-transform: uppercase;
-    margin-bottom: 1rem;
-    text-shadow: 0 0 10px rgba(108, 49, 255, 0.5);
-}
-
-.marketplace-subtitle {
-    font-size: 1.2rem;
-    color: #888;
-    max-width: 600px;
-    margin: 0 auto;
-}
-
-.marketplace-controls {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 2rem;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-
-.search-bar {
-    flex: 1;
-    max-width: 400px;
-    position: relative;
-}
-
-.search-input {
-    width: 100%;
-    padding: 0.8rem 1rem;
-    background: rgba(0, 0, 0, 0.8);
-    border: 1px solid var(--accent-color);
-    border-radius: 5px;
-    color: white;
-}
-
-.filter-controls {
-    display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-}
-
-.filter-select {
-    padding: 0.8rem 1rem;
-    background: rgba(0, 0, 0, 0.8);
-    border: 1px solid var(--accent-color);
-    border-radius: 5px;
-    color: white;
-    min-width: 150px;
-}
-
-.items-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 2rem;
-    margin-top: 2rem;
-}
-
-.item-card {
-    background: rgba(0, 0, 0, 0.8);
-    border: 1px solid var(--accent-color);
-    border-radius: 10px;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    position: relative;
-}
-
-.item-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 0 20px rgba(108, 49, 255, 0.3);
-}
-
-.item-image {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-    border-bottom: 1px solid var(--accent-color);
-}
-
-.item-content {
-    padding: 1.5rem;
-}
-
-.item-name {
-    font-size: 1.5rem;
-    color: var(--accent-color);
-    margin-bottom: 0.5rem;
-    font-family: 'Bebas Neue', sans-serif;
-}
-
-.item-type {
-    color: #888;
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
-    display: flex;
-    justify-content: space-between;
-}
-
-.item-rarity {
-    padding: 0.2rem 0.5rem;
-    border-radius: 3px;
-    font-size: 0.8rem;
-}
-
-.rarity-common { background: #666; }
-.rarity-rare { background: #0066cc; }
-.rarity-epic { background: #9933cc; }
-.rarity-legendary { background: #cc9900; }
-
-.item-stats {
-    margin-bottom: 1rem;
-    background: rgba(0, 0, 0, 0.3);
-    padding: 1rem;
-    border-radius: 5px;
-}
-
-.stat {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 0.5rem;
-    font-size: 0.9rem;
-}
-
-.stat:last-child {
-    margin-bottom: 0;
-}
-
-.item-price {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.price-value {
-    color: var(--accent-color);
-    font-size: 1.2rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.crystal-icon {
-    width: 20px;
-    height: 20px;
-}
-
-.auth-required-notice {
-    text-align: center;
-    padding: 2rem;
-    background: rgba(108, 49, 255, 0.1);
-    border: 1px solid var(--accent-color);
-    border-radius: 5px;
-    margin-top: 3rem;
-}
-
-.auth-required-notice p {
-    margin-bottom: 1rem;
-    color: #888;
-}
-
-@media (max-width: 768px) {
-    .marketplace-controls {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .search-bar {
-        max-width: none;
-    }
-    
-    .filter-controls {
-        flex-direction: column;
-    }
-    
-    .filter-select {
-        width: 100%;
-    }
-}
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/marketplace.css') }}">
 {% endblock %}
 
 {% block content %}
-<section class="marketplace-section">
-    <div class="container">
-        <div class="marketplace-header">
-            <h1 class="marketplace-title">Hunter's Marketplace</h1>
-            <p class="marketplace-subtitle">Trade powerful artifacts, rare items, and magical equipment with other hunters.</p>
-        </div>
-
-        <div class="marketplace-controls">
-            <div class="search-bar">
-                <input type="text" class="search-input" placeholder="Search items...">
-            </div>
-            <div class="filter-controls">
-                <select class="filter-select" id="type-filter">
-                    <option value="all">All Types</option>
-                    <option value="weapon">Weapons</option>
-                    <option value="armor">Armor</option>
-                    <option value="accessory">Accessories</option>
-                    <option value="consumable">Consumables</option>
-                </select>
-                <select class="filter-select" id="rarity-filter">
-                    <option value="all">All Rarities</option>
-                    <option value="common">Common</option>
-                    <option value="rare">Rare</option>
-                    <option value="epic">Epic</option>
-                    <option value="legendary">Legendary</option>
-                </select>
-            </div>
-            {% if is_authenticated %}
-            <button class="btn" onclick="createItem()">List Item</button>
-            {% endif %}
-        </div>
-
-        <div class="items-grid">
-            {% for item in items %}
-            <div class="item-card">
-                <img src="{{ url_for('static', filename='images/items/' + item.image) }}" alt="{{ item.name }}" class="item-image">
-                <div class="item-content">
-                    <h3 class="item-name">{{ item.name }}</h3>
-                    <div class="item-type">
-                        <span>{{ item.type }}</span>
-                        <span class="item-rarity rarity-{{ item.rarity.lower() }}">{{ item.rarity }}</span>
+<div class="marketplace-container">
+    <h1>Marketplace</h1>
+    <div class="items-grid">
+        {% for item in items %}
+        <div class="item-card">
+            <img src="{{ url_for('static', filename=item.image) }}" alt="{{ item.name }}" class="item-image">
+            <div class="item-details">
+                <h3 class="item-name">{{ item.name }}</h3>
+                <div class="item-type {{ item.rarity.lower() }}">{{ item.type }} • {{ item.rarity }}</div>
+                <div class="item-stats">
+                    {% for stat, value in item.stats.items() %}
+                    <div class="stat">
+                        <span class="stat-name">{{ stat }}</span>
+                        <span class="stat-value">{{ value }}</span>
                     </div>
-                    <div class="item-stats">
-                        {% for stat, value in item.stats.items() %}
-                        <div class="stat">
-                            <span>{{ stat }}</span>
-                            <span>{{ value }}</span>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    <div class="item-price">
-                        <span class="price-value">
-                            <img src="{{ url_for('static', filename='images/crystal.png') }}" alt="Crystal" class="crystal-icon">
-                            {{ item.price }}
-                        </span>
-                        {% if is_authenticated %}
-                        <button class="btn" onclick="purchaseItem({{ item.id }})">Purchase</button>
-                        {% endif %}
-                    </div>
+                    {% endfor %}
                 </div>
+                <div class="item-price">{{ item.price }} Crystals</div>
+                {% if can_edit %}
+                <div class="item-actions">
+                    <button class="btn btn-primary">Buy</button>
+                    <button class="btn btn-secondary">Edit</button>
+                </div>
+                {% endif %}
             </div>
-            {% endfor %}
         </div>
-
-        {% if not is_authenticated %}
-        <div class="auth-required-notice">
-            <p>Login to purchase items and access your inventory</p>
-            <a href="{{ url_for('login_page') }}" class="btn">Login Now</a>
-        </div>
-        {% endif %}
+        {% endfor %}
     </div>
-</section>
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/marketplace_new.js') }}"></script>
+</div>
 {% endblock %}

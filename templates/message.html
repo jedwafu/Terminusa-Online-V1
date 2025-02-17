@@ -1,4 +1,4 @@
-{% extends "base_new.html" %}
+{% extends "base.html" %}
 
 {% block head %}
 <style>
@@ -39,8 +39,8 @@
     <div class="message-icon">✓</div>
     <div class="message-text">{{ message }}</div>
     <div class="message-actions">
-        <a href="/login" class="btn">Login</a>
-        <a href="/" class="btn">Return Home</a>
+        <a href="{{ url_for('login_page') }}" class="btn btn-secondary">Login</a>
+        <a href="{{ url_for('index') }}" class="btn btn-primary">Return Home</a>
     </div>
 </div>
 {% endblock %}
