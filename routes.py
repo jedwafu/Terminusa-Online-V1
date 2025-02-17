@@ -45,9 +45,15 @@ def inject_user():
 def index():
     """Main landing page"""
     try:
+        # Get latest announcements for the news section
+        latest_announcements = Announcement.query.order_by(
+            Announcement.created_at.desc()
+        ).limit(3).all()
+
         response = make_response(render_template(
-            'index.html',
-            title='Home'
+            'index_new.html',
+            title='Home',
+            latest_announcements=latest_announcements
         ))
         response.headers['Content-Type'] = 'text/html'
         return response
