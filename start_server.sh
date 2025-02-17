@@ -30,7 +30,7 @@ WEBAPP_PORT=${WEBAPP_PORT:-5001}
 SERVICE_PORTS=(
     ["postgresql"]="5432"
     ["nginx"]="80"
-    ["uwsgi"]="$WEBAPP_PORT"
+    ["gunicorn"]="$WEBAPP_PORT"
     ["game-server"]="5000"
     ["postfix"]="25"
 )
@@ -38,7 +38,7 @@ SERVICE_PORTS=(
 SERVICE_LOGS=(
     ["postgresql"]="/var/log/postgresql/postgresql-main.log"
     ["nginx"]="/var/log/nginx/error.log"
-    ["uwsgi"]="logs/uwsgi.log"
+    ["gunicorn"]="logs/gunicorn.log"
     ["game-server"]="logs/game-server.log"
     ["postfix"]="/var/log/mail.log"
 )
@@ -47,7 +47,7 @@ SERVICE_LOGS=(
 SERVICE_REQUIRED=(
     ["postgresql"]="true"
     ["nginx"]="true"
-    ["uwsgi"]="true"
+    ["gunicorn"]="true"
     ["game-server"]="true"
     ["postfix"]="true"
 )
@@ -183,8 +183,8 @@ check_service() {
                 return 1
             fi
             ;;
-        "uwsgi")
-            local pid=$(pgrep -f "uwsgi.*web_app:app" | head -n1)
+        "gunicorn")
+            local pid=$(pgrep -f "gunicorn.*web_app:app" | head -n1)
             if [ ! -z "$pid" ] && netstat -tuln | grep -q ":$WEBAPP_PORT "; then
                 SERVICE_STATUS[$service]="running"
                 SERVICE_PIDS[$service]=$pid
@@ -283,11 +283,11 @@ start_service() {
                 return 1
             fi
             ;;
-        "uwsgi")
-            debug_log "Starting uWSGI with web_app.py on port $WEBAPP_PORT"
-            # Stop any existing uwsgi processes
-            pkill -f "uwsgi.*web_app:app" 2>/dev/null
-            rm -f logs/uwsgi.pid 2>/dev/null
+        "gunicorn")
+            debug_log "Starting Gunicorn with web_app.py on port $WEBAPP_PORT"
+            # Stop any existing gunicorn processes
+            pkill -f "gunicorn.*web_app:app" 2>/dev/null
+            rm -f logs/gunicorn.pid 2>/dev/null
             sleep 1
             
             mkdir -p logs
@@ -297,24 +297,23 @@ start_service() {
                 source venv/bin/activate
             fi
             
-            # Start uWSGI
-            uwsgi --http 0.0.0.0:$WEBAPP_PORT \
-                --master \
-                --processes 4 \
-                --threads 2 \
-                --module web_app:app \
-                --pidfile logs/uwsgi.pid \
-                --daemonize logs/uwsgi.log \
-                --log-date \
-                --http-websockets \
-                --gevent 1000
+            # Start Gunicorn with basic configuration
+            gunicorn web_app:app \
+                --bind 0.0.0.0:$WEBAPP_PORT \
+                --workers 4 \
+                --timeout 120 \
+                --daemon \
+                --access-logfile logs/gunicorn-access.log \
+                --error-logfile logs/gunicorn-error.log \
+                --pid logs/gunicorn.pid \
+                --log-level debug
             
             sleep 2  # Give it time to start
             
-            if check_service uwsgi; then
-                success_log "uWSGI started successfully on port $WEBAPP_PORT"
+            if check_service gunicorn; then
+                success_log "Gunicorn started successfully on port $WEBAPP_PORT"
             else
-                error_log "Failed to start uWSGI" "$(tail -n 10 logs/uwsgi.log)"
+                error_log "Failed to start Gunicorn" "$(tail -n 10 logs/gunicorn-error.log)"
                 return 1
             fi
             ;;
@@ -387,18 +386,18 @@ stop_service() {
                 return 1
             fi
             ;;
-        "uwsgi")
-            if [ -f logs/uwsgi.pid ]; then
-                kill -TERM $(cat logs/uwsgi.pid)
-                rm -f logs/uwsgi.pid
+        "gunicorn")
+            if [ -f logs/gunicorn.pid ]; then
+                kill -TERM $(cat logs/gunicorn.pid)
+                rm -f logs/gunicorn.pid
             else
-                pkill -f "uwsgi.*web_app:app"
+                pkill -f "gunicorn.*web_app:app"
             fi
             
-            if ! check_service uwsgi; then
-                success_log "uWSGI stopped successfully"
+            if ! check_service gunicorn; then
+                success_log "Gunicorn stopped successfully"
             else
-                error_log "Failed to stop uWSGI"
+                error_log "Failed to stop Gunicorn"
                 return 1
             fi
             ;;
