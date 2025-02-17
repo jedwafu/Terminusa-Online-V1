@@ -118,7 +118,7 @@ def marketplace_page():
                 'name': 'Legendary Sword',
                 'type': 'Weapon',
                 'rarity': 'Legendary',
-                'image': 'items/sword.jpg',
+                'image': 'images/items/sword.jpg',
                 'stats': {
                     'Attack': '+100',
                     'Speed': '+20',
@@ -131,7 +131,7 @@ def marketplace_page():
                 'name': 'Mythic Armor',
                 'type': 'Armor',
                 'rarity': 'Epic',
-                'image': 'items/armor.jpg',
+                'image': 'images/items/armor.jpg',
                 'stats': {
                     'Defense': '+80',
                     'HP': '+500',
@@ -144,7 +144,7 @@ def marketplace_page():
                 'name': 'Health Potion',
                 'type': 'Consumable',
                 'rarity': 'Common',
-                'image': 'items/potion.jpg',
+                'image': 'images/items/potion.jpg',
                 'stats': {
                     'Heal': '200 HP',
                     'Duration': 'Instant',
@@ -157,7 +157,7 @@ def marketplace_page():
                 'name': 'Ring of Power',
                 'type': 'Accessory',
                 'rarity': 'Rare',
-                'image': 'items/ring.jpg',
+                'image': 'images/items/ring.jpg',
                 'stats': {
                     'All Stats': '+15',
                     'Magic Power': '+25',
@@ -167,11 +167,9 @@ def marketplace_page():
             }
         ]
 
-        return render_template('marketplace.html', 
+        return render_template('marketplace_new.html', 
                              title='Marketplace',
-                             items=items,
-                             is_authenticated=get_jwt_identity() is not None,
-                             can_edit=get_jwt_identity() is not None)
+                             items=items)
     except Exception as e:
         logger.error(f"Error rendering marketplace page: {str(e)}")
         return render_template('error.html',
