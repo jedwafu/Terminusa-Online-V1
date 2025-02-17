@@ -185,7 +185,7 @@ check_service() {
             ;;
         "gunicorn")
             local pid=$(pgrep -f "gunicorn.*web_app:app" | head -n1)
-            if [ ! -z "$pid" ] && netstat -tuln | grep -q ":$WEBAPP_PORT "; then
+            if [ ! -z "$pid" ] && ss -tuln | grep -q ":$WEBAPP_PORT "; then
                 SERVICE_STATUS[$service]="running"
                 SERVICE_PIDS[$service]=$pid
                 debug_log "$service is running with PID $pid on port $WEBAPP_PORT"
@@ -198,7 +198,7 @@ check_service() {
             ;;
         "game-server")
             local pid=$(pgrep -f "python.*main.py" | head -n1)
-            if [ ! -z "$pid" ] && netstat -tuln | grep -q ":5000 "; then
+            if [ ! -z "$pid" ] && ss -tuln | grep -q ":5000 "; then
                 SERVICE_STATUS[$service]="running"
                 SERVICE_PIDS[$service]=$pid
                 debug_log "$service is running with PID $pid"
