@@ -487,35 +487,104 @@ def announcements_page():
                              error_message='Failed to load announcements. Please try again later.'), 500
 
 @app.route('/announcements', methods=['POST'])
+@jwt_required()
 def create_announcement():
-    # Check if the user is an admin
-    if not request.user.is_admin:
-        return jsonify({'message': 'Unauthorized access!'}), 403
-    data = request.get_json()
-    new_announcement = Announcement(title=data['title'], content=data['content'])
-    db.session.add(new_announcement)
-    db.session.commit()
-    return jsonify({'message': 'Announcement created!'}), 201
+    """Create a new announcement - requires admin access"""
+    try:
+        # Get current user
+        current_user = User.query.filter_by(username=get_jwt_identity()).first()
+        if not current_user or current_user.role != 'admin':
+            return jsonify({'status': 'error', 'message': 'Unauthorized access'}), 403
+
+        data = request.get_json()
+        if not data or 'title' not in data or 'content' not in data:
+            return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
+
+        new_announcement = Announcement(
+            title=data['title'],
+            content=data['content'],
+            created_at=datetime.utcnow()
+        )
+        db.session.add(new_announcement)
+        db.session.commit()
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Announcement created successfully',
+            'announcement': {
+                'id': new_announcement.id,
+                'title': new_announcement.title,
+                'content': new_announcement.content,
+                'created_at': new_announcement.created_at.isoformat()
+            }
+        }), 201
+    except Exception as e:
+        logger.error(f"Error creating announcement: {str(e)}")
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': 'Failed to create announcement'}), 500
 
 @app.route('/announcements/<int:id>', methods=['PUT'])
+@jwt_required()
 def update_announcement(id):
-    data = request.get_json()
-    announcement = Announcement.query.get(id)
-    if announcement:
+    """Update an existing announcement - requires admin access"""
+    try:
+        # Get current user
+        current_user = User.query.filter_by(username=get_jwt_identity()).first()
+        if not current_user or current_user.role != 'admin':
+            return jsonify({'status': 'error', 'message': 'Unauthorized access'}), 403
+
+        announcement = Announcement.query.get(id)
+        if not announcement:
+            return jsonify({'status': 'error', 'message': 'Announcement not found'}), 404
+
+        data = request.get_json()
+        if not data or 'title' not in data or 'content' not in data:
+            return jsonify({'status': 'error', 'message': 'Missing required fields'}), 400
+
         announcement.title = data['title']
         announcement.content = data['content']
         db.session.commit()
-        return jsonify({'message': 'Announcement updated!'}), 200
-    return jsonify({'message': 'Announcement not found!'}), 404
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Announcement updated successfully',
+            'announcement': {
+                'id': announcement.id,
+                'title': announcement.title,
+                'content': announcement.content,
+                'created_at': announcement.created_at.isoformat()
+            }
+        }), 200
+    except Exception as e:
+        logger.error(f"Error updating announcement: {str(e)}")
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': 'Failed to update announcement'}), 500
 
 @app.route('/announcements/<int:id>', methods=['DELETE'])
+@jwt_required()
 def delete_announcement(id):
-    announcement = Announcement.query.get(id)
-    if announcement:
+    """Delete an announcement - requires admin access"""
+    try:
+        # Get current user
+        current_user = User.query.filter_by(username=get_jwt_identity()).first()
+        if not current_user or current_user.role != 'admin':
+            return jsonify({'status': 'error', 'message': 'Unauthorized access'}), 403
+
+        announcement = Announcement.query.get(id)
+        if not announcement:
+            return jsonify({'status': 'error', 'message': 'Announcement not found'}), 404
+
         db.session.delete(announcement)
         db.session.commit()
-        return jsonify({'message': 'Announcement deleted!'}), 200
-    return jsonify({'message': 'Announcement not found!'}), 404
+
+        return jsonify({
+            'status': 'success',
+            'message': 'Announcement deleted successfully'
+        }), 200
+    except Exception as e:
+        logger.error(f"Error deleting announcement: {str(e)}")
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': 'Failed to delete announcement'}), 500
 
 @app.errorhandler(Exception)
 def handle_exception(error):
