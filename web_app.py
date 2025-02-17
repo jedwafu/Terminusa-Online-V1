@@ -11,7 +11,6 @@ import secrets
 from datetime import datetime
 import smtplib
 from email.mime.text import MIMEText
-from PIL import Image, ImageDraw
 
 # Configure logging
 logging.basicConfig(
