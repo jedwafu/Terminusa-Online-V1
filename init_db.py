@@ -3,7 +3,6 @@ import os
 from dotenv import load_dotenv
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
-import subprocess
 from rich.console import Console
 from rich.panel import Panel
 from app import app
@@ -59,9 +58,18 @@ def init_database():
         conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         cur = conn.cursor()
 
-        # Drop existing database if it exists
-        console.print("[yellow]Dropping existing database if it exists...[/yellow]")
-        cur.execute(f"DROP DATABASE IF EXISTS {db_name}")
+        # Check if database exists
+        cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (db_name,))
+        exists = cur.fetchone()
+
+        if exists:
+            console.print(f"[yellow]Database {db_name} already exists. Attempting to drop...[/yellow]")
+            try:
+                cur.execute(f"DROP DATABASE {db_name}")
+                console.print(f"[green]Database {db_name} dropped successfully[/green]")
+            except psycopg2.errors.InsufficientPrivilege:
+                console.print(f"[red]Insufficient privileges to drop database {db_name}[/red]")
+                return False
 
         # Create fresh database
         console.print(f"[yellow]Creating database {db_name}...[/yellow]")
@@ -81,13 +89,10 @@ def init_database():
             db.create_all()
             
             # Verify tables were created
-            engine = db.get_engine()
-            inspector = db.inspect(engine)
-            tables = inspector.get_table_names()
+            tables = db.engine.table_names()
             console.print(f"[green]Created tables: {', '.join(tables)}[/green]")
 
             # Create extensions
-            console.print("[yellow]Creating PostgreSQL extensions...[/yellow]")
             db.session.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
             db.session.execute('CREATE EXTENSION IF NOT EXISTS "pgcrypto"')
             db.session.commit()
