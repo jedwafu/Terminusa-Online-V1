@@ -5,35 +5,170 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Play - Terminusa Online</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <h1>Terminusa Online</h1>
-        <div id="gameContent">
-            <p>Please download and use the Terminusa Client to play the game.</p>
-            <div class="download-section">
-                <h2>Download Client</h2>
-                <div class="download-buttons">
-                    <a href="/static/downloads/terminusa-client-windows.zip" class="btn download-btn">Windows Client</a>
-                    <a href="/static/downloads/terminusa-client-linux.tar.gz" class="btn download-btn">Linux Client</a>
-                    <a href="/static/downloads/terminusa-client-mac.dmg" class="btn download-btn">Mac Client</a>
+    <nav class="navbar">
+        <div class="nav-content">
+            <a href="{{ url_for('index') }}" class="logo">Terminusa</a>
+            <div class="nav-links">
+                <a href="{{ url_for('index') }}" class="btn">Home</a>
+                <a href="{{ url_for('marketplace_page') }}" class="btn">Marketplace</a>
+                <a href="{{ url_for('leaderboard_page') }}" class="btn">Leaderboard</a>
+                <a href="{{ url_for('login_page') }}" class="btn auth-dependent">Login</a>
+                <a href="{{ url_for('register_page') }}" class="btn auth-dependent">Register</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="play-section">
+        <div class="container">
+            <div class="play-content">
+                <h1 class="glow-text">Enter the Gate</h1>
+                
+                <div class="client-section">
+                    <div class="client-info">
+                        <h2>Command Line Interface</h2>
+                        <p>Experience the true power of a hunter through our command-line interface.</p>
+                        <div class="terminal-preview">
+                            <div class="terminal-header">
+                                <span class="terminal-dot"></span>
+                                <span class="terminal-dot"></span>
+                                <span class="terminal-dot"></span>
+                            </div>
+                            <div class="terminal-body">
+                                <pre class="terminal-text">
+╔════════════════════════════════════════════════════════╗
+║                   Terminusa Online                     ║
+║                     The Genesis                        ║
+║                                                        ║
+║  Type 'help' for commands, 'quit' or Ctrl+D to exit    ║
+╚════════════════════════════════════════════════════════╝
+
+[bold blue]terminusa>[/bold blue] login
+Username: _
+                                </pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="download-section">
+                        <h2>Download Client</h2>
+                        <div class="download-options">
+                            <div class="download-card">
+                                <img src="{{ url_for('static', filename='images/windows-icon.png') }}" alt="Windows">
+                                <h3>Windows</h3>
+                                <a href="/static/downloads/terminusa-client-windows.zip" class="btn download-btn">Download for Windows</a>
+                                <span class="version">v1.0.0</span>
+                            </div>
+                            <div class="download-card">
+                                <img src="{{ url_for('static', filename='images/linux-icon.png') }}" alt="Linux">
+                                <h3>Linux</h3>
+                                <a href="/static/downloads/terminusa-client-linux.tar.gz" class="btn download-btn">Download for Linux</a>
+                                <span class="version">v1.0.0</span>
+                            </div>
+                            <div class="download-card">
+                                <img src="{{ url_for('static', filename='images/mac-icon.png') }}" alt="macOS">
+                                <h3>macOS</h3>
+                                <a href="/static/downloads/terminusa-client-mac.dmg" class="btn download-btn">Download for macOS</a>
+                                <span class="version">v1.0.0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="installation-guide">
+                        <h2>Installation Guide</h2>
+                        <div class="guide-tabs">
+                            <button class="tab-btn active" data-os="windows">Windows</button>
+                            <button class="tab-btn" data-os="linux">Linux</button>
+                            <button class="tab-btn" data-os="mac">macOS</button>
+                        </div>
+                        <div class="guide-content">
+                            <div class="guide-tab active" data-os="windows">
+                                <ol>
+                                    <li>Download the Windows client</li>
+                                    <li>Extract the ZIP file</li>
+                                    <li>Run <code>terminusa.exe</code></li>
+                                    <li>Login with your account</li>
+                                </ol>
+                            </div>
+                            <div class="guide-tab" data-os="linux">
+                                <ol>
+                                    <li>Download the Linux client</li>
+                                    <li>Extract the archive: <code>tar -xzf terminusa-client-linux.tar.gz</code></li>
+                                    <li>Make executable: <code>chmod +x terminusa</code></li>
+                                    <li>Run: <code>./terminusa</code></li>
+                                </ol>
+                            </div>
+                            <div class="guide-tab" data-os="mac">
+                                <ol>
+                                    <li>Download the macOS client</li>
+                                    <li>Open the DMG file</li>
+                                    <li>Drag Terminusa to Applications</li>
+                                    <li>Run Terminusa from Applications</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="instructions">
-                <h2>Getting Started</h2>
-                <ol>
-                    <li>Download the client for your operating system</li>
-                    <li>Extract the files (if needed)</li>
-                    <li>Run the client application</li>
-                    <li>Log in with your account</li>
-                    <li>Start your adventure!</li>
-                </ol>
-            </div>
         </div>
-        <div class="footer">
-            <a href="{{ url_for('index') }}" class="btn">Back to Home</a>
-        </div>
-    </div>
+    </section>
+
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab switching
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const guideTabs = document.querySelectorAll('.guide-tab');
+
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const os = btn.dataset.os;
+                    
+                    // Update buttons
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    // Update tabs
+                    guideTabs.forEach(tab => {
+                        if (tab.dataset.os === os) {
+                            tab.classList.add('active');
+                        } else {
+                            tab.classList.remove('active');
+                        }
+                    });
+                });
+            });
+
+            // Terminal animation
+            const terminalText = document.querySelector('.terminal-text');
+            let currentText = terminalText.innerText;
+            terminalText.innerText = '';
+            
+            let i = 0;
+            const typeWriter = () => {
+                if (i < currentText.length) {
+                    terminalText.innerText += currentText.charAt(i);
+                    i++;
+                    setTimeout(typeWriter, 50);
+                }
+            };
+            
+            typeWriter();
+
+            // Download buttons authentication check
+            const downloadBtns = document.querySelectorAll('.download-btn');
+            downloadBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    if (!localStorage.getItem('token')) {
+                        e.preventDefault();
+                        alert('Please log in to download the client.');
+                        window.location.href = '/login';
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>

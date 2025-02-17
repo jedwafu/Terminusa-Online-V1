@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard - Terminusa Online</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-content">
+            <a href="{{ url_for('index') }}" class="logo">Terminusa</a>
+            <div class="nav-links">
+                <a href="{{ url_for('index') }}" class="btn">Home</a>
+                <a href="{{ url_for('marketplace_page') }}" class="btn">Marketplace</a>
+                <a href="{{ url_for('leaderboard_page') }}" class="btn">Leaderboard</a>
+                <a href="{{ url_for('login_page') }}" class="btn auth-dependent">Login</a>
+                <a href="{{ url_for('register_page') }}" class="btn auth-dependent">Register</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="leaderboard-section">
+        <div class="container">
+            <h1>Hunter Rankings</h1>
+            
+            <div class="leaderboard-filters">
+                <select id="rankFilter" class="filter-select">
+                    <option value="all">All Ranks</option>
+                    <option value="S">S Rank</option>
+                    <option value="A">A Rank</option>
+                    <option value="B">B Rank</option>
+                    <option value="C">C Rank</option>
+                    <option value="D">D Rank</option>
+                    <option value="E">E Rank</option>
+                    <option value="F">F Rank</option>
+                </select>
+                <select id="timeFilter" class="filter-select">
+                    <option value="all">All Time</option>
+                    <option value="weekly">This Week</option>
+                    <option value="monthly">This Month</option>
+                    <option value="season">This Season</option>
+                </select>
+            </div>
+
+            <div class="top-hunters">
+                <div class="top-three">
+                    {% if players|length >= 2 %}
+                    <div class="runner-up left">
+                        <div class="rank">2</div>
+                        <div class="hunter-card">
+                            <img src="{{ url_for('static', filename='images/rank-frame-silver.png') }}" class="rank-frame">
+                            <div class="hunter-info">
+                                <h3>{{ players[1].user.username }}</h3>
+                                <p class="hunter-stats">
+                                    Level {{ players[1].level }} • Rank {{ players[1].rank }}<br>
+                                    Gates Cleared: {{ players[1].gates_cleared }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if players|length >= 1 %}
+                    <div class="champion">
+                        <div class="rank">1</div>
+                        <div class="hunter-card">
+                            <img src="{{ url_for('static', filename='images/rank-frame-gold.png') }}" class="rank-frame">
+                            <div class="hunter-info">
+                                <h3>{{ players[0].user.username }}</h3>
+                                <p class="hunter-stats">
+                                    Level {{ players[0].level }} • Rank {{ players[0].rank }}<br>
+                                    Gates Cleared: {{ players[0].gates_cleared }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if players|length >= 3 %}
+                    <div class="runner-up right">
+                        <div class="rank">3</div>
+                        <div class="hunter-card">
+                            <img src="{{ url_for('static', filename='images/rank-frame-bronze.png') }}" class="rank-frame">
+                            <div class="hunter-info">
+                                <h3>{{ players[2].user.username }}</h3>
+                                <p class="hunter-stats">
+                                    Level {{ players[2].level }} • Rank {{ players[2].rank }}<br>
+                                    Gates Cleared: {{ players[2].gates_cleared }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="leaderboard-table-container">
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Hunter</th>
+                            <th>Level</th>
+                            <th>Rank</th>
+                            <th>Gates Cleared</th>
+                            <th>Title</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in players[3:] %}
+                        <tr>
+                            <td>{{ loop.index + 3 }}</td>
+                            <td>{{ player.user.username }}</td>
+                            <td>{{ player.level }}</td>
+                            <td class="rank-{{ player.rank.lower() }}">{{ player.rank }}</td>
+                            <td>{{ player.gates_cleared }}</td>
+                            <td>{{ player.title }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="leaderboard-pagination">
+                <button id="prevPage" class="btn">Previous</button>
+                <span id="pageInfo">Page 1 of 1</span>
+                <button id="nextPage" class="btn">Next</button>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <h3>Terminusa Online</h3>
+                    <p>Rise as a Hunter</p>
+                </div>
+                <div class="footer-links">
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Contact Us</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Terminusa Online. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/leaderboard.js') }}"></script>
+</body>
+</html>

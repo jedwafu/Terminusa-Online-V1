@@ -5,23 +5,126 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Terminusa Online</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <h1>Login</h1>
-        <form id="loginForm" class="auth-form">
-            <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required>
+    <nav class="navbar">
+        <div class="nav-content">
+            <a href="{{ url_for('index') }}" class="logo">Terminusa</a>
+            <div class="nav-links">
+                <a href="{{ url_for('index') }}" class="btn">Home</a>
+                <a href="{{ url_for('marketplace_page') }}" class="btn">Marketplace</a>
+                <a href="{{ url_for('leaderboard_page') }}" class="btn">Leaderboard</a>
             </div>
-            <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
+        </div>
+    </nav>
+
+    <section class="auth-section">
+        <div class="container">
+            <div class="auth-container">
+                <div class="auth-box">
+                    <h1 class="glow-text">Login</h1>
+                    <form id="loginForm" class="auth-form">
+                        <div class="form-group">
+                            <label for="username">Username</label>
+                            <input type="text" id="username" name="username" required 
+                                   class="glow-input" autocomplete="username">
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" id="password" name="password" required 
+                                   class="glow-input" autocomplete="current-password">
+                        </div>
+                        <button type="submit" class="btn login-btn">Enter the Gate</button>
+                    </form>
+                    <div class="auth-links">
+                        <p>Don't have an account? <a href="{{ url_for('register_page') }}" class="glow-link">Register as a Hunter</a></p>
+                        <a href="#" class="forgot-password glow-link">Forgot Password?</a>
+                    </div>
+                </div>
+                <div class="auth-decoration">
+                    <div class="magic-circle"></div>
+                    <div class="floating-crystals">
+                        <div class="crystal"></div>
+                        <div class="crystal"></div>
+                        <div class="crystal"></div>
+                    </div>
+                </div>
             </div>
-            <button type="submit" class="btn">Login</button>
-        </form>
-        <p>Don't have an account? <a href="{{ url_for('register_page') }}">Register here</a></p>
+        </div>
+    </section>
+
+    <div id="notification" class="notification hidden">
+        <span class="notification-message"></span>
+        <button class="notification-close">&times;</button>
     </div>
+
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('loginForm');
+            const notification = document.getElementById('notification');
+            const notificationMessage = document.querySelector('.notification-message');
+            const notificationClose = document.querySelector('.notification-close');
+
+            loginForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+
+                try {
+                    const response = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ username, password })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        localStorage.setItem('token', data.token);
+                        showNotification('Login successful! Entering the gate...', 'success');
+                        setTimeout(() => {
+                            window.location.href = '/play';
+                        }, 1500);
+                    } else {
+                        showNotification(data.message || 'Login failed', 'error');
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    showNotification('Login failed. Please try again.', 'error');
+                }
+            });
+
+            function showNotification(message, type) {
+                notificationMessage.textContent = message;
+                notification.className = `notification ${type}`;
+                notification.classList.remove('hidden');
+                setTimeout(() => {
+                    notification.classList.add('hidden');
+                }, 3000);
+            }
+
+            notificationClose.addEventListener('click', () => {
+                notification.classList.add('hidden');
+            });
+
+            // Add particle effects
+            const magicCircle = document.querySelector('.magic-circle');
+            const crystals = document.querySelectorAll('.crystal');
+
+            function animateParticles() {
+                crystals.forEach((crystal, index) => {
+                    const delay = index * 0.2;
+                    crystal.style.animation = `float 3s ${delay}s infinite`;
+                });
+            }
+
+            animateParticles();
+        });
+    </script>
 </body>
 </html>
