@@ -303,7 +303,7 @@ start_service() {
                 --access-logfile logs/gunicorn-access.log \
                 --error-logfile logs/gunicorn-error.log \
                 --pid logs/gunicorn.pid \
-                --worker-class eventlet \
+                --worker-class gevent \
                 --log-level debug
             
             sleep 2  # Give it time to start
