@@ -332,17 +332,8 @@ start_service() {
             # Start with proper environment
             source venv/bin/activate
             export PYTHONPATH=$PWD
-            gunicorn "main:app" \
-                --bind "0.0.0.0:5000" \
-                --worker-class "gevent" \
-                --workers "1" \
-                --timeout "120" \
-                --daemon \
-                --capture-output \
-                --access-logfile "logs/game-server-access.log" \
-                --error-logfile "logs/game-server.log" \
-                --pid "logs/game-server.pid" \
-                --log-level "debug"
+            python main.py > logs/game-server.log 2>&1 &
+            echo $! > logs/game-server.pid
             
             sleep 2  # Give it time to start
             
