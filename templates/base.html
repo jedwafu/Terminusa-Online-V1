@@ -26,7 +26,7 @@
                     <button onclick="logout()" class="btn btn-secondary">Logout</button>
                 {% else %}
                     <a href="{{ url_for('login_page') }}" class="btn btn-secondary">Login</a>
-                    <a href="{{ url_for('register_page') }}" class="btn btn-primary">Register</a>
+                    <a href="{{ url_for('register') }}" class="btn btn-primary">Register</a>
                 {% endif %}
             </div>
         </div>

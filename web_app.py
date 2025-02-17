@@ -99,7 +99,7 @@ def index():
             }
         ]
 
-        return render_template('index.html', 
+        return render_template('index_fixed.html', 
                              title='Home',
                              top_players=top_players,
                              news=news,
@@ -118,7 +118,7 @@ def play_page():
     return redirect('https://play.terminusa.online')
 
 @app.route('/register')
-def register_page():
+def register():
     """Registration page"""
     try:
         return render_template('register.html', 
