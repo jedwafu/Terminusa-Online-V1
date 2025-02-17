@@ -3,8 +3,7 @@
 {% block head %}
 <style>
     .hero {
-        position: relative;
-        height: calc(100vh - var(--header-height));
+        height: calc(100vh - 70px);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -18,23 +17,19 @@
 
     .hero-content {
         max-width: 800px;
-        padding: 40px;
-        z-index: 1;
+        padding: 20px;
     }
 
     .hero-title {
         font-size: 48px;
-        font-weight: 700;
+        font-weight: bold;
         margin-bottom: 20px;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        color: var(--text-color);
     }
 
     .hero-subtitle {
         font-size: 24px;
         margin-bottom: 30px;
-        color: rgba(255,255,255,0.9);
+        color: #CCC;
     }
 
     .hero-buttons {
@@ -43,61 +38,48 @@
         justify-content: center;
     }
 
-    .features {
-        padding: 80px 0;
-        background: var(--card-background);
+    .section {
+        padding: 60px 0;
     }
 
     .section-title {
-        font-size: 36px;
+        font-size: 32px;
         text-align: center;
         margin-bottom: 40px;
-        text-transform: uppercase;
-        letter-spacing: 2px;
         color: var(--primary-color);
+    }
+
+    .features {
+        background-color: var(--card-background);
     }
 
     .features-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 30px;
-        margin-top: 40px;
     }
 
     .feature-card {
-        background: rgba(0,0,0,0.5);
-        padding: 30px;
         text-align: center;
+        padding: 30px;
+        background-color: var(--background-color);
         border: 1px solid var(--border-color);
         border-radius: 8px;
-        transition: transform 0.3s ease;
-    }
-
-    .feature-card:hover {
-        transform: translateY(-10px);
     }
 
     .feature-icon {
-        font-size: 48px;
+        font-size: 36px;
         margin-bottom: 20px;
-        color: var(--primary-color);
     }
 
     .feature-title {
-        font-size: 24px;
+        font-size: 20px;
         margin-bottom: 15px;
         color: var(--primary-color);
     }
 
     .feature-description {
-        font-size: 16px;
-        color: rgba(255,255,255,0.8);
-        line-height: 1.6;
-    }
-
-    .news-section {
-        padding: 80px 0;
-        background: var(--background-color);
+        color: #CCC;
     }
 
     .news-grid {
@@ -107,10 +89,10 @@
     }
 
     .news-card {
-        background: var(--card-background);
+        background-color: var(--card-background);
+        border: 1px solid var(--border-color);
         border-radius: 8px;
         overflow: hidden;
-        border: 1px solid var(--border-color);
     }
 
     .news-image {
@@ -131,59 +113,47 @@
 
     .news-title {
         font-size: 20px;
-        margin-bottom: 15px;
-        color: var(--text-color);
+        margin-bottom: 10px;
     }
 
     .news-excerpt {
-        color: rgba(255,255,255,0.8);
-        font-size: 16px;
-        line-height: 1.6;
+        color: #CCC;
     }
 
-    .leaderboard-preview {
-        padding: 80px 0;
-        background: var(--card-background);
+    .leaderboard {
+        background-color: var(--card-background);
     }
 
     .top-players {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 30px;
-        margin-top: 40px;
     }
 
     .player-card {
-        background: rgba(0,0,0,0.5);
-        padding: 30px;
-        text-align: center;
+        background-color: var(--background-color);
         border: 1px solid var(--border-color);
         border-radius: 8px;
+        padding: 20px;
+        text-align: center;
     }
 
     .player-rank {
-        font-size: 36px;
+        font-size: 32px;
         color: var(--primary-color);
-        margin-bottom: 15px;
+        margin-bottom: 10px;
     }
 
     .player-name {
         font-size: 20px;
         margin-bottom: 10px;
-        color: var(--text-color);
     }
 
     .player-stats {
-        color: rgba(255,255,255,0.8);
-        font-size: 16px;
+        color: #CCC;
     }
 
-    @media (max-width: 1024px) {
-        .features-grid,
-        .news-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-
+    @media (max-width: 768px) {
         .hero-title {
             font-size: 36px;
         }
@@ -191,30 +161,24 @@
         .hero-subtitle {
             font-size: 20px;
         }
-    }
 
-    @media (max-width: 768px) {
+        .hero-buttons {
+            flex-direction: column;
+        }
+
         .features-grid,
         .news-grid,
         .top-players {
             grid-template-columns: 1fr;
         }
 
-        .hero-buttons {
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .hero-title {
-            font-size: 32px;
-        }
-
-        .hero-subtitle {
-            font-size: 18px;
+        .section {
+            padding: 40px 0;
         }
 
         .section-title {
             font-size: 28px;
+            margin-bottom: 30px;
         }
     }
 </style>
@@ -236,7 +200,7 @@
     </div>
 </section>
 
-<section class="features">
+<section class="section features">
     <div class="container">
         <h2 class="section-title">Features</h2>
         <div class="features-grid">
@@ -259,7 +223,7 @@
     </div>
 </section>
 
-<section class="news-section">
+<section class="section">
     <div class="container">
         <h2 class="section-title">Latest News</h2>
         <div class="news-grid">
@@ -277,7 +241,7 @@
     </div>
 </section>
 
-<section class="leaderboard-preview">
+<section class="section leaderboard">
     <div class="container">
         <h2 class="section-title">Top Hunters</h2>
         <div class="top-players">

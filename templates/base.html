@@ -4,47 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }} - Terminusa Online</title>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     {% block head %}{% endblock %}
 </head>
 <body>
-    <div class="cursor-glow"></div>
-    
     <header class="header">
-        <div class="header-content container">
-            <a href="https://terminusa.online" class="logo">
-                <span class="logo-text">Terminusa</span>
-                <span class="logo-highlight">Online</span>
-            </a>
+        <div class="container header-content">
+            <a href="https://terminusa.online" class="logo">Terminusa Online</a>
             <nav class="nav-menu">
-                <a href="https://terminusa.online" class="nav-link" data-text="Home">Home</a>
-                <a href="{{ url_for('marketplace_page') }}" class="nav-link" data-text="Marketplace">Marketplace</a>
-                <a href="{{ url_for('leaderboard_page') }}" class="nav-link" data-text="Leaderboard">Leaderboard</a>
+                <a href="https://terminusa.online" class="nav-link">Home</a>
+                <a href="{{ url_for('marketplace_page') }}" class="nav-link">Marketplace</a>
+                <a href="{{ url_for('leaderboard_page') }}" class="nav-link">Leaderboard</a>
                 {% if is_authenticated %}
-                    <a href="https://play.terminusa.online" class="nav-link" data-text="Play Now">Play Now</a>
+                    <a href="https://play.terminusa.online" class="nav-link">Play Now</a>
                 {% endif %}
             </nav>
             <div class="auth-buttons">
                 {% if is_authenticated %}
-                    <a href="https://play.terminusa.online" class="btn btn-primary">
-                        <span class="btn-text">Play Now</span>
-                        <span class="btn-glow"></span>
-                    </a>
-                    <button onclick="logout()" class="btn btn-secondary">
-                        <span class="btn-text">Logout</span>
-                        <span class="btn-glow"></span>
-                    </button>
+                    <a href="https://play.terminusa.online" class="btn btn-primary">Play Now</a>
+                    <button onclick="logout()" class="btn btn-secondary">Logout</button>
                 {% else %}
-                    <a href="{{ url_for('login_page') }}" class="btn btn-secondary">
-                        <span class="btn-text">Login</span>
-                        <span class="btn-glow"></span>
-                    </a>
-                    <a href="{{ url_for('register_page') }}" class="btn btn-primary">
-                        <span class="btn-text">Register</span>
-                        <span class="btn-glow"></span>
-                    </a>
+                    <a href="{{ url_for('login_page') }}" class="btn btn-secondary">Login</a>
+                    <a href="{{ url_for('register_page') }}" class="btn btn-primary">Register</a>
                 {% endif %}
             </div>
         </div>
@@ -55,12 +37,12 @@
     </main>
 
     <footer class="footer">
-        <div class="footer-content container">
+        <div class="container footer-content">
             <div class="footer-links">
-                <a href="#" class="footer-link" data-text="About">About</a>
-                <a href="#" class="footer-link" data-text="Terms">Terms</a>
-                <a href="#" class="footer-link" data-text="Privacy">Privacy</a>
-                <a href="#" class="footer-link" data-text="Support">Support</a>
+                <a href="#" class="footer-link">About</a>
+                <a href="#" class="footer-link">Terms</a>
+                <a href="#" class="footer-link">Privacy</a>
+                <a href="#" class="footer-link">Support</a>
             </div>
             <div class="copyright">
                 © 2025 Terminusa Online. All rights reserved.
@@ -69,86 +51,17 @@
     </footer>
 
     <script>
-        // Cursor glow effect
-        document.addEventListener('mousemove', (e) => {
-            const cursor = document.querySelector('.cursor-glow');
-            cursor.style.left = e.clientX + 'px';
-            cursor.style.top = e.clientY + 'px';
-        });
-
-        // GSAP Animations
-        gsap.from('.logo', {
-            duration: 1,
-            y: -50,
-            opacity: 0,
-            ease: 'power3.out'
-        });
-
-        gsap.from('.nav-link', {
-            duration: 0.8,
-            y: -30,
-            opacity: 0,
-            stagger: 0.1,
-            ease: 'power3.out'
-        });
-
-        gsap.from('.auth-buttons', {
-            duration: 1,
-            x: 50,
-            opacity: 0,
-            ease: 'power3.out'
-        });
-
-        // Hover effects for nav links
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('mouseenter', () => {
-                gsap.to(link, {
-                    duration: 0.3,
-                    scale: 1.1,
-                    color: '#7B68EE',
-                    ease: 'power2.out'
-                });
-            });
-
-            link.addEventListener('mouseleave', () => {
-                gsap.to(link, {
-                    duration: 0.3,
-                    scale: 1,
-                    color: '#FFFFFF',
-                    ease: 'power2.out'
-                });
-            });
-        });
-
-        // Toast notification system
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
-            toast.className = `toast toast-${type} fade-in`;
-            toast.innerHTML = `
-                <span class="toast-text">${message}</span>
-                <span class="toast-glow"></span>
-            `;
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
             document.body.appendChild(toast);
 
-            gsap.from(toast, {
-                duration: 0.5,
-                x: 100,
-                opacity: 0,
-                ease: 'power3.out'
-            });
-
             setTimeout(() => {
-                gsap.to(toast, {
-                    duration: 0.5,
-                    x: 100,
-                    opacity: 0,
-                    ease: 'power3.in',
-                    onComplete: () => toast.remove()
-                });
+                toast.remove();
             }, 3000);
         }
 
-        // Authentication functions
         function logout() {
             localStorage.removeItem('token');
             showToast('Logged out successfully');
@@ -157,21 +70,11 @@
             }, 1000);
         }
 
-        // Check authentication status on page load
         document.addEventListener('DOMContentLoaded', function() {
             const token = localStorage.getItem('token');
             if (token) {
                 document.body.classList.add('authenticated');
             }
-
-            // Animate elements on page load
-            gsap.from('.main-content > *', {
-                duration: 1,
-                y: 30,
-                opacity: 0,
-                stagger: 0.2,
-                ease: 'power3.out'
-            });
         });
     </script>
 
