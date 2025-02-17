@@ -1,10 +1,10 @@
 :root {
-    --primary-color: #FFB800;
-    --secondary-color: #1E1E1E;
-    --text-color: #FFFFFF;
-    --background-color: #000000;
+    --matrix-green: #00FF41;
+    --matrix-dark-green: #003B00;
+    --matrix-black: #0D0208;
+    --matrix-glow: 0 0 10px #00FF41, 0 0 20px #00FF41, 0 0 30px #00FF41;
     --header-height: 80px;
-    --gold-gradient: linear-gradient(45deg, #FFB800, #FFC933);
+    --background-overlay: linear-gradient(180deg, rgba(0,59,0,0.3) 0%, rgba(13,2,8,0.9) 100%);
 }
 
 * {
@@ -14,9 +14,9 @@
 }
 
 body {
-    font-family: 'Inter', sans-serif;
-    background-color: var(--background-color);
-    color: var(--text-color);
+    font-family: 'Share Tech Mono', monospace;
+    background-color: var(--matrix-black);
+    color: var(--matrix-green);
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
 }
@@ -25,6 +25,7 @@ body {
     max-width: 1440px;
     margin: 0 auto;
     padding: 0 32px;
+    position: relative;
 }
 
 /* Header */
@@ -34,10 +35,10 @@ body {
     left: 0;
     right: 0;
     height: var(--header-height);
-    background: rgba(0, 0, 0, 0.95);
+    background: rgba(13, 2, 8, 0.95);
+    border-bottom: 1px solid var(--matrix-green);
     backdrop-filter: blur(10px);
     z-index: 100;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .header-content {
@@ -49,11 +50,12 @@ body {
 
 .logo {
     font-size: 28px;
-    font-weight: 800;
-    color: var(--text-color);
+    font-weight: 700;
+    color: var(--matrix-green);
     text-decoration: none;
-    letter-spacing: 1px;
     text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: var(--matrix-glow);
 }
 
 .nav-menu {
@@ -63,34 +65,39 @@ body {
 }
 
 .nav-link {
-    color: var(--text-color);
+    color: var(--matrix-green);
     text-decoration: none;
     font-size: 16px;
-    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
     transition: all 0.3s ease;
-    padding: 8px 0;
     position: relative;
+    padding: 8px 0;
+}
+
+.nav-link::before {
+    content: '[';
+    position: absolute;
+    left: -15px;
+    opacity: 0;
+    transition: all 0.3s ease;
 }
 
 .nav-link::after {
-    content: '';
+    content: ']';
     position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 0;
-    height: 2px;
-    background: var(--gold-gradient);
-    transition: width 0.3s ease;
+    right: -15px;
+    opacity: 0;
+    transition: all 0.3s ease;
 }
 
 .nav-link:hover {
-    color: var(--primary-color);
+    text-shadow: var(--matrix-glow);
 }
 
+.nav-link:hover::before,
 .nav-link:hover::after {
-    width: 100%;
+    opacity: 1;
 }
 
 .auth-buttons {
@@ -104,26 +111,21 @@ body {
     justify-content: center;
     height: 48px;
     padding: 0 32px;
-    border-radius: 4px;
+    font-family: 'Share Tech Mono', monospace;
     font-size: 16px;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    cursor: pointer;
-    border: none;
-    min-width: 140px;
     text-transform: uppercase;
     letter-spacing: 1px;
-}
-
-.btn-primary {
-    background: var(--gold-gradient);
-    color: var(--background-color);
+    text-decoration: none;
+    cursor: pointer;
+    border: 2px solid var(--matrix-green);
+    background: transparent;
+    color: var(--matrix-green);
     position: relative;
     overflow: hidden;
+    transition: all 0.3s ease;
 }
 
-.btn-primary::before {
+.btn::before {
     content: '';
     position: absolute;
     top: 0;
@@ -133,65 +135,81 @@ body {
     background: linear-gradient(
         120deg,
         transparent,
-        rgba(255, 255, 255, 0.3),
+        rgba(0, 255, 65, 0.2),
         transparent
     );
     transition: 0.5s;
 }
 
-.btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(255, 184, 0, 0.4);
+.btn:hover {
+    text-shadow: var(--matrix-glow);
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
 }
 
-.btn-primary:hover::before {
+.btn:hover::before {
     left: 100%;
 }
 
-.btn-secondary {
-    background-color: transparent;
-    color: var(--primary-color);
-    border: 2px solid var(--primary-color);
-    position: relative;
-    overflow: hidden;
+.btn-primary {
+    background: var(--matrix-dark-green);
 }
 
-.btn-secondary:hover {
-    background-color: rgba(255, 184, 0, 0.1);
-    transform: translateY(-2px);
+.btn-secondary {
+    background: transparent;
 }
 
 /* Main Content */
 .main-content {
     padding-top: var(--header-height);
+    min-height: calc(100vh - var(--header-height));
 }
 
 /* Section Styles */
 .section {
-    padding: 100px 0;
+    padding: 80px 0;
     position: relative;
 }
 
 .section-title {
-    font-size: 40px;
-    font-weight: 800;
-    margin-bottom: 60px;
-    text-align: center;
+    font-size: 36px;
     text-transform: uppercase;
     letter-spacing: 2px;
-    color: var(--primary-color);
+    text-align: center;
+    margin-bottom: 60px;
+    color: var(--matrix-green);
+    text-shadow: var(--matrix-glow);
     position: relative;
 }
 
+.section-title::before,
 .section-title::after {
     content: '';
     position: absolute;
-    bottom: -16px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80px;
-    height: 3px;
-    background: var(--gold-gradient);
+    top: 50%;
+    width: 100px;
+    height: 1px;
+    background: var(--matrix-green);
+    box-shadow: var(--matrix-glow);
+}
+
+.section-title::before {
+    right: calc(50% + 120px);
+}
+
+.section-title::after {
+    left: calc(50% + 120px);
+}
+
+/* Card Styles */
+.card {
+    background: rgba(0, 59, 0, 0.2);
+    border: 1px solid var(--matrix-green);
+    padding: 24px;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
 }
 
 /* Grid Layouts */
@@ -206,9 +224,9 @@ body {
 
 /* Footer */
 .footer {
-    background-color: var(--secondary-color);
-    padding: 60px 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--matrix-black);
+    border-top: 1px solid var(--matrix-green);
+    padding: 40px 0;
 }
 
 .footer-content {
@@ -223,60 +241,40 @@ body {
 }
 
 .footer-link {
-    color: var(--text-color);
+    color: var(--matrix-green);
     text-decoration: none;
     font-size: 14px;
-    font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 1px;
-    transition: color 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 .footer-link:hover {
-    color: var(--primary-color);
+    text-shadow: var(--matrix-glow);
 }
 
 .copyright {
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--matrix-green);
+    opacity: 0.7;
     font-size: 14px;
-    letter-spacing: 0.5px;
 }
 
-/* Toast Notifications */
-.toast {
+/* Matrix Rain Effect */
+.matrix-overlay {
     position: fixed;
-    bottom: 24px;
-    right: 24px;
-    padding: 16px 24px;
-    background: rgba(0, 0, 0, 0.9);
-    border-left: 4px solid var(--primary-color);
-    color: var(--text-color);
-    border-radius: 4px;
-    font-size: 14px;
-    font-weight: 500;
-    z-index: 1000;
-    animation: slideIn 0.3s ease;
-}
-
-@keyframes slideIn {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0.1;
 }
 
 /* Responsive Design */
 @media (max-width: 1024px) {
     .grid-3 {
         grid-template-columns: repeat(2, 1fr);
-    }
-
-    .section-title {
-        font-size: 32px;
     }
 }
 
@@ -313,27 +311,23 @@ body {
         grid-template-columns: 1fr;
     }
 
-    .section {
-        padding: 60px 0;
-    }
-
-    .section-title {
-        font-size: 28px;
-    }
-
-    .footer-content {
-        flex-direction: column;
-        gap: 24px;
-        text-align: center;
-    }
-
-    .footer-links {
-        flex-direction: column;
-        gap: 16px;
+    .section-title::before,
+    .section-title::after {
+        display: none;
     }
 }
 
 /* Animations */
+@keyframes flicker {
+    0% { opacity: 1; }
+    50% { opacity: 0.8; }
+    100% { opacity: 1; }
+}
+
+.flicker {
+    animation: flicker 2s infinite;
+}
+
 @keyframes fadeIn {
     from {
         opacity: 0;

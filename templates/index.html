@@ -1,98 +1,120 @@
 {% extends "base.html" %}
 
 {% block head %}
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
     .hero {
-        background-image: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)),
-                          url('https://images.unsplash.com/photo-1624559588776-7a60e5c58e4b');
-        background-position: center 30%;
-    }
-
-    .features {
-        background-color: var(--secondary-color);
         position: relative;
+        height: calc(100vh - var(--header-height));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.9)),
+                    url('https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5');
+        background-size: cover;
+        background-position: center;
         overflow: hidden;
     }
 
-    .features::before {
+    .hero::before {
         content: '';
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        background-image: linear-gradient(rgba(0,0,0,0.9), rgba(0,0,0,0.7)),
-                         url('https://images.unsplash.com/photo-1626126525134-fbbc07afb32c');
-        background-size: cover;
-        background-position: center;
-        z-index: 0;
+        background: var(--background-overlay);
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 1;
+        max-width: 800px;
+        padding: 0 20px;
+    }
+
+    .hero-title {
+        font-size: 64px;
+        font-weight: 700;
+        margin-bottom: 24px;
+        text-transform: uppercase;
+        letter-spacing: 4px;
+        color: var(--matrix-green);
+        text-shadow: var(--matrix-glow);
+        animation: flicker 2s infinite;
+    }
+
+    .hero-subtitle {
+        font-size: 24px;
+        margin-bottom: 40px;
+        color: var(--matrix-green);
+        opacity: 0.8;
+    }
+
+    .hero-buttons {
+        display: flex;
+        gap: 24px;
+        justify-content: center;
+    }
+
+    .features {
+        background-color: rgba(0, 59, 0, 0.1);
+        position: relative;
     }
 
     .feature-card {
-        background: rgba(0, 0, 0, 0.7);
+        background: rgba(13, 2, 8, 0.8);
+        border: 1px solid var(--matrix-green);
         padding: 40px;
         text-align: center;
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        position: relative;
-        z-index: 1;
-        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 0 30px rgba(0, 255, 65, 0.2);
     }
 
     .feature-icon {
-        font-size: 40px;
+        font-size: 48px;
         margin-bottom: 24px;
-        position: relative;
-    }
-
-    .feature-icon::after {
-        content: '';
-        position: absolute;
-        width: 60px;
-        height: 60px;
-        background: var(--primary-color);
-        border-radius: 50%;
-        opacity: 0.1;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+        text-shadow: var(--matrix-glow);
     }
 
     .feature-title {
         font-size: 24px;
-        font-weight: 700;
         margin-bottom: 16px;
-        color: var(--primary-color);
+        color: var(--matrix-green);
+        text-transform: uppercase;
+        letter-spacing: 2px;
     }
 
     .feature-description {
-        color: rgba(255, 255, 255, 0.8);
-        font-size: 16px;
-        line-height: 1.6;
+        color: var(--matrix-green);
+        opacity: 0.8;
     }
 
     .news-section {
-        background-color: var(--background-color);
-        position: relative;
+        background-color: var(--matrix-black);
     }
 
     .news-card {
-        background: var(--secondary-color);
-        border-radius: 8px;
+        background: rgba(0, 59, 0, 0.2);
+        border: 1px solid var(--matrix-green);
         overflow: hidden;
-        position: relative;
+        transition: all 0.3s ease;
+    }
+
+    .news-card:hover {
+        box-shadow: 0 0 30px rgba(0, 255, 65, 0.2);
     }
 
     .news-image {
         width: 100%;
-        height: 240px;
+        height: 200px;
         object-fit: cover;
-        transition: transform 0.3s ease;
-    }
-
-    .news-card:hover .news-image {
-        transform: scale(1.05);
+        border-bottom: 1px solid var(--matrix-green);
     }
 
     .news-content {
@@ -101,93 +123,105 @@
 
     .news-date {
         font-size: 14px;
-        color: var(--primary-color);
-        margin-bottom: 8px;
-        font-weight: 500;
+        color: var(--matrix-green);
+        margin-bottom: 12px;
+        opacity: 0.8;
     }
 
     .news-title {
         font-size: 20px;
-        font-weight: 700;
         margin-bottom: 12px;
-        line-height: 1.4;
+        color: var(--matrix-green);
+        text-transform: uppercase;
+        letter-spacing: 1px;
     }
 
     .news-excerpt {
-        color: rgba(255, 255, 255, 0.8);
-        font-size: 16px;
-        line-height: 1.6;
+        color: var(--matrix-green);
+        opacity: 0.8;
     }
 
     .leaderboard {
-        background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.6)),
-                    url('https://images.unsplash.com/photo-1624559588776-7a60e5c58e4b');
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
+        background: rgba(0, 59, 0, 0.1);
         position: relative;
     }
 
-    .player-card {
-        background: rgba(0, 0, 0, 0.8);
-        padding: 32px;
-        text-align: center;
-        border-radius: 8px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
+    .leaderboard-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 40px;
+        background: rgba(13, 2, 8, 0.8);
+        border: 1px solid var(--matrix-green);
     }
 
-    .player-rank {
-        font-size: 48px;
-        font-weight: 800;
-        color: var(--primary-color);
-        margin-bottom: 16px;
-        line-height: 1;
-        text-shadow: 0 0 20px rgba(255, 184, 0, 0.5);
+    .leaderboard-table th,
+    .leaderboard-table td {
+        padding: 16px;
+        text-align: left;
+        border-bottom: 1px solid rgba(0, 255, 65, 0.2);
+    }
+
+    .leaderboard-table th {
+        color: var(--matrix-green);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: normal;
+    }
+
+    .leaderboard-table tr:hover {
+        background: rgba(0, 255, 65, 0.1);
+    }
+
+    .rank {
+        color: var(--matrix-green);
+        font-size: 24px;
+        text-shadow: var(--matrix-glow);
     }
 
     .player-name {
-        font-size: 24px;
-        font-weight: 700;
-        margin-bottom: 12px;
+        color: var(--matrix-green);
+        font-weight: bold;
     }
 
-    .player-stats {
-        color: rgba(255, 255, 255, 0.8);
-        font-size: 16px;
-    }
-
-    .hero-buttons {
-        display: flex;
-        gap: 16px;
-        justify-content: center;
+    .stats {
+        color: var(--matrix-green);
+        opacity: 0.8;
     }
 
     @media (max-width: 768px) {
+        .hero-title {
+            font-size: 36px;
+        }
+
+        .hero-subtitle {
+            font-size: 18px;
+        }
+
         .hero-buttons {
             flex-direction: column;
             align-items: center;
         }
 
-        .hero-buttons .btn {
-            width: 100%;
-            max-width: 300px;
+        .leaderboard-table {
+            font-size: 14px;
         }
     }
 </style>
 {% endblock %}
 
 {% block content %}
+<div class="matrix-overlay" id="matrix-rain"></div>
+
 <section class="hero">
     <div class="hero-content">
-        <h1 class="hero-title">Rise as a Hunter</h1>
-        <p class="hero-subtitle">Enter the gates, face powerful monsters, and become legendary</p>
+        <h1 class="hero-title">Enter the Matrix</h1>
+        <p class="hero-subtitle">Join the digital revolution and become a legendary hunter</p>
         <div class="hero-buttons">
             {% if is_authenticated %}
-                <a href="https://play.terminusa.online" class="btn btn-primary">Enter the Gate</a>
+                <a href="https://play.terminusa.online" class="btn btn-primary">Access the System</a>
             {% else %}
-                <a href="{{ url_for('register_page') }}" class="btn btn-primary">Begin Your Journey</a>
-                <a href="{{ url_for('login_page') }}" class="btn btn-secondary">Return to Battle</a>
+                <a href="{{ url_for('register_page') }}" class="btn btn-primary">Initialize</a>
+                <a href="{{ url_for('login_page') }}" class="btn btn-secondary">Return</a>
             {% endif %}
         </div>
     </div>
@@ -195,22 +229,22 @@
 
 <section class="section features">
     <div class="container">
-        <h2 class="section-title">Features</h2>
+        <h2 class="section-title">System Features</h2>
         <div class="grid grid-3">
             <div class="feature-card">
                 <div class="feature-icon">⚔️</div>
-                <h3 class="feature-title">Epic Battles</h3>
-                <p class="feature-description">Face powerful monsters and bosses in intense combat scenarios</p>
+                <h3 class="feature-title">Combat Protocol</h3>
+                <p class="feature-description">Engage in intense digital warfare against powerful system entities</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">🏰</div>
-                <h3 class="feature-title">Guild System</h3>
-                <p class="feature-description">Join forces with other hunters and conquer challenges together</p>
+                <h3 class="feature-title">Neural Network</h3>
+                <p class="feature-description">Connect with other operators in our advanced guild system</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">💎</div>
-                <h3 class="feature-title">Rich Economy</h3>
-                <p class="feature-description">Trade items, equipment, and resources in the marketplace</p>
+                <h3 class="feature-title">Digital Assets</h3>
+                <p class="feature-description">Trade and acquire powerful resources in the marketplace</p>
             </div>
         </div>
     </div>
@@ -218,13 +252,13 @@
 
 <section class="section news-section">
     <div class="container">
-        <h2 class="section-title">Latest News</h2>
+        <h2 class="section-title">System Updates</h2>
         <div class="grid grid-3">
             {% for item in news %}
             <article class="news-card">
-                <img src="https://images.unsplash.com/photo-{{ loop.index }}-1624559588776-7a60e5c58e4b" alt="{{ item.title }}" class="news-image">
+                <img src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5" alt="{{ item.title }}" class="news-image">
                 <div class="news-content">
-                    <div class="news-date">{{ item.date }}</div>
+                    <div class="news-date">[{{ item.date }}]</div>
                     <h3 class="news-title">{{ item.title }}</h3>
                     <p class="news-excerpt">{{ item.content }}</p>
                 </div>
@@ -236,18 +270,74 @@
 
 <section class="section leaderboard">
     <div class="container">
-        <h2 class="section-title">Top Hunters</h2>
-        <div class="grid grid-3">
-            {% for player in top_players %}
-            <div class="player-card">
-                <div class="player-rank">{{ player.rank }}</div>
-                <h3 class="player-name">{{ player.user.username }}</h3>
-                <div class="player-stats">
-                    Level {{ player.level }} • {{ player.gates_cleared }} Gates Cleared
-                </div>
-            </div>
-            {% endfor %}
-        </div>
+        <h2 class="section-title">Top Operators</h2>
+        <table class="leaderboard-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Operator</th>
+                    <th>Level</th>
+                    <th>Gates Cleared</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for player in top_players %}
+                <tr>
+                    <td class="rank">{{ player.rank }}</td>
+                    <td class="player-name">{{ player.user.username }}</td>
+                    <td class="stats">{{ player.level }}</td>
+                    <td class="stats">{{ player.gates_cleared }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </section>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Matrix Rain Effect
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    document.querySelector('.matrix-overlay').appendChild(canvas);
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const matrix = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%";
+    const matrixArray = matrix.split("");
+    const fontSize = 14;
+    const columns = canvas.width / fontSize;
+    const drops = [];
+
+    for (let i = 0; i < columns; i++) {
+        drops[i] = 1;
+    }
+
+    function drawMatrix() {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#00FF41";
+        ctx.font = fontSize + "px monospace";
+
+        for (let i = 0; i < drops.length; i++) {
+            const text = matrixArray[Math.floor(Math.random() * matrixArray.length)];
+            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                drops[i] = 0;
+            }
+            drops[i]++;
+        }
+    }
+
+    setInterval(drawMatrix, 50);
+
+    // Resize handler
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+</script>
 {% endblock %}
