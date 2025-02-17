@@ -4,6 +4,7 @@
     --text-color: #FFFFFF;
     --background-color: #000000;
     --header-height: 80px;
+    --gold-gradient: linear-gradient(45deg, #FFB800, #FFC933);
 }
 
 * {
@@ -47,11 +48,12 @@ body {
 }
 
 .logo {
-    font-size: 24px;
-    font-weight: 700;
+    font-size: 28px;
+    font-weight: 800;
     color: var(--text-color);
     text-decoration: none;
     letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
 .nav-menu {
@@ -64,12 +66,31 @@ body {
     color: var(--text-color);
     text-decoration: none;
     font-size: 16px;
-    font-weight: 500;
-    transition: color 0.3s ease;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    padding: 8px 0;
+    position: relative;
+}
+
+.nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--gold-gradient);
+    transition: width 0.3s ease;
 }
 
 .nav-link:hover {
     color: var(--primary-color);
+}
+
+.nav-link:hover::after {
+    width: 100%;
 }
 
 .auth-buttons {
@@ -91,22 +112,48 @@ body {
     cursor: pointer;
     border: none;
     min-width: 140px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .btn-primary {
-    background-color: var(--primary-color);
+    background: var(--gold-gradient);
     color: var(--background-color);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        120deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    transition: 0.5s;
 }
 
 .btn-primary:hover {
-    background-color: #FFC933;
     transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 184, 0, 0.4);
+}
+
+.btn-primary:hover::before {
+    left: 100%;
 }
 
 .btn-secondary {
     background-color: transparent;
     color: var(--primary-color);
     border: 2px solid var(--primary-color);
+    position: relative;
+    overflow: hidden;
 }
 
 .btn-secondary:hover {
@@ -119,60 +166,32 @@ body {
     padding-top: var(--header-height);
 }
 
-/* Hero Section */
-.hero {
-    position: relative;
-    height: calc(100vh - var(--header-height));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    background-size: cover;
-    background-position: center;
-    overflow: hidden;
-}
-
-.hero::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0.8));
-}
-
-.hero-content {
-    position: relative;
-    z-index: 1;
-    max-width: 800px;
-    padding: 0 20px;
-}
-
-.hero-title {
-    font-size: 64px;
-    font-weight: 800;
-    margin-bottom: 24px;
-    line-height: 1.2;
-    letter-spacing: -1px;
-}
-
-.hero-subtitle {
-    font-size: 24px;
-    margin-bottom: 40px;
-    color: rgba(255, 255, 255, 0.9);
-}
-
 /* Section Styles */
 .section {
     padding: 100px 0;
+    position: relative;
 }
 
 .section-title {
     font-size: 40px;
-    font-weight: 700;
+    font-weight: 800;
     margin-bottom: 60px;
     text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--primary-color);
+    position: relative;
+}
+
+.section-title::after {
+    content: '';
+    position: absolute;
+    bottom: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 3px;
+    background: var(--gold-gradient);
 }
 
 /* Grid Layouts */
@@ -185,22 +204,11 @@ body {
     grid-template-columns: repeat(3, 1fr);
 }
 
-/* Card Styles */
-.card {
-    background: var(--secondary-color);
-    border-radius: 8px;
-    overflow: hidden;
-    transition: transform 0.3s ease;
-}
-
-.card:hover {
-    transform: translateY(-8px);
-}
-
 /* Footer */
 .footer {
     background-color: var(--secondary-color);
     padding: 60px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .footer-content {
@@ -218,6 +226,9 @@ body {
     color: var(--text-color);
     text-decoration: none;
     font-size: 14px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
     transition: color 0.3s ease;
 }
 
@@ -228,6 +239,34 @@ body {
 .copyright {
     color: rgba(255, 255, 255, 0.6);
     font-size: 14px;
+    letter-spacing: 0.5px;
+}
+
+/* Toast Notifications */
+.toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 16px 24px;
+    background: rgba(0, 0, 0, 0.9);
+    border-left: 4px solid var(--primary-color);
+    color: var(--text-color);
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 1000;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
 }
 
 /* Responsive Design */
@@ -236,12 +275,8 @@ body {
         grid-template-columns: repeat(2, 1fr);
     }
 
-    .hero-title {
-        font-size: 48px;
-    }
-
-    .hero-subtitle {
-        font-size: 20px;
+    .section-title {
+        font-size: 32px;
     }
 }
 
@@ -260,11 +295,14 @@ body {
         flex-direction: column;
         gap: 16px;
         margin: 16px 0;
+        width: 100%;
+        align-items: center;
     }
 
     .auth-buttons {
         width: 100%;
         flex-direction: column;
+        gap: 12px;
     }
 
     .btn {
@@ -275,12 +313,12 @@ body {
         grid-template-columns: 1fr;
     }
 
-    .hero-title {
-        font-size: 36px;
-    }
-
     .section {
         padding: 60px 0;
+    }
+
+    .section-title {
+        font-size: 28px;
     }
 
     .footer-content {
@@ -293,4 +331,20 @@ body {
         flex-direction: column;
         gap: 16px;
     }
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
 }
