@@ -4,14 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }} - Terminusa Online</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
     {% block head %}{% endblock %}
 </head>
 <body>
     <header class="header">
         <div class="container header-content">
-            <a href="https://terminusa.online" class="logo">Terminusa Online</a>
+            <a href="https://terminusa.online" class="logo">
+                <span>Terminusa</span>
+                <span style="color: var(--primary-color)">Online</span>
+            </a>
             <nav class="nav-menu">
                 <a href="https://terminusa.online" class="nav-link">Home</a>
                 <a href="{{ url_for('marketplace_page') }}" class="nav-link">Marketplace</a>
@@ -51,6 +54,46 @@
     </footer>
 
     <script>
+        // Smooth scroll behavior
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Parallax effect for hero section
+        window.addEventListener('scroll', function() {
+            const scrolled = window.pageYOffset;
+            const hero = document.querySelector('.hero');
+            if (hero) {
+                hero.style.backgroundPositionY = scrolled * 0.5 + 'px';
+            }
+        });
+
+        // Add fade-in animation to elements when they come into view
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('fade-in');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.feature-card, .news-card, .player-card').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Toast notification system
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
@@ -58,10 +101,12 @@
             document.body.appendChild(toast);
 
             setTimeout(() => {
-                toast.remove();
+                toast.classList.add('fade-out');
+                setTimeout(() => toast.remove(), 300);
             }, 3000);
         }
 
+        // Authentication functions
         function logout() {
             localStorage.removeItem('token');
             showToast('Logged out successfully');
@@ -70,11 +115,24 @@
             }, 1000);
         }
 
+        // Check authentication status on page load
         document.addEventListener('DOMContentLoaded', function() {
             const token = localStorage.getItem('token');
             if (token) {
                 document.body.classList.add('authenticated');
             }
+
+            // Add scroll progress indicator
+            const progressBar = document.createElement('div');
+            progressBar.className = 'scroll-progress';
+            document.body.appendChild(progressBar);
+
+            window.addEventListener('scroll', () => {
+                const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+                const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+                const scrolled = (winScroll / height) * 100;
+                progressBar.style.width = scrolled + '%';
+            });
         });
     </script>
 
