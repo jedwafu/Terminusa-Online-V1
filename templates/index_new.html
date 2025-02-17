@@ -109,8 +109,10 @@
 .hero-section {
     position: relative;
     padding: 120px 0;
-    background: linear-gradient(rgba(13, 2, 8, 0.8), rgba(13, 2, 8, 0.9)),
-                url('/static/images/hero-bg.jpg') center/cover;
+    background: linear-gradient(135deg, 
+        rgba(13, 2, 8, 0.95) 0%,
+        rgba(0, 255, 65, 0.1) 50%,
+        rgba(13, 2, 8, 0.95) 100%);
     text-align: center;
     overflow: hidden;
 }
@@ -251,12 +253,34 @@
 /* CTA Section */
 .cta-section {
     padding: 80px 0;
-    background: linear-gradient(rgba(13, 2, 8, 0.9), rgba(13, 2, 8, 0.9)),
-                url('/static/images/cta-bg.jpg') center/cover;
+    background: linear-gradient(45deg,
+        rgba(13, 2, 8, 0.95) 0%,
+        rgba(0, 255, 65, 0.1) 50%,
+        rgba(13, 2, 8, 0.95) 100%);
     text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.cta-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        rgba(0, 255, 65, 0.02) 10px,
+        rgba(0, 255, 65, 0.02) 20px
+    );
 }
 
 .cta-content {
+    position: relative;
+    z-index: 1;
     max-width: 600px;
     margin: 0 auto;
 }
