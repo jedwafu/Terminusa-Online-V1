@@ -26,8 +26,8 @@ logger = logging.getLogger(__name__)
 # Global flag for graceful shutdown
 should_exit = Event()
 
-# Import app after monkey patching
-from app import app, socketio
+# Initialize Flask app
+app = Flask(__name__)
 
 def update_game_state(game_manager):
     """Update game state periodically"""
@@ -76,15 +76,9 @@ def main():
 
         # Start server
         logger.info(f"Starting server on {host}:{port}")
-        socketio.run(
-            app,
-            host=host,
-            port=port,
-            debug=debug,
-            use_reloader=False,
-            allow_unsafe_werkzeug=True,
-            log_output=True
-        )
+        from gevent.pywsgi import WSGIServer
+        http_server = WSGIServer((host, port), app)
+        http_server.serve_forever()
 
     except Exception as e:
         logger.error(f"Error in main: {str(e)}", exc_info=True)
