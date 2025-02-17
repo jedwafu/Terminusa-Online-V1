@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Announcements - Terminusa Online</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/marketplace.css') }}">
+</head>
+<body>
+    <header class="header">
+        <div class="container header-content">
+            <a href="https://terminusa.online" class="logo">Terminusa Online</a>
+            <nav class="nav-menu">
+                <a href="https://terminusa.online" class="nav-link">Home</a>
+                <a href="{{ url_for('marketplace_page') }}" class="nav-link">Marketplace</a>
+                <a href="{{ url_for('leaderboard_page') }}" class="nav-link">Leaderboard</a>
+                {% if is_authenticated %}
+                    <a href="https://play.terminusa.online" class="nav-link">Play Now</a>
+                {% endif %}
+            </nav>
+            <div class="auth-buttons">
+                {% if is_authenticated %}
+                    <a href="https://play.terminusa.online" class="btn btn-primary">Play Now</a>
+                    <button onclick="logout()" class="btn btn-secondary">Logout</button>
+                {% else %}
+                    <a href="{{ url_for('login_page') }}" class="btn btn-secondary">Login</a>
+                    <a href="{{ url_for('register_page') }}" class="btn btn-primary">Register</a>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <h1>Manage Announcements</h1>
+            <form id="announcement-form">
+                <input type="text" id="title" placeholder="Title" required>
+                <textarea id="content" placeholder="Content" required></textarea>
+                <button type="submit" class="btn btn-primary">Create Announcement</button>
+            </form>
+
+            <h2>Current Announcements</h2>
+            <ul id="announcement-list">
+                {% for announcement in announcements %}
+                <li>
+                    <h3>{{ announcement.title }}</h3>
+                    <p>{{ announcement.content }}</p>
+                    <button onclick="deleteAnnouncement({{ announcement.id }})" class="btn btn-secondary">Delete</button>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-links">
+                <a href="#" class="footer-link">About</a>
+                <a href="#" class="footer-link">Terms</a>
+                <a href="#" class="footer-link">Privacy</a>
+                <a href="#" class="footer-link">Support</a>
+            </div>
+            <div class="copyright">
+                © 2025 Terminusa Online. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('announcement-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+
+            fetch('/announcements', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ title: title, content: content })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                location.reload();
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        function deleteAnnouncement(id) {
+            fetch(`/announcements/${id}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                location.reload();
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>

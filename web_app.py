@@ -11,6 +11,9 @@ def get_announcements():
 
 @app.route('/announcements', methods=['POST'])
 def create_announcement():
+    # Check if the user is an admin
+    if not request.user.is_admin:
+        return jsonify({'message': 'Unauthorized access!'}), 403
     data = request.get_json()
     new_announcement = Announcement(title=data['title'], content=data['content'])
     db.session.add(new_announcement)
