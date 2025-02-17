@@ -1,0 +1,55 @@
+/* Marketplace Styles */
+.marketplace-container {
+    padding: 20px;
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+.items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.item-card {
+    background: rgba(0, 59, 0, 0.2);
+    border: 1px solid var(--primary-color);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.item-card:hover {
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
+}
+
+.item-image {
+    width: 100%;
+    height: auto;
+}
+
+.item-details {
+    padding: 10px;
+}
+
+.item-name {
+    font-size: 18px;
+    color: var(--primary-color);
+}
+
+.item-type {
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+.item-price {
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.item-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+}
