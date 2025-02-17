@@ -49,6 +49,62 @@ if ! command -v psql &> /dev/null; then
     fi
 fi
 
+# Check if Nginx is installed
+if ! command -v nginx &> /dev/null; then
+    echo -e "${RED}Nginx is not installed!${NC}"
+    echo -e "${YELLOW}Installing Nginx...${NC}"
+    if [ -f /etc/debian_version ]; then
+        # Debian/Ubuntu
+        apt-get update
+        apt-get install -y nginx
+    elif [ -f /etc/redhat-release ]; then
+        # RHEL/CentOS
+        yum install -y nginx
+    else
+        echo -e "${RED}Unsupported distribution. Please install Nginx manually.${NC}"
+        exit 1
+    fi
+fi
+
+# Configure Nginx
+echo -e "${YELLOW}Configuring Nginx...${NC}"
+cat > /etc/nginx/sites-available/terminusa << 'EOL'
+server {
+    listen 80;
+    server_name play.terminusa.online;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /static {
+        alias /root/Terminusa/static;
+    }
+
+    location /socket.io {
+        proxy_pass http://127.0.0.1:8000/socket.io;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+EOL
+
+# Enable the site
+ln -sf /etc/nginx/sites-available/terminusa /etc/nginx/sites-enabled/
+rm -f /etc/nginx/sites-enabled/default
+
+# Test Nginx configuration
+nginx -t
+if [ $? -ne 0 ]; then
+    echo -e "${RED}Nginx configuration test failed!${NC}"
+    exit 1
+fi
+
 # Ensure PostgreSQL is running
 if ! systemctl is-active --quiet postgresql; then
     echo -e "${YELLOW}Starting PostgreSQL service...${NC}"
@@ -71,24 +127,26 @@ if ! command -v postfix &> /dev/null; then
     fi
 fi
 
-# Set up database user and permissions
-echo -e "${YELLOW}Setting up database user and permissions...${NC}"
-chmod +x setup_db_user.sh
-./setup_db_user.sh
-if [ $? -ne 0 ]; then
-    echo -e "${RED}Database user setup failed! Please check the logs.${NC}"
-    exit 1
+# Check if .env file exists
+if [ ! -f ".env" ]; then
+    echo -e "${YELLOW}Creating .env file from example...${NC}"
+    cp .env.example .env
+    echo -e "${GREEN}Created .env file. Please update it with your configuration.${NC}"
+    echo -e "${YELLOW}Press any key to continue after updating .env file...${NC}"
+    read -n 1 -s
 fi
 
 # Create required directories
 mkdir -p logs
 mkdir -p instance
+mkdir -p static/downloads
 
 # Set proper permissions
 chmod +x server_manager.py
 chmod +x init_db.py
+chmod -R 755 static
 
-# Initialize database
+# Initialize database and create admin account
 echo -e "${YELLOW}Initializing database...${NC}"
 python init_db.py
 
@@ -103,6 +161,10 @@ if [ ! -f "/etc/postfix/local_recipients" ]; then
     chmod +x setup_smtp.sh
     ./setup_smtp.sh
 fi
+
+# Start Nginx
+echo -e "${YELLOW}Starting Nginx...${NC}"
+systemctl restart nginx
 
 # Start the server manager
 echo -e "${GREEN}Starting server manager...${NC}"

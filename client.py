@@ -11,11 +11,15 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.text import Text
 from rich.prompt import Prompt, Confirm
-from rich.progress import Progress
+from rich.progress import Progress, SpinnerColumn
 import time
 import asyncio
 from urllib.parse import urljoin
 import socket
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 console = Console()
 
@@ -25,7 +29,9 @@ class TerminusaClient(cmd.Cmd):
 ║                   Terminusa Online                     ║
 ║                     The Genesis                        ║
 ║                                                        ║
-║  Type 'help' for commands, 'quit' or Ctrl+D to exit    ║
+║              [cyan]Rise as a Hunter[/cyan]                      ║
+║                                                        ║
+║  Type [green]'help'[/green] for commands, [red]'quit'[/red] to exit        ║
 ╚════════════════════════════════════════════════════════╝
     '''
     prompt = '[bold blue]terminusa>[/bold blue] '
@@ -39,9 +45,7 @@ class TerminusaClient(cmd.Cmd):
         self.session.headers.update({'User-Agent': 'TerminusaClient/1.0'})
         
         # Get server details from environment or use defaults
-        host = os.getenv('SERVER_HOST', 'localhost')
-        port = os.getenv('SERVER_PORT', '5000')
-        self.base_url = os.getenv('API_URL', f'http://{host}:{port}')
+        self.base_url = os.getenv('API_URL', 'http://play.terminusa.online')
         
         # Test server connection
         self._test_server_connection()
@@ -49,8 +53,14 @@ class TerminusaClient(cmd.Cmd):
     def _test_server_connection(self):
         """Test connection to the server"""
         try:
-            console.print(f"[yellow]Connecting to server at {self.base_url}...[/yellow]")
-            response = self.session.get(urljoin(self.base_url, '/api/health'), timeout=5)
+            with Progress(
+                SpinnerColumn(),
+                "[progress.description]{task.description}",
+                transient=True,
+            ) as progress:
+                progress.add_task(description="Connecting to server...", total=None)
+                response = self.session.get(urljoin(self.base_url, '/health'), timeout=5)
+                
             if response.status_code == 200:
                 console.print("[green]Successfully connected to server![/green]")
             else:
@@ -67,6 +77,12 @@ class TerminusaClient(cmd.Cmd):
         try:
             url = urljoin(self.base_url, endpoint)
             timeout = kwargs.pop('timeout', 10)
+            
+            # Add authorization header if token exists
+            if self.token:
+                kwargs.setdefault('headers', {})
+                kwargs['headers']['Authorization'] = f'Bearer {self.token}'
+            
             response = self.session.request(method, url, timeout=timeout, **kwargs)
             
             # Handle common status codes
@@ -83,7 +99,7 @@ class TerminusaClient(cmd.Cmd):
                 raise Exception("Server error. Please try again later.")
             
             return response
-        except requests.exceptions.ConnectionError as e:
+        except requests.exceptions.ConnectionError:
             raise Exception(f"Connection error: Could not connect to server at {self.base_url}")
         except requests.exceptions.Timeout:
             raise Exception("Request timed out. Server is not responding.")
@@ -92,15 +108,22 @@ class TerminusaClient(cmd.Cmd):
         
     def do_login(self, arg):
         """Login to your account"""
-        username = Prompt.ask("Username")
-        password = getpass.getpass("Password: ")
+        username = Prompt.ask("[cyan]Username[/cyan]")
+        password = getpass.getpass("[cyan]Password: [/cyan]")
         
         try:
-            response = self._make_request(
-                'POST',
-                '/api/login',
-                json={"username": username, "password": password}
-            )
+            with Progress(
+                SpinnerColumn(),
+                "[progress.description]{task.description}",
+                transient=True,
+            ) as progress:
+                progress.add_task(description="Logging in...", total=None)
+                
+                response = self._make_request(
+                    'POST',
+                    '/api/login',
+                    json={"username": username, "password": password}
+                )
             
             if response.status_code == 200:
                 data = response.json()
@@ -118,25 +141,32 @@ class TerminusaClient(cmd.Cmd):
 
     def do_register(self, arg):
         """Create a new account"""
-        username = Prompt.ask("Username")
-        email = Prompt.ask("Email")
-        password = getpass.getpass("Password: ")
-        confirm_password = getpass.getpass("Confirm Password: ")
+        username = Prompt.ask("[cyan]Username[/cyan]")
+        email = Prompt.ask("[cyan]Email[/cyan]")
+        password = getpass.getpass("[cyan]Password: [/cyan]")
+        confirm_password = getpass.getpass("[cyan]Confirm Password: [/cyan]")
         
         if password != confirm_password:
             console.print("[red]Passwords do not match![/red]")
             return
         
         try:
-            response = self._make_request(
-                'POST',
-                '/api/register',
-                json={
-                    "username": username,
-                    "email": email,
-                    "password": password
-                }
-            )
+            with Progress(
+                SpinnerColumn(),
+                "[progress.description]{task.description}",
+                transient=True,
+            ) as progress:
+                progress.add_task(description="Creating account...", total=None)
+                
+                response = self._make_request(
+                    'POST',
+                    '/api/register',
+                    json={
+                        "username": username,
+                        "email": email,
+                        "password": password
+                    }
+                )
             
             if response.status_code in (200, 201):
                 console.print("[green]Registration successful! Please check your email to verify your account.[/green]")
@@ -158,16 +188,22 @@ class TerminusaClient(cmd.Cmd):
             return
         
         try:
-            response = self._make_request('GET', '/api/game/inventory')
+            with Progress(
+                SpinnerColumn(),
+                "[progress.description]{task.description}",
+                transient=True,
+            ) as progress:
+                progress.add_task(description="Loading inventory...", total=None)
+                response = self._make_request('GET', '/api/game/inventory')
             
             if response.status_code == 200:
                 data = response.json()
-                table = Table(title="Inventory")
-                table.add_column("Slot")
-                table.add_column("Item")
-                table.add_column("Quantity")
-                table.add_column("Type")
-                table.add_column("Rarity")
+                table = Table(title="[cyan]Inventory[/cyan]")
+                table.add_column("Slot", style="cyan")
+                table.add_column("Item", style="white")
+                table.add_column("Quantity", style="green")
+                table.add_column("Type", style="yellow")
+                table.add_column("Rarity", style="magenta")
                 
                 for item in data['inventory']['items']:
                     table.add_row(
@@ -175,7 +211,7 @@ class TerminusaClient(cmd.Cmd):
                         item['name'],
                         str(item['quantity']),
                         item['type'],
-                        f"[{self._get_rarity_color(item['rarity'])}]{item['rarity']}[/{self._get_rarity_color(item['rarity'])}]"
+                        self._get_rarity_color(item['rarity'])
                     )
                 
                 console.print(table)
@@ -191,17 +227,23 @@ class TerminusaClient(cmd.Cmd):
             return
         
         try:
-            response = self._make_request('GET', '/api/game/gates')
+            with Progress(
+                SpinnerColumn(),
+                "[progress.description]{task.description}",
+                transient=True,
+            ) as progress:
+                progress.add_task(description="Loading gates...", total=None)
+                response = self._make_request('GET', '/api/game/gates')
             
             if response.status_code == 200:
                 data = response.json()
-                table = Table(title="Available Gates")
-                table.add_column("ID")
-                table.add_column("Name")
-                table.add_column("Type")
-                table.add_column("Level Req")
-                table.add_column("Rank Req")
-                table.add_column("Players")
+                table = Table(title="[cyan]Available Gates[/cyan]")
+                table.add_column("ID", style="cyan")
+                table.add_column("Name", style="white")
+                table.add_column("Type", style="yellow")
+                table.add_column("Level Req", style="red")
+                table.add_column("Rank Req", style="magenta")
+                table.add_column("Players", style="green")
                 
                 for gate in data['gates']:
                     table.add_row(
@@ -231,10 +273,16 @@ class TerminusaClient(cmd.Cmd):
             
         try:
             gate_id = int(arg)
-            response = self._make_request(
-                'POST',
-                f'/api/game/gates/{gate_id}/enter'
-            )
+            with Progress(
+                SpinnerColumn(),
+                "[progress.description]{task.description}",
+                transient=True,
+            ) as progress:
+                progress.add_task(description="Entering gate...", total=None)
+                response = self._make_request(
+                    'POST',
+                    f'/api/game/gates/{gate_id}/enter'
+                )
             
             if response.status_code == 200:
                 data = response.json()
@@ -262,7 +310,13 @@ class TerminusaClient(cmd.Cmd):
     def _load_character(self):
         """Load character data"""
         try:
-            response = self._make_request('GET', '/api/game/profile')
+            with Progress(
+                SpinnerColumn(),
+                "[progress.description]{task.description}",
+                transient=True,
+            ) as progress:
+                progress.add_task(description="Loading character...", total=None)
+                response = self._make_request('GET', '/api/game/profile')
             
             if response.status_code == 200:
                 self.character = response.json()['character']
@@ -279,18 +333,18 @@ class TerminusaClient(cmd.Cmd):
         
         # Basic Info
         console.print(Panel(f"""
-[bold]Name:[/bold] {self.user_data['username']}
-[bold]Level:[/bold] {char['level']} ([cyan]{char['experience']}/1000 XP[/cyan])
-[bold]Rank:[/bold] [{self._get_rank_color(char['rank'])}]{char['rank']}[/{self._get_rank_color(char['rank'])}]
-[bold]Title:[/bold] {char['title'] or 'None'}
-        """, title="Character Info"))
+[bold cyan]Name:[/bold cyan] {self.user_data['username']}
+[bold cyan]Level:[/bold cyan] {char['level']} ([cyan]{char['experience']}/1000 XP[/cyan])
+[bold cyan]Rank:[/bold cyan] [{self._get_rank_color(char['rank'])}]{char['rank']}[/{self._get_rank_color(char['rank'])}]
+[bold cyan]Title:[/bold cyan] {char['title'] or 'None'}
+        """, title="[bold cyan]Character Info[/bold cyan]"))
         
         # Stats
-        stats_table = Table(title="Stats")
-        stats_table.add_column("Base Stats", justify="right")
-        stats_table.add_column("Value", justify="left")
-        stats_table.add_column("Combat Stats", justify="right")
-        stats_table.add_column("Value", justify="left")
+        stats_table = Table(title="[cyan]Stats[/cyan]")
+        stats_table.add_column("Base Stats", justify="right", style="cyan")
+        stats_table.add_column("Value", justify="left", style="green")
+        stats_table.add_column("Combat Stats", justify="right", style="cyan")
+        stats_table.add_column("Value", justify="left", style="green")
         
         stats_table.add_row(
             "Strength", str(char['strength']),
@@ -316,9 +370,9 @@ class TerminusaClient(cmd.Cmd):
         console.print(stats_table)
         
         # Progress
-        progress_table = Table(title="Progress")
-        progress_table.add_column("Achievement", justify="right")
-        progress_table.add_column("Count", justify="left")
+        progress_table = Table(title="[cyan]Progress[/cyan]")
+        progress_table.add_column("Achievement", justify="right", style="cyan")
+        progress_table.add_column("Count", justify="left", style="green")
         
         progress_table.add_row("Gates Cleared", str(char['gates_cleared']))
         progress_table.add_row("Bosses Defeated", str(char['bosses_defeated']))
@@ -361,22 +415,22 @@ class TerminusaClient(cmd.Cmd):
         console.print(Panel(f"""
 [green]Gate Cleared Successfully![/green]
 
-[bold]Experience Gained:[/bold] {results['experience']}
-[bold]Items Found:[/bold] {len(results['items'])}
-[bold]Crystals Found:[/bold] {results['crystals']}
-        """, title="Results"))
+[bold cyan]Experience Gained:[/bold cyan] {results['experience']}
+[bold cyan]Items Found:[/bold cyan] {len(results['items'])}
+[bold cyan]Crystals Found:[/bold cyan] {results['crystals']}
+        """, title="[cyan]Results[/cyan]"))
         
         if results['items']:
-            items_table = Table(title="Items Found")
-            items_table.add_column("Item")
-            items_table.add_column("Type")
-            items_table.add_column("Rarity")
+            items_table = Table(title="[cyan]Items Found[/cyan]")
+            items_table.add_column("Item", style="white")
+            items_table.add_column("Type", style="yellow")
+            items_table.add_column("Rarity", style="magenta")
             
             for item in results['items']:
                 items_table.add_row(
                     item['name'],
                     item['type'],
-                    f"[{self._get_rarity_color(item['rarity'])}]{item['rarity']}[/{self._get_rarity_color(item['rarity'])}]"
+                    self._get_rarity_color(item['rarity'])
                 )
             
             console.print(items_table)
@@ -392,7 +446,7 @@ class TerminusaClient(cmd.Cmd):
             'mythic': 'red',
             'divine': 'cyan'
         }
-        return colors.get(rarity.lower(), 'white')
+        return f"[{colors.get(rarity.lower(), 'white')}]{rarity}[/{colors.get(rarity.lower(), 'white')}]"
 
     @staticmethod
     def _get_rank_color(rank):
