@@ -26,21 +26,17 @@ def init_db(app):
             existing_tables = inspector.get_table_names()
             
             if not existing_tables:
-                app.logger.info("No existing tables found. Creating tables...")
-                db.create_all()
-                app.logger.info("Created all tables")
+                app.logger.info("No existing tables found. Please run migrations to create tables.")
             else:
                 app.logger.info(f"Found existing tables: {', '.join(existing_tables)}")
                 
                 # Verify required tables exist
-                required_tables = ['users', 'player_characters', 'wallets', 'inventories']
+                required_tables = ['users', 'player_characters', 'wallets', 'inventories', 'announcements']
                 missing_tables = [table for table in required_tables if table not in existing_tables]
                 
                 if missing_tables:
                     app.logger.warning(f"Missing required tables: {', '.join(missing_tables)}")
-                    app.logger.info("Creating missing tables...")
-                    db.create_all()  # This will only create missing tables
-                    app.logger.info("Created missing tables")
+                    app.logger.info("Please run migrations to create missing tables.")
             
             # Create extensions if they don't exist
             db.session.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
