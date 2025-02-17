@@ -47,7 +47,7 @@ cors = CORS(app, resources={r"/api/*": {"origins": "*"}})  # Enable CORS for API
 socketio = SocketIO(
     app,
     cors_allowed_origins="*",
-    async_mode='threading',
+    async_mode='eventlet',
     logger=True,
     engineio_logger=True,
     ping_timeout=60,
