@@ -1,10 +1,11 @@
+from gevent import monkey
+monkey.patch_all()
+
 import os
-import threading
 import time
 import socket
 import signal
 import sys
-import multiprocessing
 from dotenv import load_dotenv
 import logging
 from flask import Flask
