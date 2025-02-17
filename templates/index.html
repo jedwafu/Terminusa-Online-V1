@@ -1,4 +1,4 @@
-{% extends "base_fixed.html" %}
+{% extends "base.html" %}
 
 {% block head %}
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
@@ -11,7 +11,7 @@
             <p class="hero-subtitle">Enter the world of Terminusa, where only the strongest survive</p>
             <div class="hero-buttons">
                 <a href="{{ url_for('play_page') }}" class="btn auth-required logged-in">Play Now</a>
-                <a href="{{ url_for('register') }}" class="btn auth-dependent logged-out">Join the Hunt</a>
+                <a href="{{ url_for('register_page') }}" class="btn auth-dependent logged-out">Join the Hunt</a>
             </div>
         </div>
     </section>

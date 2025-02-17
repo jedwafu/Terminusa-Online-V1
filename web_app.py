@@ -99,7 +99,7 @@ def index():
             }
         ]
 
-        return render_template('index_fixed.html', 
+        return render_template('index.html', 
                              title='Home',
                              top_players=top_players,
                              news=news,
@@ -116,20 +116,6 @@ def index():
 def play_page():
     """Play page"""
     return redirect('https://play.terminusa.online')
-
-@app.route('/register')
-def register():
-    """Registration page"""
-    try:
-        return render_template('register.html', 
-                             title='Register',
-                             is_authenticated=False)
-    except Exception as e:
-        logger.error(f"Error rendering register page: {str(e)}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
 
 @app.route('/login')
 def login_page():
@@ -352,8 +338,22 @@ def login():
         logger.error(f"Login error: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Login failed'}), 500
 
+@app.route('/register')
+def register_page():
+    """Registration page"""
+    try:
+        return render_template('register.html', 
+                             title='Register',
+                             is_authenticated=False)
+    except Exception as e:
+        logger.error(f"Error rendering register page: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+
 @app.route('/api/register', methods=['POST'])
-def register():
+def register_api():
     """Handle registration requests"""
     try:
         data = request.get_json()
