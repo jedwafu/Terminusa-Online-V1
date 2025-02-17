@@ -4,171 +4,323 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${YELLOW}Starting Terminusa Online Server...${NC}"
+# Debug mode flag
+DEBUG=false
 
-# Check if running as root
-if [ "$EUID" -ne 0 ]; then 
-    echo -e "${RED}Please run as root${NC}"
-    exit 1
-fi
+# Service status tracking
+declare -A SERVICE_STATUS
 
-# Check if Python is installed
-if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}Python is not installed! Please install Python 3.10 or later.${NC}"
-    exit 1
-fi
-
-# Check if virtual environment exists, create if it doesn't
-if [ ! -d "venv" ]; then
-    echo -e "${YELLOW}Creating virtual environment...${NC}"
-    python3 -m venv venv
-fi
-
-# Activate virtual environment and install dependencies
-source venv/bin/activate
-echo -e "${YELLOW}Installing/Updating dependencies...${NC}"
-pip install -r requirements-base.txt
-
-# Check if PostgreSQL is installed
-if ! command -v psql &> /dev/null; then
-    echo -e "${RED}PostgreSQL is not installed!${NC}"
-    echo -e "${YELLOW}Installing PostgreSQL...${NC}"
-    if [ -f /etc/debian_version ]; then
-        # Debian/Ubuntu
-        apt-get update
-        apt-get install -y postgresql postgresql-contrib
-    elif [ -f /etc/redhat-release ]; then
-        # RHEL/CentOS
-        yum install -y postgresql-server postgresql-contrib
-        postgresql-setup initdb
-    else
-        echo -e "${RED}Unsupported distribution. Please install PostgreSQL manually.${NC}"
-        exit 1
+# Debug logging function
+debug_log() {
+    if [ "$DEBUG" = true ]; then
+        echo -e "${BLUE}[DEBUG] $1${NC}"
     fi
-fi
-
-# Check if Nginx is installed
-if ! command -v nginx &> /dev/null; then
-    echo -e "${RED}Nginx is not installed!${NC}"
-    echo -e "${YELLOW}Installing Nginx...${NC}"
-    if [ -f /etc/debian_version ]; then
-        # Debian/Ubuntu
-        apt-get update
-        apt-get install -y nginx
-    elif [ -f /etc/redhat-release ]; then
-        # RHEL/CentOS
-        yum install -y nginx
-    else
-        echo -e "${RED}Unsupported distribution. Please install Nginx manually.${NC}"
-        exit 1
-    fi
-fi
-
-# Configure Nginx
-echo -e "${YELLOW}Configuring Nginx...${NC}"
-cat > /etc/nginx/sites-available/terminusa << 'EOL'
-server {
-    listen 80;
-    server_name play.terminusa.online;
-
-    location / {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
-    location /static {
-        alias /root/Terminusa/static;
-    }
-
-    location /socket.io {
-        proxy_pass http://127.0.0.1:8000/socket.io;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-    }
 }
-EOL
 
-# Enable the site
-ln -sf /etc/nginx/sites-available/terminusa /etc/nginx/sites-enabled/
-rm -f /etc/nginx/sites-enabled/default
+# Error logging function
+error_log() {
+    echo -e "${RED}[ERROR] $1${NC}"
+    if [ "$DEBUG" = true ]; then
+        echo -e "${RED}[ERROR DETAILS] $2${NC}"
+    fi
+}
 
-# Test Nginx configuration
-nginx -t
-if [ $? -ne 0 ]; then
-    echo -e "${RED}Nginx configuration test failed!${NC}"
-    exit 1
-fi
+# Success logging function
+success_log() {
+    echo -e "${GREEN}[SUCCESS] $1${NC}"
+}
 
-# Ensure PostgreSQL is running
-if ! systemctl is-active --quiet postgresql; then
-    echo -e "${YELLOW}Starting PostgreSQL service...${NC}"
-    systemctl start postgresql
-fi
+# Info logging function
+info_log() {
+    echo -e "${YELLOW}[INFO] $1${NC}"
+}
 
-# Check if Postfix is installed
-if ! command -v postfix &> /dev/null; then
-    echo -e "${RED}Postfix is not installed!${NC}"
-    echo -e "${YELLOW}Installing Postfix...${NC}"
-    if [ -f /etc/debian_version ]; then
-        # Debian/Ubuntu
-        DEBIAN_FRONTEND=noninteractive apt-get install -y postfix
-    elif [ -f /etc/redhat-release ]; then
-        # RHEL/CentOS
-        yum install -y postfix
+# Check service status
+check_service() {
+    local service=$1
+    if systemctl is-active --quiet $service; then
+        SERVICE_STATUS[$service]="running"
+        debug_log "$service is running"
+        return 0
     else
-        echo -e "${RED}Unsupported distribution. Please install Postfix manually.${NC}"
+        SERVICE_STATUS[$service]="stopped"
+        debug_log "$service is stopped"
+        return 1
+    fi
+}
+
+# Start a specific service
+start_service() {
+    local service=$1
+    info_log "Starting $service..."
+    
+    case $service in
+        "postgresql")
+            systemctl start postgresql
+            if check_service postgresql; then
+                success_log "PostgreSQL started successfully"
+            else
+                error_log "Failed to start PostgreSQL" "$(systemctl status postgresql)"
+                return 1
+            fi
+            ;;
+        "nginx")
+            systemctl start nginx
+            if check_service nginx; then
+                success_log "Nginx started successfully"
+            else
+                error_log "Failed to start Nginx" "$(systemctl status nginx)"
+                return 1
+            fi
+            ;;
+        "postfix")
+            systemctl start postfix
+            if check_service postfix; then
+                success_log "Postfix started successfully"
+            else
+                error_log "Failed to start Postfix" "$(systemctl status postfix)"
+                return 1
+            fi
+            ;;
+        "gunicorn")
+            debug_log "Starting Gunicorn with web_app.py"
+            gunicorn -w 4 -b 0.0.0.0:8000 web_app:app --daemon
+            if [ $? -eq 0 ]; then
+                success_log "Gunicorn started successfully"
+            else
+                error_log "Failed to start Gunicorn" "Check logs/gunicorn.log for details"
+                return 1
+            fi
+            ;;
+        "game-server")
+            debug_log "Starting game server with main.py"
+            python main.py &
+            if [ $? -eq 0 ]; then
+                success_log "Game server started successfully"
+            else
+                error_log "Failed to start game server" "Check logs/game-server.log for details"
+                return 1
+            fi
+            ;;
+        *)
+            error_log "Unknown service: $service"
+            return 1
+            ;;
+    esac
+}
+
+# Stop a specific service
+stop_service() {
+    local service=$1
+    info_log "Stopping $service..."
+    
+    case $service in
+        "postgresql")
+            systemctl stop postgresql
+            if ! check_service postgresql; then
+                success_log "PostgreSQL stopped successfully"
+            else
+                error_log "Failed to stop PostgreSQL" "$(systemctl status postgresql)"
+                return 1
+            fi
+            ;;
+        "nginx")
+            systemctl stop nginx
+            if ! check_service nginx; then
+                success_log "Nginx stopped successfully"
+            else
+                error_log "Failed to stop Nginx" "$(systemctl status nginx)"
+                return 1
+            fi
+            ;;
+        "postfix")
+            systemctl stop postfix
+            if ! check_service postfix; then
+                success_log "Postfix stopped successfully"
+            else
+                error_log "Failed to stop Postfix" "$(systemctl status postfix)"
+                return 1
+            fi
+            ;;
+        "gunicorn")
+            pkill gunicorn
+            if [ $? -eq 0 ]; then
+                success_log "Gunicorn stopped successfully"
+            else
+                error_log "Failed to stop Gunicorn" "Process may not be running"
+                return 1
+            fi
+            ;;
+        "game-server")
+            pkill -f "python main.py"
+            if [ $? -eq 0 ]; then
+                success_log "Game server stopped successfully"
+            else
+                error_log "Failed to stop game server" "Process may not be running"
+                return 1
+            fi
+            ;;
+        *)
+            error_log "Unknown service: $service"
+            return 1
+            ;;
+    esac
+}
+
+# Show service status
+show_status() {
+    info_log "Checking service status..."
+    printf "${YELLOW}%-20s %-10s %-20s${NC}\n" "Service" "Status" "Details"
+    echo "----------------------------------------------------"
+    
+    check_service postgresql
+    printf "%-20s %-10s %-20s\n" "PostgreSQL" "${SERVICE_STATUS[postgresql]}" "Database Server"
+    
+    check_service nginx
+    printf "%-20s %-10s %-20s\n" "Nginx" "${SERVICE_STATUS[nginx]}" "Web Server"
+    
+    check_service postfix
+    printf "%-20s %-10s %-20s\n" "Postfix" "${SERVICE_STATUS[postfix]}" "Mail Server"
+    
+    if pgrep gunicorn >/dev/null; then
+        printf "%-20s %-10s %-20s\n" "Gunicorn" "running" "Application Server"
+    else
+        printf "%-20s %-10s %-20s\n" "Gunicorn" "stopped" "Application Server"
+    fi
+    
+    if pgrep -f "python main.py" >/dev/null; then
+        printf "%-20s %-10s %-20s\n" "Game Server" "running" "Game Service"
+    else
+        printf "%-20s %-10s %-20s\n" "Game Server" "stopped" "Game Service"
+    fi
+}
+
+# Show help message
+show_help() {
+    echo -e "${YELLOW}Terminusa Online Server Management${NC}"
+    echo
+    echo "Usage: $0 [options] [service]"
+    echo
+    echo "Options:"
+    echo "  -h, --help     Show this help message"
+    echo "  -d, --debug    Enable debug output"
+    echo "  start          Start all services or specific service"
+    echo "  stop           Stop all services or specific service"
+    echo "  restart        Restart all services or specific service"
+    echo "  status         Show service status"
+    echo
+    echo "Services:"
+    echo "  postgresql     Database server"
+    echo "  nginx         Web server"
+    echo "  postfix       Mail server"
+    echo "  gunicorn      Application server"
+    echo "  game-server   Game server"
+    echo "  all           All services"
+    echo
+    echo "Examples:"
+    echo "  $0 start                # Start all services"
+    echo "  $0 start postgresql     # Start only PostgreSQL"
+    echo "  $0 stop nginx          # Stop only Nginx"
+    echo "  $0 status              # Show all service status"
+    echo "  $0 -d start           # Start all services with debug output"
+}
+
+# Main script execution
+main() {
+    # Process command line arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -h|--help)
+                show_help
+                exit 0
+                ;;
+            -d|--debug)
+                DEBUG=true
+                shift
+                ;;
+            start|stop|restart|status)
+                ACTION=$1
+                shift
+                ;;
+            postgresql|nginx|postfix|gunicorn|game-server|all)
+                SERVICE=$1
+                shift
+                ;;
+            *)
+                error_log "Unknown option: $1"
+                show_help
+                exit 1
+                ;;
+        esac
+    done
+
+    # Check if running as root
+    if [ "$EUID" -ne 0 ]; then 
+        error_log "Please run as root"
         exit 1
     fi
-fi
 
-# Check if .env file exists
-if [ ! -f ".env" ]; then
-    echo -e "${YELLOW}Creating .env file from example...${NC}"
-    cp .env.example .env
-    echo -e "${GREEN}Created .env file. Please update it with your configuration.${NC}"
-    echo -e "${YELLOW}Press any key to continue after updating .env file...${NC}"
-    read -n 1 -s
-fi
+    # Create logs directory
+    mkdir -p logs
 
-# Create required directories
-mkdir -p logs
-mkdir -p instance
-mkdir -p static/downloads
+    # Process the action
+    case $ACTION in
+        start)
+            if [ "$SERVICE" = "all" ] || [ -z "$SERVICE" ]; then
+                info_log "Starting all services..."
+                start_service postgresql
+                start_service nginx
+                start_service postfix
+                start_service gunicorn
+                start_service game-server
+            else
+                start_service $SERVICE
+            fi
+            ;;
+        stop)
+            if [ "$SERVICE" = "all" ] || [ -z "$SERVICE" ]; then
+                info_log "Stopping all services..."
+                stop_service game-server
+                stop_service gunicorn
+                stop_service nginx
+                stop_service postfix
+                stop_service postgresql
+            else
+                stop_service $SERVICE
+            fi
+            ;;
+        restart)
+            if [ "$SERVICE" = "all" ] || [ -z "$SERVICE" ]; then
+                info_log "Restarting all services..."
+                stop_service game-server
+                stop_service gunicorn
+                stop_service nginx
+                stop_service postfix
+                stop_service postgresql
+                sleep 2
+                start_service postgresql
+                start_service postfix
+                start_service nginx
+                start_service gunicorn
+                start_service game-server
+            else
+                stop_service $SERVICE
+                sleep 2
+                start_service $SERVICE
+            fi
+            ;;
+        status)
+            show_status
+            ;;
+        *)
+            show_help
+            exit 1
+            ;;
+    esac
+}
 
-# Set proper permissions
-chmod +x server_manager.py
-chmod +x init_db.py
-chmod -R 755 static
-
-# Initialize database and create admin account
-echo -e "${YELLOW}Initializing database...${NC}"
-python init_db.py
-
-if [ $? -ne 0 ]; then
-    echo -e "${RED}Database initialization failed! Please check the logs.${NC}"
-    exit 1
-fi
-
-# Run SMTP setup if needed
-if [ ! -f "/etc/postfix/local_recipients" ]; then
-    echo -e "${YELLOW}Running SMTP setup...${NC}"
-    chmod +x setup_smtp.sh
-    ./setup_smtp.sh
-fi
-
-# Start Nginx
-echo -e "${YELLOW}Starting Nginx...${NC}"
-systemctl restart nginx
-
-# Start the server manager
-echo -e "${GREEN}Starting server manager...${NC}"
-python server_manager.py
-
-# Keep the terminal open if there's an error
-read -p "Press enter to continue..."
+# Execute main function with all arguments
+main "$@"
