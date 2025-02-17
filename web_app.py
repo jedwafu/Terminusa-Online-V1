@@ -6,6 +6,18 @@ from database import db, init_db
 from models import User, PlayerCharacter, Wallet, Inventory, Transaction, Gate
 import os
 import bcrypt
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('logs/web.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -16,8 +28,8 @@ CORS(app)
 
 # Configure app
 app.config.update(
-    SECRET_KEY=os.getenv('FLASK_SECRET_KEY'),
-    JWT_SECRET_KEY=os.getenv('JWT_SECRET_KEY'),
+    SECRET_KEY=os.getenv('FLASK_SECRET_KEY', 'dev-key-please-change'),
+    JWT_SECRET_KEY=os.getenv('JWT_SECRET_KEY', 'jwt-key-please-change'),
     SQLALCHEMY_DATABASE_URI=os.getenv('DATABASE_URL'),
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
     JWT_ACCESS_TOKEN_EXPIRES=3600  # 1 hour
@@ -30,7 +42,11 @@ init_db(app)
 @app.route('/')
 def index():
     """Main landing page"""
-    return render_template('index.html')
+    try:
+        return render_template('index.html')
+    except Exception as e:
+        logger.error(f"Error rendering index page: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to render page'}), 500
 
 @app.route('/health')
 def health_check():
@@ -40,36 +56,57 @@ def health_check():
         db.session.execute('SELECT 1')
         return jsonify({'status': 'healthy', 'database': 'connected'})
     except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
         return jsonify({'status': 'unhealthy', 'error': str(e)}), 500
 
 @app.route('/login')
 def login_page():
     """Login page"""
-    return render_template('login.html')
+    try:
+        return render_template('login.html')
+    except Exception as e:
+        logger.error(f"Error rendering login page: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to render page'}), 500
 
 @app.route('/register')
 def register_page():
     """Registration page"""
-    return render_template('register.html')
+    try:
+        return render_template('register.html')
+    except Exception as e:
+        logger.error(f"Error rendering register page: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to render page'}), 500
 
 @app.route('/play')
 def play_page():
     """Game page"""
-    return render_template('play.html')
+    try:
+        return render_template('play.html')
+    except Exception as e:
+        logger.error(f"Error rendering play page: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to render page'}), 500
 
 @app.route('/marketplace')
 def marketplace_page():
     """Marketplace page"""
-    return render_template('marketplace.html')
+    try:
+        return render_template('marketplace.html')
+    except Exception as e:
+        logger.error(f"Error rendering marketplace page: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to render page'}), 500
 
 @app.route('/leaderboard')
 def leaderboard_page():
     """Leaderboard page"""
-    top_players = PlayerCharacter.query.order_by(
-        PlayerCharacter.level.desc(),
-        PlayerCharacter.gates_cleared.desc()
-    ).limit(100).all()
-    return render_template('leaderboard.html', players=top_players)
+    try:
+        top_players = PlayerCharacter.query.order_by(
+            PlayerCharacter.level.desc(),
+            PlayerCharacter.gates_cleared.desc()
+        ).limit(100).all()
+        return render_template('leaderboard.html', players=top_players)
+    except Exception as e:
+        logger.error(f"Error rendering leaderboard page: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to render page'}), 500
 
 # API Routes
 @app.route('/api/login', methods=['POST'])
@@ -107,7 +144,7 @@ def login():
         }), 200
 
     except Exception as e:
-        app.logger.error(f"Login error: {str(e)}")
+        logger.error(f"Login error: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Login failed'}), 500
 
 @app.route('/api/register', methods=['POST'])
@@ -143,7 +180,7 @@ def register():
             is_email_verified=True  # TODO: Implement email verification
         )
         db.session.add(user)
-        db.session.flush()
+        db.session.flush()  # Get user.id
 
         # Create character
         character = PlayerCharacter(
@@ -183,7 +220,7 @@ def register():
 
     except Exception as e:
         db.session.rollback()
-        app.logger.error(f"Registration error: {str(e)}")
+        logger.error(f"Registration error: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Registration failed'}), 500
 
 @app.route('/api/marketplace/items', methods=['GET'])
@@ -194,6 +231,7 @@ def get_marketplace_items():
         # TODO: Implement marketplace items
         return jsonify({'items': []})
     except Exception as e:
+        logger.error(f"Error getting marketplace items: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/leaderboard', methods=['GET'])
@@ -214,6 +252,7 @@ def get_leaderboard():
             } for player in top_players]
         })
     except Exception as e:
+        logger.error(f"Error getting leaderboard data: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 @app.errorhandler(404)
@@ -232,6 +271,12 @@ def internal_error(error):
     return render_template('index.html'), 500
 
 if __name__ == '__main__':
+    # Create logs directory
+    os.makedirs('logs', exist_ok=True)
+    
+    # Get port from environment or use default
     port = int(os.getenv('WEBAPP_PORT', 5001))
     debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    
+    # Run the app
     app.run(host='0.0.0.0', port=port, debug=debug)
