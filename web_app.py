@@ -3,7 +3,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from dotenv import load_dotenv
 from database import db, init_db
-from models import User, PlayerCharacter, Wallet, Inventory, Transaction, Gate, Guild
+from models import User, PlayerCharacter, Wallet, Inventory, Transaction, Gate, Guild, Item
 import os
 import bcrypt
 import logging
@@ -11,6 +11,7 @@ import secrets
 from datetime import datetime
 import smtplib
 from email.mime.text import MIMEText
+from PIL import Image, ImageDraw
 
 # Configure logging
 logging.basicConfig(
@@ -32,10 +33,84 @@ app = Flask(__name__,
             static_folder='static')
 CORS(app)
 
-# Ensure static directory exists
-os.makedirs('static/images', exist_ok=True)
-os.makedirs('static/css', exist_ok=True)
-os.makedirs('static/js', exist_ok=True)
+# Ensure required static files exist
+def ensure_marketplace_images():
+    """Ensure marketplace images exist"""
+    images_dir = os.path.join('static', 'images')
+    items_dir = os.path.join(images_dir, 'items')
+    os.makedirs(items_dir, exist_ok=True)
+
+    # Create crystal icon
+    crystal_path = os.path.join(images_dir, 'crystal.png')
+    if not os.path.exists(crystal_path):
+        img = Image.new('RGBA', (32, 32), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        # Draw a simple crystal shape
+        points = [(16, 0), (32, 16), (16, 32), (0, 16)]
+        d.polygon(points, fill=(108, 49, 255, 255))
+        img.save(crystal_path)
+
+    # Create marketplace background
+    bg_path = os.path.join(images_dir, 'marketplace-bg.jpg')
+    if not os.path.exists(bg_path):
+        img = Image.new('RGB', (1920, 1080), color='darkblue')
+        d = ImageDraw.Draw(img)
+        # Create a gradient effect
+        for y in range(1080):
+            alpha = int(255 * (1 - y/1080))
+            d.line([(0, y), (1920, y)], fill=(0, 0, alpha))
+        img.save(bg_path)
+
+    # Create placeholder item images
+    placeholder_items = [
+        ('sword.jpg', 'purple'),
+        ('armor.jpg', 'blue'),
+        ('potion.jpg', 'red'),
+        ('ring.jpg', 'gold')
+    ]
+    for filename, color in placeholder_items:
+        path = os.path.join(items_dir, filename)
+        if not os.path.exists(path):
+            img = Image.new('RGB', (400, 400), color=color)
+            d = ImageDraw.Draw(img)
+            d.text((200, 200), filename.split('.')[0].title(), fill='white', anchor='mm')
+            img.save(path)
+
+def ensure_leaderboard_images():
+    """Ensure leaderboard images exist"""
+    images_dir = os.path.join('static', 'images')
+    os.makedirs(images_dir, exist_ok=True)
+
+    # Create icon images
+    icons = {
+        'gate.png': [(16, 0), (32, 16), (16, 32), (0, 16)],  # Diamond shape
+        'monster.png': [(0, 0), (32, 0), (32, 32), (0, 32)],  # Square
+        'members.png': [(16, 0), (32, 16), (16, 32), (0, 16)],  # Diamond shape
+        'trophy.png': [(16, 0), (32, 16), (16, 32), (0, 16)]  # Diamond shape
+    }
+
+    for filename, points in icons.items():
+        path = os.path.join(images_dir, filename)
+        if not os.path.exists(path):
+            img = Image.new('RGBA', (32, 32), (0, 0, 0, 0))
+            d = ImageDraw.Draw(img)
+            d.polygon(points, fill=(108, 49, 255, 255))
+            img.save(path)
+
+    # Create leaderboard background
+    bg_path = os.path.join(images_dir, 'leaderboard-bg.jpg')
+    if not os.path.exists(bg_path):
+        img = Image.new('RGB', (1920, 1080), color='darkblue')
+        d = ImageDraw.Draw(img)
+        # Create a gradient effect
+        for y in range(1080):
+            alpha = int(255 * (1 - y/1080))
+            d.line([(0, y), (1920, y)], fill=(0, 0, alpha))
+        img.save(bg_path)
+
+# Initialize static files
+ensure_marketplace_images()
+ensure_leaderboard_images()
 
 # Configure app
 app.config.update(
@@ -101,50 +176,15 @@ def index():
         return render_template('error.html', 
                              error_message='An error occurred while loading the page. Please try again later.'), 500
 
-def ensure_marketplace_images():
-    """Ensure marketplace images exist"""
-    images_dir = os.path.join('static', 'images')
-    items_dir = os.path.join(images_dir, 'items')
-    os.makedirs(items_dir, exist_ok=True)
-
-    # Create crystal icon
-    crystal_path = os.path.join(images_dir, 'crystal.png')
-    if not os.path.exists(crystal_path):
-        img = Image.new('RGBA', (32, 32), (0, 0, 0, 0))
-        d = ImageDraw.Draw(img)
-        # Draw a simple crystal shape
-        points = [(16, 0), (32, 16), (16, 32), (0, 16)]
-        d.polygon(points, fill=(108, 49, 255, 255))
-        img.save(crystal_path)
-
-    # Create marketplace background
-    bg_path = os.path.join(images_dir, 'marketplace-bg.jpg')
-    if not os.path.exists(bg_path):
-        img = Image.new('RGB', (1920, 1080), color='darkblue')
-        d = ImageDraw.Draw(img)
-        # Create a gradient effect
-        for y in range(1080):
-            alpha = int(255 * (1 - y/1080))
-            d.line([(0, y), (1920, y)], fill=(0, 0, alpha))
-        img.save(bg_path)
-
-    # Create placeholder item images
-    placeholder_items = [
-        ('sword.jpg', 'purple'),
-        ('armor.jpg', 'blue'),
-        ('potion.jpg', 'red'),
-        ('ring.jpg', 'gold')
-    ]
-    for filename, color in placeholder_items:
-        path = os.path.join(items_dir, filename)
-        if not os.path.exists(path):
-            img = Image.new('RGB', (400, 400), color=color)
-            d = ImageDraw.Draw(img)
-            d.text((200, 200), filename.split('.')[0].title(), fill='white', anchor='mm')
-            img.save(path)
-
-# Initialize marketplace images
-ensure_marketplace_images()
+@app.route('/login')
+def login_page():
+    """Login page"""
+    try:
+        return render_template('login_new.html', title='Login')
+    except Exception as e:
+        logger.error(f"Error rendering login page: {str(e)}")
+        return render_template('error.html', 
+                             error_message='An error occurred while loading the page. Please try again later.'), 500
 
 @app.route('/marketplace')
 def marketplace_page():
@@ -226,41 +266,6 @@ def create_marketplace_item():
     except Exception as e:
         logger.error(f"Error creating marketplace item: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
-
-def ensure_leaderboard_images():
-    """Ensure leaderboard images exist"""
-    images_dir = os.path.join('static', 'images')
-    os.makedirs(images_dir, exist_ok=True)
-
-    # Create icon images
-    icons = {
-        'gate.png': [(16, 0), (32, 16), (16, 32), (0, 16)],  # Diamond shape
-        'monster.png': [(0, 0), (32, 0), (32, 32), (0, 32)],  # Square
-        'members.png': [(16, 0), (32, 16), (16, 32), (0, 16)],  # Diamond shape
-        'trophy.png': [(16, 0), (32, 16), (16, 32), (0, 16)]  # Diamond shape
-    }
-
-    for filename, points in icons.items():
-        path = os.path.join(images_dir, filename)
-        if not os.path.exists(path):
-            img = Image.new('RGBA', (32, 32), (0, 0, 0, 0))
-            d = ImageDraw.Draw(img)
-            d.polygon(points, fill=(108, 49, 255, 255))
-            img.save(path)
-
-    # Create leaderboard background
-    bg_path = os.path.join(images_dir, 'leaderboard-bg.jpg')
-    if not os.path.exists(bg_path):
-        img = Image.new('RGB', (1920, 1080), color='darkblue')
-        d = ImageDraw.Draw(img)
-        # Create a gradient effect
-        for y in range(1080):
-            alpha = int(255 * (1 - y/1080))
-            d.line([(0, y), (1920, y)], fill=(0, 0, alpha))
-        img.save(bg_path)
-
-# Initialize leaderboard images
-ensure_leaderboard_images()
 
 @app.route('/leaderboard')
 def leaderboard_page():
