@@ -10,11 +10,10 @@
         align-items: center;
         justify-content: center;
         text-align: center;
-        background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.9)),
+        background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)),
                     url('https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5');
         background-size: cover;
         background-position: center;
-        overflow: hidden;
     }
 
     .hero::before {
@@ -24,7 +23,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: var(--background-overlay);
+        background: rgba(0, 0, 0, 0.25);
     }
 
     .hero-content {
@@ -40,16 +39,14 @@
         margin-bottom: 24px;
         text-transform: uppercase;
         letter-spacing: 4px;
-        color: var(--matrix-green);
-        text-shadow: var(--matrix-glow);
-        animation: flicker 2s infinite;
+        color: var(--primary-color);
+        text-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
     }
 
     .hero-subtitle {
         font-size: 24px;
         margin-bottom: 40px;
-        color: var(--matrix-green);
-        opacity: 0.8;
+        color: rgba(255, 255, 255, 0.9);
     }
 
     .hero-buttons {
@@ -59,15 +56,16 @@
     }
 
     .features {
-        background-color: rgba(0, 59, 0, 0.1);
+        background-color: var(--secondary-color);
         position: relative;
     }
 
     .feature-card {
-        background: rgba(13, 2, 8, 0.8);
-        border: 1px solid var(--matrix-green);
+        background: rgba(0, 0, 0, 0.7);
         padding: 40px;
         text-align: center;
+        border-radius: 8px;
+        border: 1px solid var(--primary-color);
         transition: all 0.3s ease;
     }
 
@@ -79,29 +77,30 @@
     .feature-icon {
         font-size: 48px;
         margin-bottom: 24px;
-        text-shadow: var(--matrix-glow);
+        color: var(--primary-color);
     }
 
     .feature-title {
         font-size: 24px;
         margin-bottom: 16px;
-        color: var(--matrix-green);
+        color: var(--primary-color);
         text-transform: uppercase;
         letter-spacing: 2px;
     }
 
     .feature-description {
-        color: var(--matrix-green);
-        opacity: 0.8;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 16px;
+        line-height: 1.6;
     }
 
     .news-section {
-        background-color: var(--matrix-black);
+        background-color: var(--background-color);
     }
 
     .news-card {
-        background: rgba(0, 59, 0, 0.2);
-        border: 1px solid var(--matrix-green);
+        background: var(--secondary-color);
+        border-radius: 8px;
         overflow: hidden;
         transition: all 0.3s ease;
     }
@@ -112,9 +111,8 @@
 
     .news-image {
         width: 100%;
-        height: 200px;
+        height: 240px;
         object-fit: cover;
-        border-bottom: 1px solid var(--matrix-green);
     }
 
     .news-content {
@@ -123,22 +121,22 @@
 
     .news-date {
         font-size: 14px;
-        color: var(--matrix-green);
-        margin-bottom: 12px;
-        opacity: 0.8;
+        color: var(--primary-color);
+        margin-bottom: 8px;
+        font-weight: 500;
     }
 
     .news-title {
         font-size: 20px;
+        font-weight: 700;
         margin-bottom: 12px;
-        color: var(--matrix-green);
-        text-transform: uppercase;
-        letter-spacing: 1px;
+        line-height: 1.4;
     }
 
     .news-excerpt {
-        color: var(--matrix-green);
-        opacity: 0.8;
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 16px;
+        line-height: 1.6;
     }
 
     .leaderboard {
@@ -146,46 +144,43 @@
         position: relative;
     }
 
-    .leaderboard-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 40px;
-        background: rgba(13, 2, 8, 0.8);
-        border: 1px solid var(--matrix-green);
+    .top-players {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 40px;
     }
 
-    .leaderboard-table th,
-    .leaderboard-table td {
-        padding: 16px;
-        text-align: left;
-        border-bottom: 1px solid rgba(0, 255, 65, 0.2);
+    .player-card {
+        background: rgba(0, 0, 0, 0.8);
+        padding: 32px;
+        text-align: center;
+        border-radius: 8px;
+        border: 1px solid var(--primary-color);
+        transition: all 0.3s ease;
     }
 
-    .leaderboard-table th {
-        color: var(--matrix-green);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        font-weight: normal;
+    .player-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 0 30px rgba(0, 255, 65, 0.2);
     }
 
-    .leaderboard-table tr:hover {
-        background: rgba(0, 255, 65, 0.1);
-    }
-
-    .rank {
-        color: var(--matrix-green);
-        font-size: 24px;
-        text-shadow: var(--matrix-glow);
+    .player-rank {
+        font-size: 48px;
+        font-weight: 800;
+        color: var(--primary-color);
+        margin-bottom: 16px;
+        line-height: 1;
     }
 
     .player-name {
-        color: var(--matrix-green);
-        font-weight: bold;
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 12px;
     }
 
-    .stats {
-        color: var(--matrix-green);
-        opacity: 0.8;
+    .player-stats {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 16px;
     }
 
     @media (max-width: 768px) {
@@ -202,16 +197,18 @@
             align-items: center;
         }
 
-        .leaderboard-table {
-            font-size: 14px;
+        .section-title {
+            font-size: 28px;
+        }
+
+        .grid-3 {
+            grid-template-columns: 1fr;
         }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="matrix-overlay" id="matrix-rain"></div>
-
 <section class="hero">
     <div class="hero-content">
         <h1 class="hero-title">Enter the Matrix</h1>
@@ -258,7 +255,7 @@
             <article class="news-card">
                 <img src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5" alt="{{ item.title }}" class="news-image">
                 <div class="news-content">
-                    <div class="news-date">[{{ item.date }}]</div>
+                    <div class="news-date">{{ item.date }}</div>
                     <h3 class="news-title">{{ item.title }}</h3>
                     <p class="news-excerpt">{{ item.content }}</p>
                 </div>
@@ -299,32 +296,33 @@
 {% block scripts %}
 <script>
     // Matrix Rain Effect
-    const canvas = document.createElement('canvas');
+    const canvas = document.getElementById('matrix-bg');
     const ctx = canvas.getContext('2d');
-    document.querySelector('.matrix-overlay').appendChild(canvas);
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const matrix = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%";
-    const matrixArray = matrix.split("");
-    const fontSize = 14;
-    const columns = canvas.width / fontSize;
-    const drops = [];
-
-    for (let i = 0; i < columns; i++) {
-        drops[i] = 1;
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
     }
 
-    function drawMatrix() {
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const matrix = "01";
+    const fontSize = 14;
+    const columns = canvas.width / fontSize;
+    const drops = new Array(Math.floor(columns)).fill(1);
+
+    function draw() {
         ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#00FF41";
-        ctx.font = fontSize + "px monospace";
+
+        ctx.fillStyle = "rgba(0, 255, 65, 0.25)"; // Reduced opacity
+        ctx.font = fontSize + "px 'Share Tech Mono'";
 
         for (let i = 0; i < drops.length; i++) {
-            const text = matrixArray[Math.floor(Math.random() * matrixArray.length)];
+            const text = matrix[Math.floor(Math.random() * matrix.length)];
             ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
             if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
                 drops[i] = 0;
             }
@@ -332,12 +330,7 @@
         }
     }
 
-    setInterval(drawMatrix, 50);
-
-    // Resize handler
-    window.addEventListener('resize', () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    });
+    // Reduced speed of matrix rain
+    setInterval(draw, 100); // Slower interval
 </script>
 {% endblock %}
