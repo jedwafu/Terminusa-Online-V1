@@ -61,11 +61,11 @@ def init_database():
 
         # Drop existing database if it exists
         console.print("[yellow]Dropping existing database if it exists...[/yellow]")
-        cur.execute("DROP DATABASE IF EXISTS %s", (db_name,))
+        cur.execute(f"DROP DATABASE IF EXISTS {db_name}")
 
         # Create fresh database
         console.print(f"[yellow]Creating database {db_name}...[/yellow]")
-        cur.execute('CREATE DATABASE %s', (db_name,))
+        cur.execute(f"CREATE DATABASE {db_name}")
         console.print(f"[green]Database {db_name} created successfully[/green]")
 
         cur.close()
