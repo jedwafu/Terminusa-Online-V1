@@ -96,7 +96,7 @@ def index():
             }
         ]
 
-        return render_template('index_new.html', 
+        return render_template('index.html', 
                              title='Home',
                              top_players=top_players,
                              news=news)
@@ -110,7 +110,7 @@ def index():
 def login_page():
     """Login page"""
     try:
-        return render_template('login_new.html', title='Login')
+        return render_template('login.html', title='Login')
     except Exception as e:
         logger.error(f"Error rendering login page: {str(e)}")
         return render_template('error.html', 
@@ -176,7 +176,7 @@ def marketplace_page():
             }
         ]
 
-        return render_template('marketplace_new.html', 
+        return render_template('marketplace.html', 
                              title='Marketplace',
                              items=items,
                              is_authenticated=get_jwt_identity() is not None)
@@ -274,7 +274,7 @@ def leaderboard_page():
             }
         ]
 
-        return render_template('leaderboard_new.html', 
+        return render_template('leaderboard.html', 
                              title='Leaderboard',
                              hunters=hunters,
                              guilds=guilds)
