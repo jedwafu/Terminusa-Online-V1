@@ -101,12 +101,112 @@ def index():
         return render_template('error.html', 
                              error_message='An error occurred while loading the page. Please try again later.'), 500
 
+def ensure_marketplace_images():
+    """Ensure marketplace images exist"""
+    images_dir = os.path.join('static', 'images')
+    items_dir = os.path.join(images_dir, 'items')
+    os.makedirs(items_dir, exist_ok=True)
+
+    # Create crystal icon
+    crystal_path = os.path.join(images_dir, 'crystal.png')
+    if not os.path.exists(crystal_path):
+        img = Image.new('RGBA', (32, 32), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
+        # Draw a simple crystal shape
+        points = [(16, 0), (32, 16), (16, 32), (0, 16)]
+        d.polygon(points, fill=(108, 49, 255, 255))
+        img.save(crystal_path)
+
+    # Create marketplace background
+    bg_path = os.path.join(images_dir, 'marketplace-bg.jpg')
+    if not os.path.exists(bg_path):
+        img = Image.new('RGB', (1920, 1080), color='darkblue')
+        d = ImageDraw.Draw(img)
+        # Create a gradient effect
+        for y in range(1080):
+            alpha = int(255 * (1 - y/1080))
+            d.line([(0, y), (1920, y)], fill=(0, 0, alpha))
+        img.save(bg_path)
+
+    # Create placeholder item images
+    placeholder_items = [
+        ('sword.jpg', 'purple'),
+        ('armor.jpg', 'blue'),
+        ('potion.jpg', 'red'),
+        ('ring.jpg', 'gold')
+    ]
+    for filename, color in placeholder_items:
+        path = os.path.join(items_dir, filename)
+        if not os.path.exists(path):
+            img = Image.new('RGB', (400, 400), color=color)
+            d = ImageDraw.Draw(img)
+            d.text((200, 200), filename.split('.')[0].title(), fill='white', anchor='mm')
+            img.save(path)
+
+# Initialize marketplace images
+ensure_marketplace_images()
+
 @app.route('/marketplace')
 def marketplace_page():
     """Marketplace page"""
     try:
-        items = Item.query.all()  # Get all marketplace items
-        return render_template('marketplace.html', 
+        # Create sample items if none exist
+        items = [
+            {
+                'id': 1,
+                'name': 'Legendary Sword',
+                'type': 'Weapon',
+                'rarity': 'Legendary',
+                'image': 'items/sword.jpg',
+                'stats': {
+                    'Attack': '+100',
+                    'Speed': '+20',
+                    'Critical': '15%'
+                },
+                'price': 1000
+            },
+            {
+                'id': 2,
+                'name': 'Mythic Armor',
+                'type': 'Armor',
+                'rarity': 'Epic',
+                'image': 'items/armor.jpg',
+                'stats': {
+                    'Defense': '+80',
+                    'HP': '+500',
+                    'Magic Resist': '+30'
+                },
+                'price': 800
+            },
+            {
+                'id': 3,
+                'name': 'Health Potion',
+                'type': 'Consumable',
+                'rarity': 'Common',
+                'image': 'items/potion.jpg',
+                'stats': {
+                    'Heal': '200 HP',
+                    'Duration': 'Instant',
+                    'Cooldown': '30s'
+                },
+                'price': 50
+            },
+            {
+                'id': 4,
+                'name': 'Ring of Power',
+                'type': 'Accessory',
+                'rarity': 'Rare',
+                'image': 'items/ring.jpg',
+                'stats': {
+                    'All Stats': '+15',
+                    'Magic Power': '+25',
+                    'MP Regen': '+10%'
+                },
+                'price': 500
+            }
+        ]
+
+        return render_template('marketplace_new.html', 
                              title='Marketplace',
                              items=items,
                              is_authenticated=get_jwt_identity() is not None)
