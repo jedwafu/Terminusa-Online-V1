@@ -1,194 +1,142 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - Terminusa Online</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
-</head>
-<body>
-    <nav class="navbar">
-        <div class="nav-content">
-            <a href="{{ url_for('index') }}" class="logo">Terminusa</a>
-            <div class="nav-links">
-                <a href="{{ url_for('index') }}" class="btn">Home</a>
-                <a href="{{ url_for('marketplace_page') }}" class="btn">Marketplace</a>
-                <a href="{{ url_for('leaderboard_page') }}" class="btn">Leaderboard</a>
-            </div>
+{% extends "base.html" %}
+
+{% block head %}
+<style>
+.register-container {
+    max-width: 400px;
+    margin: 4rem auto;
+    padding: 2rem;
+    background: var(--card-background);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+}
+
+.register-title {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: var(--primary-color);
+    font-size: 2rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-color);
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+.register-actions {
+    text-align: center;
+    margin-top: 2rem;
+}
+
+.register-actions .btn {
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.login-link {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.login-link a {
+    color: var(--accent-color);
+    text-decoration: none;
+}
+
+.login-link a:hover {
+    text-decoration: underline;
+}
+
+.error-message {
+    color: #f44336;
+    text-align: center;
+    margin: 1rem 0;
+    display: none;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="register-container">
+    <h1 class="register-title">Register</h1>
+    <form id="registerForm" onsubmit="handleRegister(event)">
+        <div class="form-group">
+            <label for="username" class="form-label">Username</label>
+            <input type="text" id="username" name="username" class="form-input" required>
         </div>
-    </nav>
-
-    <section class="auth-section">
-        <div class="container">
-            <div class="auth-container">
-                <div class="auth-box">
-                    <h1 class="glow-text">Become a Hunter</h1>
-                    <form id="registerForm" class="auth-form">
-                        <div class="form-group">
-                            <label for="username">Hunter Name</label>
-                            <input type="text" id="username" name="username" required 
-                                   class="glow-input" autocomplete="username">
-                            <span class="input-hint">Choose your hunter name wisely, it cannot be changed.</span>
-                        </div>
-                        <div class="form-group">
-                            <label for="email">Email</label>
-                            <input type="email" id="email" name="email" required 
-                                   class="glow-input" autocomplete="email">
-                            <span class="input-hint">Required for account recovery and updates.</span>
-                        </div>
-                        <div class="form-group">
-                            <label for="password">Password</label>
-                            <input type="password" id="password" name="password" required 
-                                   class="glow-input" autocomplete="new-password">
-                            <span class="password-strength"></span>
-                        </div>
-                        <div class="form-group">
-                            <label for="confirmPassword">Confirm Password</label>
-                            <input type="password" id="confirmPassword" name="confirmPassword" required 
-                                   class="glow-input" autocomplete="new-password">
-                        </div>
-                        <div class="terms-container">
-                            <label class="terms-label">
-                                <input type="checkbox" id="termsAccepted" required>
-                                <span>I accept the <a href="#" class="glow-link">Terms of Service</a> and acknowledge the <a href="#" class="glow-link">Privacy Policy</a></span>
-                            </label>
-                        </div>
-                        <button type="submit" class="btn register-btn">Begin Your Journey</button>
-                    </form>
-                    <div class="auth-links">
-                        <p>Already a Hunter? <a href="{{ url_for('login_page') }}" class="glow-link">Login here</a></p>
-                    </div>
-                </div>
-                <div class="auth-decoration">
-                    <div class="magic-circle"></div>
-                    <div class="floating-crystals">
-                        <div class="crystal"></div>
-                        <div class="crystal"></div>
-                        <div class="crystal"></div>
-                    </div>
-                    <div class="rank-progression">
-                        <div class="rank">F</div>
-                        <div class="rank">E</div>
-                        <div class="rank">D</div>
-                        <div class="rank">C</div>
-                        <div class="rank">B</div>
-                        <div class="rank">A</div>
-                        <div class="rank">S</div>
-                    </div>
-                </div>
-            </div>
+        <div class="form-group">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" id="email" name="email" class="form-input" required>
         </div>
-    </section>
+        <div class="form-group">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" id="password" name="password" class="form-input" required>
+        </div>
+        <div id="errorMessage" class="error-message"></div>
+        <div class="register-actions">
+            <button type="submit" class="btn btn-primary">Register</button>
+        </div>
+        <div class="login-link">
+            Already have an account? <a href="{{ url_for('login_page') }}">Login here</a>
+        </div>
+    </form>
+</div>
 
-    <div id="notification" class="notification hidden">
-        <span class="notification-message"></span>
-        <button class="notification-close">&times;</button>
-    </div>
-
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const registerForm = document.getElementById('registerForm');
-            const notification = document.getElementById('notification');
-            const notificationMessage = document.querySelector('.notification-message');
-            const notificationClose = document.querySelector('.notification-close');
-            const passwordInput = document.getElementById('password');
-            const confirmPasswordInput = document.getElementById('confirmPassword');
-            const passwordStrength = document.querySelector('.password-strength');
-
-            // Password strength checker
-            passwordInput.addEventListener('input', function() {
-                const password = this.value;
-                let strength = 0;
-                let message = '';
-
-                if (password.length >= 8) strength++;
-                if (password.match(/[a-z]/)) strength++;
-                if (password.match(/[A-Z]/)) strength++;
-                if (password.match(/[0-9]/)) strength++;
-                if (password.match(/[^a-zA-Z0-9]/)) strength++;
-
-                switch(strength) {
-                    case 0:
-                    case 1:
-                        message = 'Weak';
-                        passwordStrength.className = 'password-strength weak';
-                        break;
-                    case 2:
-                    case 3:
-                        message = 'Moderate';
-                        passwordStrength.className = 'password-strength moderate';
-                        break;
-                    case 4:
-                    case 5:
-                        message = 'Strong';
-                        passwordStrength.className = 'password-strength strong';
-                        break;
-                }
-
-                passwordStrength.textContent = message;
-            });
-
-            registerForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const username = document.getElementById('username').value;
-                const email = document.getElementById('email').value;
-                const password = passwordInput.value;
-                const confirmPassword = confirmPasswordInput.value;
-
-                if (password !== confirmPassword) {
-                    showNotification('Passwords do not match', 'error');
-                    return;
-                }
-
-                try {
-                    const response = await fetch('/api/register', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ username, email, password })
-                    });
-
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        showNotification('Registration successful! You can now login.', 'success');
-                        setTimeout(() => {
-                            window.location.href = '/login';
-                        }, 2000);
-                    } else {
-                        showNotification(data.message || 'Registration failed', 'error');
-                    }
-                } catch (error) {
-                    console.error('Registration error:', error);
-                    showNotification('Registration failed. Please try again.', 'error');
-                }
-            });
-
-            function showNotification(message, type) {
-                notificationMessage.textContent = message;
-                notification.className = `notification ${type}`;
-                notification.classList.remove('hidden');
-                setTimeout(() => {
-                    notification.classList.add('hidden');
-                }, 3000);
-            }
-
-            notificationClose.addEventListener('click', () => {
-                notification.classList.add('hidden');
-            });
-
-            // Animate rank progression
-            const ranks = document.querySelectorAll('.rank');
-            ranks.forEach((rank, index) => {
-                setTimeout(() => {
-                    rank.classList.add('glow');
-                }, index * 500);
-            });
+<script>
+async function handleRegister(event) {
+    event.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const errorMessage = document.getElementById('errorMessage');
+    
+    try {
+        const response = await fetch('/api/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, email, password })
         });
-    </script>
-</body>
-</html>
+        
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            // Show success message
+            showToast('Registration successful! Please check your email to verify your account.', 'success');
+            
+            // Redirect to login page after a short delay
+            setTimeout(() => {
+                window.location.href = '{{ url_for("login_page") }}';
+            }, 3000);
+        } else {
+            errorMessage.textContent = data.message;
+            errorMessage.style.display = 'block';
+        }
+    } catch (error) {
+        errorMessage.textContent = 'An error occurred. Please try again.';
+        errorMessage.style.display = 'block';
+    }
+}
+</script>
+{% endblock %}

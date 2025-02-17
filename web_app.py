@@ -121,7 +121,7 @@ def play_page():
 def login_page():
     """Login page"""
     try:
-        return render_template('login.html', 
+        return render_template('login_fixed.html', 
                              title='Login',
                              is_authenticated=False)
     except Exception as e:
@@ -189,7 +189,7 @@ def marketplace_page():
             }
         ]
 
-        return render_template('marketplace.html', 
+        return render_template('marketplace_fixed.html', 
                              title='Marketplace',
                              items=items,
                              is_authenticated=get_jwt_identity() is not None,
@@ -288,7 +288,7 @@ def leaderboard_page():
             }
         ]
 
-        return render_template('leaderboard.html', 
+        return render_template('leaderboard_fixed.html', 
                              title='Leaderboard',
                              hunters=hunters,
                              guilds=guilds,
@@ -467,7 +467,7 @@ def verify_email(token):
         user.email_verification_token = None
         db.session.commit()
 
-        return render_template('message.html',
+        return render_template('message_fixed.html',
                              title='Email Verified',
                              message='Your email has been verified successfully. You can now log in.')
 
