@@ -38,3 +38,5 @@ typing-extensions
 # Server Management
 psutil==5.9.5
 rich==13.5.2
+requests==2.31.0
+urllib3==2.1.0

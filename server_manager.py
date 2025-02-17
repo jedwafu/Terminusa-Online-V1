@@ -7,6 +7,7 @@ import psutil
 import logging
 import subprocess
 import bcrypt
+import requests
 from datetime import datetime
 from rich.console import Console
 from rich.table import Table
@@ -114,6 +115,20 @@ def ensure_admin_exists():
             db.session.rollback()
             return False
 
+def wait_for_service(url, max_attempts=30):
+    """Wait for a service to become available"""
+    attempt = 0
+    while attempt < max_attempts:
+        try:
+            response = requests.get(url, timeout=1)
+            if response.status_code == 200:
+                return True
+        except requests.exceptions.RequestException:
+            pass
+        attempt += 1
+        time.sleep(1)
+    return False
+
 class ServiceManager:
     def __init__(self):
         self.console = Console()
@@ -124,7 +139,8 @@ class ServiceManager:
                 'start_cmd': 'systemctl start postgresql',
                 'stop_cmd': 'systemctl stop postgresql',
                 'status_cmd': 'systemctl status postgresql',
-                'process_name': 'postgres'
+                'process_name': 'postgres',
+                'health_url': None
             },
             'postfix': {
                 'name': 'Mail Server',
@@ -132,26 +148,30 @@ class ServiceManager:
                 'start_cmd': 'systemctl start postfix',
                 'stop_cmd': 'systemctl stop postfix',
                 'status_cmd': 'systemctl status postfix',
-                'process_name': 'master'
+                'process_name': 'master',
+                'health_url': None
             },
             'opendkim': {
                 'name': 'OpenDKIM',
                 'start_cmd': 'systemctl start opendkim',
                 'stop_cmd': 'systemctl stop opendkim',
                 'status_cmd': 'systemctl status opendkim',
-                'process_name': 'opendkim'
+                'process_name': 'opendkim',
+                'health_url': None
             },
             'game_server': {
                 'name': 'Game Server',
                 'port': int(os.getenv('SERVER_PORT', 5000)),
                 'start_cmd': 'python main.py',
-                'process_name': 'python'
+                'process_name': 'python',
+                'health_url': 'http://localhost:5000/health'
             },
             'web_server': {
                 'name': 'Web Server',
                 'port': int(os.getenv('WEBAPP_PORT', 5001)),
                 'start_cmd': 'python web_app.py',
-                'process_name': 'python'
+                'process_name': 'python',
+                'health_url': 'http://localhost:5001/health'
             }
         }
         self.processes = {}
@@ -230,6 +250,12 @@ class ServiceManager:
                     stderr=subprocess.PIPE
                 )
                 self.processes[service_id] = process
+                
+                # Wait for service to be available
+                if service.get('health_url'):
+                    if not wait_for_service(service['health_url']):
+                        logger.error(f"Service {service['name']} failed to start")
+                        return False
             else:
                 # Start system services
                 subprocess.run(service['start_cmd'].split(), check=True)
@@ -287,7 +313,9 @@ class ServiceManager:
             
             # Start services in order
             for service_id in ['postgresql', 'postfix', 'opendkim', 'web_server', 'game_server']:
-                self.start_service(service_id)
+                if not self.start_service(service_id):
+                    self.console.print(f"[red]Failed to start {service_id}![/red]")
+                    return False
                 progress.update(task, advance=1)
                 time.sleep(1)  # Give each service time to start
 
