@@ -75,19 +75,22 @@ error_log() {
     if [ "$DEBUG" = true ] && [ ! -z "$2" ]; then
         echo -e "${RED}[ERROR DETAILS] $2${NC}"
     fi
-    logger -t "terminusa" "ERROR: $1"
+    # Log to file instead of using logger command
+    echo "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> logs/server.log
 }
 
 # Success logging function
 success_log() {
     echo -e "${GREEN}[SUCCESS] $(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
-    logger -t "terminusa" "SUCCESS: $1"
+    # Log to file instead of using logger command
+    echo "[SUCCESS] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> logs/server.log
 }
 
 # Info logging function
 info_log() {
     echo -e "${YELLOW}[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
-    logger -t "terminusa" "INFO: $1"
+    # Log to file instead of using logger command
+    echo "[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> logs/server.log
 }
 
 # Get service resource usage
