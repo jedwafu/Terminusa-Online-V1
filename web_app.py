@@ -39,8 +39,9 @@ def ensure_static_directories():
     os.makedirs('static/css', exist_ok=True)
     os.makedirs('static/js', exist_ok=True)
 
-# Initialize static directories
+# Initialize directories
 ensure_static_directories()
+os.makedirs('logs', exist_ok=True)  # Create logs directory
 
 # Configure app
 app.config.update(
@@ -472,9 +473,6 @@ def handle_exception(error):
                          error_message='An unexpected error occurred. Please try again later.'), 500
 
 if __name__ == '__main__':
-    # Create logs directory
-    os.makedirs('logs', exist_ok=True)
-    
     # Get port from environment or use default
     port = int(os.getenv('WEBAPP_PORT', 5001))
     debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
