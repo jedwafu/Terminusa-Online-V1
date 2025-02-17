@@ -5,7 +5,7 @@ from models import (
     Inventory, InventoryItem, Guild, GuildMember, Party, 
     PartyMember, PartyInvitation, Gate, GateSession, 
     MagicBeast, Achievement, AIBehavior, Transaction, 
-    ChatMessage
+    ChatMessage, Announcement
 )
 from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt, verify_jwt_in_request, create_access_token
 import logging
@@ -36,6 +36,159 @@ def send_static(path):
 @app.route('/health')
 def health_check():
     return jsonify({'status': 'healthy'})
+
+def admin_required():
+    def wrapper(fn):
+        @wraps(fn)
+        def decorated_view(*args, **kwargs):
+            try:
+                verify_jwt_in_request()
+                claims = get_jwt()
+                if claims.get("role") != "admin":
+                    return jsonify({"status": "error", "message": "Admin access required"}), 403
+                return fn(*args, **kwargs)
+            except Exception as e:
+                return jsonify({"status": "error", "message": "Authentication required"}), 401
+        return decorated_view
+    return wrapper
+
+@app.route('/announcements')
+def announcements_page():
+    """Render announcements page"""
+    announcements = Announcement.query.order_by(Announcement.created_at.desc()).all()
+    return render_template('announcements_new.html', announcements=announcements)
+
+@app.route('/api/announcements', methods=['GET'])
+def get_announcements():
+    """Get all announcements"""
+    try:
+        announcements = Announcement.query.order_by(Announcement.created_at.desc()).all()
+        return jsonify({
+            'status': 'success',
+            'announcements': [{
+                'id': a.id,
+                'title': a.title,
+                'content': a.content,
+                'created_at': a.created_at.isoformat()
+            } for a in announcements]
+        }), 200
+    except Exception as e:
+        app.logger.error(f"Error getting announcements: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to get announcements'}), 500
+
+@app.route('/api/announcements/<int:id>', methods=['GET'])
+def get_announcement(id):
+    """Get a single announcement"""
+    try:
+        announcement = Announcement.query.get(id)
+        if not announcement:
+            return jsonify({'status': 'error', 'message': 'Announcement not found'}), 404
+            
+        return jsonify({
+            'status': 'success',
+            'announcement': {
+                'id': announcement.id,
+                'title': announcement.title,
+                'content': announcement.content,
+                'created_at': announcement.created_at.isoformat()
+            }
+        }), 200
+    except Exception as e:
+        app.logger.error(f"Error getting announcement: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to get announcement'}), 500
+
+@app.route('/api/announcements', methods=['POST'])
+@admin_required()
+def create_announcement():
+    """Create a new announcement"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'status': 'error', 'message': 'No data provided'}), 400
+            
+        title = data.get('title')
+        content = data.get('content')
+        
+        if not title or not content:
+            return jsonify({'status': 'error', 'message': 'Title and content are required'}), 400
+            
+        announcement = Announcement(title=title, content=content)
+        db.session.add(announcement)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Announcement created successfully',
+            'announcement': {
+                'id': announcement.id,
+                'title': announcement.title,
+                'content': announcement.content,
+                'created_at': announcement.created_at.isoformat()
+            }
+        }), 201
+    except Exception as e:
+        app.logger.error(f"Error creating announcement: {str(e)}")
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': 'Failed to create announcement'}), 500
+
+@app.route('/api/announcements/<int:id>', methods=['PUT'])
+@admin_required()
+def update_announcement(id):
+    """Update an announcement"""
+    try:
+        announcement = Announcement.query.get(id)
+        if not announcement:
+            return jsonify({'status': 'error', 'message': 'Announcement not found'}), 404
+            
+        data = request.get_json()
+        if not data:
+            return jsonify({'status': 'error', 'message': 'No data provided'}), 400
+            
+        title = data.get('title')
+        content = data.get('content')
+        
+        if not title or not content:
+            return jsonify({'status': 'error', 'message': 'Title and content are required'}), 400
+            
+        announcement.title = title
+        announcement.content = content
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Announcement updated successfully',
+            'announcement': {
+                'id': announcement.id,
+                'title': announcement.title,
+                'content': announcement.content,
+                'created_at': announcement.created_at.isoformat()
+            }
+        }), 200
+    except Exception as e:
+        app.logger.error(f"Error updating announcement: {str(e)}")
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': 'Failed to update announcement'}), 500
+
+@app.route('/api/announcements/<int:id>', methods=['DELETE'])
+@admin_required()
+def delete_announcement(id):
+    """Delete an announcement"""
+    try:
+        announcement = Announcement.query.get(id)
+        if not announcement:
+            return jsonify({'status': 'error', 'message': 'Announcement not found'}), 404
+            
+        db.session.delete(announcement)
+        db.session.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Announcement deleted successfully'
+        }), 200
+    except Exception as e:
+        app.logger.error(f"Error deleting announcement: {str(e)}")
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': 'Failed to delete announcement'}), 500
 
 # Page routes
 @app.route('/login')

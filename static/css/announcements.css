@@ -39,15 +39,19 @@
     resize: vertical;
 }
 
+.form-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
 /* Announcements List */
 #announcement-list {
-    list-style: none;
-    padding: 0;
     max-width: 800px;
     margin: 2rem auto;
 }
 
-#announcement-list li {
+.announcement-item {
     background: rgba(255, 255, 255, 0.05);
     margin-bottom: 1.5rem;
     padding: 1.5rem;
@@ -56,21 +60,40 @@
     transition: transform 0.3s, box-shadow 0.3s;
 }
 
-#announcement-list li:hover {
+.announcement-item:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-#announcement-list h3 {
+.announcement-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.announcement-header h3 {
     color: var(--primary-color);
-    margin: 0 0 1rem 0;
+    margin: 0;
     font-size: 1.5rem;
 }
 
-#announcement-list p {
+.announcement-date {
+    color: var(--text-color);
+    opacity: 0.7;
+    font-size: 0.9rem;
+}
+
+.announcement-item p {
     color: var(--text-color);
     margin: 0 0 1rem 0;
     line-height: 1.6;
+}
+
+.announcement-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
 }
 
 /* Button Styles */
@@ -93,9 +116,41 @@
     color: var(--primary-color);
 }
 
+.btn-danger {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
 .btn:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Notification Styles */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 2rem;
+    border-radius: 4px;
+    color: white;
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: 1000;
+}
+
+.notification.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.notification.success {
+    background-color: #28a745;
+}
+
+.notification.error {
+    background-color: #dc3545;
 }
 
 /* Responsive Design */
@@ -110,8 +165,18 @@
         padding: 1rem;
     }
 
-    #announcement-list h3 {
+    .announcement-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .announcement-header h3 {
         font-size: 1.25rem;
+    }
+
+    .announcement-actions {
+        flex-wrap: wrap;
     }
 }
 
