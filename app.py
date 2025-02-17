@@ -1,8 +1,10 @@
+from gevent import monkey
+monkey.patch_all()
+
 import os
 from flask import Flask
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
-from flask_socketio import SocketIO
 from dotenv import load_dotenv
 import logging
 from logging.handlers import RotatingFileHandler
@@ -44,15 +46,6 @@ app.config.update(
 print("[DEBUG] Initializing extensions")
 jwt = JWTManager(app)
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})  # Enable CORS for API routes
-socketio = SocketIO(
-    app,
-    cors_allowed_origins="*",
-    async_mode='eventlet',
-    logger=True,
-    engineio_logger=True,
-    ping_timeout=60,
-    ping_interval=25
-)
 
 # Initialize database
 init_db(app)
@@ -82,48 +75,6 @@ import models
 print("[DEBUG] Importing routes")
 import routes
 
-# WebSocket event handlers
-@socketio.on('connect')
-def handle_connect():
-    app.logger.info('Client connected')
-
-@socketio.on('disconnect')
-def handle_disconnect():
-    app.logger.info('Client disconnected')
-
-@socketio.on('join_gate')
-def handle_join_gate(data):
-    """Handle player joining a gate"""
-    gate_id = data.get('gate_id')
-    if gate_id:
-        socketio.emit('gate_update', {
-            'type': 'player_joined',
-            'gate_id': gate_id,
-            'player': data.get('player')
-        })
-
-@socketio.on('leave_gate')
-def handle_leave_gate(data):
-    """Handle player leaving a gate"""
-    gate_id = data.get('gate_id')
-    if gate_id:
-        socketio.emit('gate_update', {
-            'type': 'player_left',
-            'gate_id': gate_id,
-            'player': data.get('player')
-        })
-
-@socketio.on('combat_event')
-def handle_combat_event(data):
-    """Handle combat events in gates"""
-    gate_id = data.get('gate_id')
-    if gate_id:
-        socketio.emit('gate_update', {
-            'type': 'combat_event',
-            'gate_id': gate_id,
-            'event': data.get('event')
-        })
-
 # Error handlers
 @app.errorhandler(404)
 def not_found_error(error):
@@ -139,11 +90,8 @@ def internal_error(error):
 if __name__ == '__main__':
     port = int(os.getenv('SERVER_PORT', 5000))
     debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-    socketio.run(
-        app,
-        host='0.0.0.0',
-        port=port,
-        debug=debug,
-        use_reloader=False,
-        allow_unsafe_werkzeug=True
-    )
+    
+    # Use gevent WSGI server
+    from gevent.pywsgi import WSGIServer
+    http_server = WSGIServer(('0.0.0.0', port), app)
+    http_server.serve_forever()
