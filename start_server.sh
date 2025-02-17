@@ -639,11 +639,8 @@ main() {
         esac
     done
 
-    # Check if running as root
-    if [ "$EUID" -ne 0 ]; then 
-        error_log "Please run as root"
-        exit 1
-    fi
+    # Create logs directory if it doesn't exist
+    mkdir -p logs
 
     # Set up trap for cleanup
     trap cleanup SIGINT SIGTERM
