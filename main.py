@@ -10,6 +10,8 @@ from dotenv import load_dotenv
 import logging
 from flask import Flask
 from werkzeug.serving import make_server
+import gevent
+from gevent.event import Event
 
 # Configure logging
 logging.basicConfig(
@@ -23,7 +25,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Global flag for graceful shutdown
-should_exit = multiprocessing.Event()
+should_exit = Event()
 
 def is_port_in_use(port):
     """Check if a port is in use"""
@@ -53,26 +55,21 @@ def cleanup_port(port):
         logger.error(f"Error cleaning up port: {e}")
     return False
 
-def start_game_state_updater(game_manager, stop_event):
-    """Start background thread to update game state"""
-    def update_loop():
-        while not stop_event.is_set():
-            try:
-                game_manager.update_game_state()
-                time.sleep(60)  # Update every minute
-            except Exception as e:
-                logger.error(f"Error in game state update: {str(e)}", exc_info=True)
-    
-    thread = threading.Thread(target=update_loop)
-    thread.daemon = True
-    thread.start()
-    return thread
+def update_game_state(game_manager, stop_event):
+    """Update game state periodically"""
+    while not stop_event.is_set():
+        try:
+            game_manager.update_game_state()
+            gevent.sleep(60)  # Update every minute
+        except Exception as e:
+            logger.error(f"Error in game state update: {str(e)}", exc_info=True)
+            gevent.sleep(5)  # Wait a bit before retrying
 
 def run_server(app, host, port, debug):
-    """Run the Flask-SocketIO server in a separate process"""
+    """Run the Flask-SocketIO server"""
     from app import socketio
     try:
-        logger.info(f"Starting server process on {host}:{port}")
+        logger.info(f"Starting server on {host}:{port}")
         socketio.run(
             app,
             host=host,
@@ -113,24 +110,17 @@ def main():
         game_manager = GameManager()
         logger.info("Game manager initialized")
 
-        # Start game state updater
-        updater_stop = threading.Event()
-        game_state_updater = start_game_state_updater(game_manager, updater_stop)
-        logger.info("Game state updater started")
-
         # Configure server
         port = int(os.getenv('SERVER_PORT', 5000))
         debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-        
-        # Use 0.0.0.0 to bind to all interfaces
-        host = '0.0.0.0'
+        host = '0.0.0.0'  # Bind to all interfaces
 
         # Check if port is in use
         if is_port_in_use(port):
             logger.warning(f"Port {port} is already in use")
             if cleanup_port(port):
                 logger.info(f"Successfully cleaned up port {port}")
-                time.sleep(1)  # Additional delay after cleanup
+                gevent.sleep(1)  # Additional delay after cleanup
             else:
                 alternative_port = port + 1
                 while is_port_in_use(alternative_port) and alternative_port < port + 10:
@@ -141,46 +131,32 @@ def main():
                 else:
                     raise RuntimeError(f"Could not find available port in range {port}-{port+9}")
 
-        # Start server in a separate process
-        logger.info(f"Starting server on {host}:{port}")
-        server_process = multiprocessing.Process(
-            target=run_server,
-            args=(app, host, port, debug)
-        )
-        server_process.start()
+        # Start game state updater in a greenlet
+        updater = gevent.spawn(update_game_state, game_manager, should_exit)
+        logger.info("Game state updater started")
 
-        # Wait a bit to ensure server starts
-        time.sleep(2)
-        
-        # Check if server process is still alive
-        if not server_process.is_alive():
-            raise RuntimeError("Server failed to start")
+        # Start server in a greenlet
+        server = gevent.spawn(run_server, app, host, port, debug)
+        logger.info("Server started")
 
-        # Monitor the server process
-        while not should_exit.is_set() and server_process.is_alive():
-            time.sleep(1)
+        # Wait for either the server to finish or a shutdown signal
+        gevent.joinall([server, updater], timeout=None, count=1)
 
         # Cleanup
         logger.info("Initiating shutdown...")
-        updater_stop.set()
-        if server_process.is_alive():
-            server_process.terminate()
-            server_process.join(timeout=5)
-        game_state_updater.join(timeout=5)
+        should_exit.set()
+        gevent.joinall([server, updater], timeout=5)
         logger.info("Shutdown complete")
 
     except Exception as e:
         logger.error(f"Error in main: {str(e)}", exc_info=True)
         raise
     finally:
-        # Ensure processes are cleaned up
-        if 'server_process' in locals() and server_process.is_alive():
-            server_process.terminate()
-            server_process.join(timeout=5)
+        # Ensure everything is cleaned up
+        should_exit.set()
 
 if __name__ == "__main__":
     try:
-        multiprocessing.freeze_support()
         main()
     except Exception as e:
         logger.error(f"Fatal error: {str(e)}", exc_info=True)
