@@ -323,7 +323,7 @@ def login():
 def register_page():
     """Registration page"""
     try:
-        return render_template('register.html', 
+        return render_template('register_new.html', 
                              title='Register',
                              is_authenticated=False)
     except Exception as e:
