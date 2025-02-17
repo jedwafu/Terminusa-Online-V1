@@ -3,7 +3,7 @@ monkey.patch_all()
 
 from flask import Flask, render_template, jsonify, request, redirect, url_for
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, verify_jwt_in_request_optional
 from dotenv import load_dotenv
 from database import db, init_db
 from models import User, PlayerCharacter, Wallet, Inventory, Transaction, Gate, Guild, Item
@@ -66,6 +66,9 @@ init_db(app)
 def index():
     """Main landing page"""
     try:
+        # Check JWT but don't require it
+        verify_jwt_in_request_optional()
+        
         # Get top players for the leaderboard section
         top_players = PlayerCharacter.query.order_by(
             PlayerCharacter.level.desc(),
@@ -136,6 +139,9 @@ def login_page():
 def marketplace_page():
     """Marketplace page"""
     try:
+        # Check JWT but don't require it
+        verify_jwt_in_request_optional()
+        
         # Create sample items if none exist
         items = [
             {
@@ -218,6 +224,9 @@ def create_marketplace_item():
 def leaderboard_page():
     """Leaderboard page"""
     try:
+        # Check JWT but don't require it
+        verify_jwt_in_request_optional()
+        
         # Create sample hunters if none exist
         hunters = [
             {
@@ -512,4 +521,6 @@ if __name__ == '__main__':
     debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
     
     # Run the app
-    app.run(host='0.0.0.0', port=port, debug=debug)
+    from gevent.pywsgi import WSGIServer
+    http_server = WSGIServer(('0.0.0.0', port), app)
+    http_server.serve_forever()
