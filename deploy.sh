@@ -51,10 +51,16 @@ echo -e "${YELLOW}Installing Python dependencies...${NC}"
 python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements-base.txt
 
-# Initialize database
-echo -e "${YELLOW}Initializing database...${NC}"
+# Run database migrations
+echo -e "${YELLOW}Running database migrations...${NC}"
 export PYTHONPATH=$PWD
-python3 init_db.py
+export FLASK_APP=app.py
+flask db upgrade
+
+# Create static directories if they don't exist
+echo -e "${YELLOW}Setting up static files...${NC}"
+mkdir -p static/css static/js static/images
+chmod -R 755 static
 
 # Set up Nginx
 echo -e "${YELLOW}Setting up Nginx...${NC}"
@@ -62,8 +68,23 @@ if [ ! -f "/etc/nginx/sites-available/terminusa" ]; then
     sudo cp nginx/terminusa.conf /etc/nginx/sites-available/
     sudo ln -s /etc/nginx/sites-available/terminusa /etc/nginx/sites-enabled/
     sudo rm -f /etc/nginx/sites-enabled/default
-    sudo nginx -t && sudo systemctl restart nginx
 fi
+
+# Verify and restart Nginx
+echo -e "${YELLOW}Verifying Nginx configuration...${NC}"
+sudo nginx -t
+if [ $? -eq 0 ]; then
+    echo -e "${YELLOW}Restarting Nginx...${NC}"
+    sudo systemctl restart nginx
+else
+    echo -e "${RED}Nginx configuration test failed${NC}"
+    exit 1
+fi
+
+# Set proper permissions
+echo -e "${YELLOW}Setting file permissions...${NC}"
+sudo chown -R www-data:www-data static
+sudo chmod -R 755 static
 
 # Start services
 echo -e "${YELLOW}Starting services...${NC}"
