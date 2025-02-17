@@ -1,18 +1,17 @@
-{% extends "base.html" %}
+{% extends "base_new.html" %}
 
 {% block head %}
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
-
     <section class="hero">
         <div class="hero-content">
             <h1 class="hero-title glow-text">Rise as a Hunter</h1>
             <p class="hero-subtitle">Enter the world of Terminusa, where only the strongest survive</p>
             <div class="hero-buttons">
-                <a href="{{ url_for('play_page') }}" class="btn">Play Now</a>
-                <a href="{{ url_for('register_page') }}" class="btn">Join the Hunt</a>
+                <a href="{{ url_for('play_page') }}" class="btn auth-required logged-in">Play Now</a>
+                <a href="{{ url_for('register_page') }}" class="btn auth-dependent logged-out">Join the Hunt</a>
             </div>
         </div>
     </section>
@@ -21,30 +20,16 @@
         <div class="container">
             <h2>Latest News</h2>
             <div class="news-grid">
+                {% for item in news %}
                 <article class="news-card">
-                    <img src="{{ url_for('static', filename='images/news1.jpg') }}" alt="News 1" class="news-image">
+                    <img src="{{ url_for('static', filename='images/' + item.image) }}" alt="{{ item.title }}" class="news-image">
                     <div class="news-content">
-                        <div class="news-date">February 17, 2025</div>
-                        <h3 class="news-title">New Gate System Released</h3>
-                        <p>Experience the thrill of our new gate system. Challenge powerful monsters and earn legendary rewards.</p>
+                        <div class="news-date">{{ item.date }}</div>
+                        <h3 class="news-title">{{ item.title }}</h3>
+                        <p>{{ item.content }}</p>
                     </div>
                 </article>
-                <article class="news-card">
-                    <img src="{{ url_for('static', filename='images/news2.jpg') }}" alt="News 2" class="news-image">
-                    <div class="news-content">
-                        <div class="news-date">February 16, 2025</div>
-                        <h3 class="news-title">Season 1 Rankings</h3>
-                        <p>The first season rankings are in! See who made it to the top of the hunter rankings.</p>
-                    </div>
-                </article>
-                <article class="news-card">
-                    <img src="{{ url_for('static', filename='images/news3.jpg') }}" alt="News 3" class="news-image">
-                    <div class="news-content">
-                        <div class="news-date">February 15, 2025</div>
-                        <h3 class="news-title">New Magic Beasts Discovered</h3>
-                        <p>Mysterious new magic beasts have appeared in the gates. Can you defeat them?</p>
-                    </div>
-                </article>
+                {% endfor %}
             </div>
         </div>
     </section>
@@ -63,27 +48,15 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {% for player in top_players %}
                     <tr>
-                        <td>1</td>
-                        <td>Shadow Monarch</td>
-                        <td>100</td>
-                        <td>1,234</td>
-                        <td>S</td>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ player.user.username }}</td>
+                        <td>{{ player.level }}</td>
+                        <td>{{ player.gates_cleared }}</td>
+                        <td>{{ player.rank }}</td>
                     </tr>
-                    <tr>
-                        <td>2</td>
-                        <td>Frost Queen</td>
-                        <td>98</td>
-                        <td>1,156</td>
-                        <td>S</td>
-                    </tr>
-                    <tr>
-                        <td>3</td>
-                        <td>Dragon Slayer</td>
-                        <td>95</td>
-                        <td>1,089</td>
-                        <td>S</td>
-                    </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
@@ -108,36 +81,4 @@
             </div>
         </div>
     </section>
-
-{% endblock %}
-
-{% block scripts %}
-<script src="{{ url_for('static', filename='js/main.js') }}"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Check authentication status
-        const token = localStorage.getItem('auth_token');
-        const authDependentElements = document.querySelectorAll('.auth-dependent');
-        
-        if (token) {
-            // Hide login/register buttons if logged in
-            authDependentElements.forEach(el => {
-                if (el.classList.contains('logged-out')) {
-                    el.style.display = 'none';
-                } else if (el.classList.contains('logged-in')) {
-                    el.style.display = 'inline-block';
-                }
-            });
-        } else {
-            // Show login/register buttons if logged out
-            authDependentElements.forEach(el => {
-                if (el.classList.contains('logged-in')) {
-                    el.style.display = 'none';
-                } else if (el.classList.contains('logged-out')) {
-                    el.style.display = 'inline-block';
-                }
-            });
-        }
-    });
-</script>
 {% endblock %}

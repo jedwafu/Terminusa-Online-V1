@@ -3,62 +3,46 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terminusa Online</title>
-    <link rel="stylesheet" href="/static/css/main.css">
+    <title>{{ title or 'Terminusa Online' }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     {% block head %}{% endblock %}
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Terminusa Online</h1>
-            <nav>
-                <ul>
-                    <li><a href="/">Home</a></li>
-                    <li><a href="/play" class="auth-required">Play</a></li>
-                    <li><a href="/marketplace" class="auth-required">Marketplace</a></li>
-                    <li><a href="/gates" class="auth-required">Gates</a></li>
-                    <li class="auth-controls">
-                        <span class="logged-out">
-                            <a href="/login">Login</a>
-                            <a href="/register">Register</a>
-                        </span>
-                        <span class="logged-in" style="display: none;">
-                            <span class="username"></span>
-                            <a href="#" onclick="logout()">Logout</a>
-                        </span>
-                    </li>
-                </ul>
-            </nav>
-        </header>
+    <nav class="navbar">
+        <div class="nav-content">
+            <a href="/" class="logo">Terminusa</a>
+            <div class="nav-links">
+                <a href="/" class="btn">Home</a>
+                <a href="/play" class="btn auth-required logged-in">Play</a>
+                <a href="/marketplace" class="btn auth-required logged-in">Marketplace</a>
+                <a href="/gates" class="btn auth-required logged-in">Gates</a>
+                <a href="/login" class="btn logged-out">Login</a>
+                <a href="/register" class="btn logged-out">Register</a>
+                <span class="logged-in" style="display:none">
+                    <span class="username"></span>
+                    <a href="#" onclick="logout()" class="btn">Logout</a>
+                </span>
+            </div>
+        </div>
+    </nav>
 
-        <main>
-            {% block content %}{% endblock %}
-        </main>
-
-        <footer>
-            <p>&copy; 2025 Terminusa Online. All rights reserved.</p>
-        </footer>
-    </div>
+    {% block content %}{% endblock %}
 
     <script>
-    // Check authentication status on page load
     document.addEventListener('DOMContentLoaded', function() {
         const token = localStorage.getItem('auth_token');
         const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
         
         if (token) {
-            // User is logged in
             document.querySelectorAll('.logged-out').forEach(el => el.style.display = 'none');
             document.querySelectorAll('.logged-in').forEach(el => el.style.display = 'inline-block');
             document.querySelectorAll('.username').forEach(el => el.textContent = userData.username || '');
         } else {
-            // User is logged out
             document.querySelectorAll('.logged-out').forEach(el => el.style.display = 'inline-block');
             document.querySelectorAll('.logged-in').forEach(el => el.style.display = 'none');
             
-            // Redirect if trying to access protected pages
-            const authRequired = document.querySelector('.auth-required');
-            if (authRequired && window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+            if (document.querySelector('.auth-required.active') && 
+                !window.location.pathname.match(/^\/(login|register)$/)) {
                 window.location.href = '/login';
             }
         }
@@ -68,18 +52,6 @@
         localStorage.removeItem('auth_token');
         localStorage.removeItem('user_data');
         window.location.href = '/';
-    }
-
-    // Add authorization header to all API requests
-    function fetchWithAuth(url, options = {}) {
-        const token = localStorage.getItem('auth_token');
-        if (token) {
-            options.headers = {
-                ...options.headers,
-                'Authorization': `Bearer ${token}`
-            };
-        }
-        return fetch(url, options);
     }
     </script>
 

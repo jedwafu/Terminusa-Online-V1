@@ -1,101 +1,182 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Leaderboard - Terminusa Online</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
-</head>
-<body>
-    <nav class="navbar">
-        <div class="nav-content">
-            <a href="{{ url_for('index') }}" class="logo">Terminusa</a>
-            <div class="nav-links">
-                <a href="{{ url_for('index') }}" class="btn">Home</a>
-                <a href="{{ url_for('marketplace_page') }}" class="btn">Marketplace</a>
-                <a href="{{ url_for('leaderboard_page') }}" class="btn">Leaderboard</a>
-                <a href="{{ url_for('login_page') }}" class="btn auth-dependent">Login</a>
-                <a href="{{ url_for('register_page') }}" class="btn auth-dependent">Register</a>
-            </div>
+{% extends "base_new.html" %}
+
+{% block head %}
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+.leaderboard-section {
+    padding: 4rem 2rem;
+    background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), url('/static/images/leaderboard-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    min-height: calc(100vh - 60px);
+}
+
+.leaderboard-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.leaderboard-title {
+    font-size: 3rem;
+    color: var(--accent-color);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    text-shadow: 0 0 10px rgba(108, 49, 255, 0.5);
+}
+
+.leaderboard-subtitle {
+    font-size: 1.2rem;
+    color: #888;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.leaderboard-tabs {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+    gap: 1rem;
+}
+
+.tab-button {
+    padding: 1rem 2rem;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid var(--accent-color);
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.tab-button.active {
+    background: var(--accent-color);
+}
+
+.leaderboard-table-container {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid var(--accent-color);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(108, 49, 255, 0.2);
+}
+
+.leaderboard-table th {
+    background: rgba(108, 49, 255, 0.1);
+    color: var(--accent-color);
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.leaderboard-table tr:hover {
+    background: rgba(108, 49, 255, 0.05);
+}
+
+.rank {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--accent-color);
+}
+
+.rank-1 { color: gold; }
+.rank-2 { color: silver; }
+.rank-3 { color: #cd7f32; }
+
+.hunter-name,
+.guild-name {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.hunter-rank,
+.guild-rank {
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    background: rgba(108, 49, 255, 0.2);
+}
+
+.rank-S { color: gold; }
+.rank-A { color: #ff5555; }
+.rank-B { color: #5555ff; }
+.rank-C { color: #55ff55; }
+.rank-D { color: #ffff55; }
+.rank-E { color: #aaaaaa; }
+.rank-F { color: #ffffff; }
+
+.stats {
+    display: flex;
+    gap: 1rem;
+    color: #888;
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.stat-icon {
+    width: 16px;
+    height: 16px;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .leaderboard-tabs {
+        flex-direction: column;
+    }
+    
+    .tab-button {
+        width: 100%;
+    }
+    
+    .stats {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .leaderboard-table th,
+    .leaderboard-table td {
+        padding: 0.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="leaderboard-section">
+    <div class="container">
+        <div class="leaderboard-header">
+            <h1 class="leaderboard-title">Leaderboard</h1>
+            <p class="leaderboard-subtitle">The strongest hunters and most powerful guilds in Terminusa Online</p>
         </div>
-    </nav>
 
-    <section class="leaderboard-section">
-        <div class="container">
-            <h1>Hunter Rankings</h1>
-            
-            <div class="leaderboard-filters">
-                <select id="rankFilter" class="filter-select">
-                    <option value="all">All Ranks</option>
-                    <option value="S">S Rank</option>
-                    <option value="A">A Rank</option>
-                    <option value="B">B Rank</option>
-                    <option value="C">C Rank</option>
-                    <option value="D">D Rank</option>
-                    <option value="E">E Rank</option>
-                    <option value="F">F Rank</option>
-                </select>
-                <select id="timeFilter" class="filter-select">
-                    <option value="all">All Time</option>
-                    <option value="weekly">This Week</option>
-                    <option value="monthly">This Month</option>
-                    <option value="season">This Season</option>
-                </select>
-            </div>
+        <div class="leaderboard-tabs">
+            <button class="tab-button active" onclick="showTab('hunters')">Top Hunters</button>
+            <button class="tab-button" onclick="showTab('guilds')">Top Guilds</button>
+        </div>
 
-            <div class="top-hunters">
-                <div class="top-three">
-                    {% if players|length >= 2 %}
-                    <div class="runner-up left">
-                        <div class="rank">2</div>
-                        <div class="hunter-card">
-                            <img src="{{ url_for('static', filename='images/rank-frame-silver.png') }}" class="rank-frame">
-                            <div class="hunter-info">
-                                <h3>{{ players[1].user.username }}</h3>
-                                <p class="hunter-stats">
-                                    Level {{ players[1].level }} • Rank {{ players[1].rank }}<br>
-                                    Gates Cleared: {{ players[1].gates_cleared }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    {% if players|length >= 1 %}
-                    <div class="champion">
-                        <div class="rank">1</div>
-                        <div class="hunter-card">
-                            <img src="{{ url_for('static', filename='images/rank-frame-gold.png') }}" class="rank-frame">
-                            <div class="hunter-info">
-                                <h3>{{ players[0].user.username }}</h3>
-                                <p class="hunter-stats">
-                                    Level {{ players[0].level }} • Rank {{ players[0].rank }}<br>
-                                    Gates Cleared: {{ players[0].gates_cleared }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    {% if players|length >= 3 %}
-                    <div class="runner-up right">
-                        <div class="rank">3</div>
-                        <div class="hunter-card">
-                            <img src="{{ url_for('static', filename='images/rank-frame-bronze.png') }}" class="rank-frame">
-                            <div class="hunter-info">
-                                <h3>{{ players[2].user.username }}</h3>
-                                <p class="hunter-stats">
-                                    Level {{ players[2].level }} • Rank {{ players[2].rank }}<br>
-                                    Gates Cleared: {{ players[2].gates_cleared }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-
+        <div id="hunters-tab" class="tab-content active">
             <div class="leaderboard-table-container">
                 <table class="leaderboard-table">
                     <thead>
@@ -103,54 +184,99 @@
                             <th>Rank</th>
                             <th>Hunter</th>
                             <th>Level</th>
-                            <th>Rank</th>
-                            <th>Gates Cleared</th>
-                            <th>Title</th>
+                            <th>Stats</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for player in players[3:] %}
+                        {% for hunter in hunters %}
                         <tr>
-                            <td>{{ loop.index + 3 }}</td>
-                            <td>{{ player.user.username }}</td>
-                            <td>{{ player.level }}</td>
-                            <td class="rank-{{ player.rank.lower() }}">{{ player.rank }}</td>
-                            <td>{{ player.gates_cleared }}</td>
-                            <td>{{ player.title }}</td>
+                            <td><span class="rank rank-{{ loop.index }}">{{ loop.index }}</span></td>
+                            <td>
+                                <div class="hunter-name">
+                                    {{ hunter.user.username }}
+                                    <span class="hunter-rank rank-{{ hunter.rank }}">{{ hunter.rank }}</span>
+                                </div>
+                            </td>
+                            <td>{{ hunter.level }}</td>
+                            <td>
+                                <div class="stats">
+                                    <div class="stat">
+                                        <img src="{{ url_for('static', filename='images/gate.png') }}" alt="Gates" class="stat-icon">
+                                        {{ hunter.gates_cleared }} Gates
+                                    </div>
+                                    <div class="stat">
+                                        <img src="{{ url_for('static', filename='images/monster.png') }}" alt="Monsters" class="stat-icon">
+                                        {{ hunter.monsters_defeated }} Monsters
+                                    </div>
+                                </div>
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
+        </div>
 
-            <div class="leaderboard-pagination">
-                <button id="prevPage" class="btn">Previous</button>
-                <span id="pageInfo">Page 1 of 1</span>
-                <button id="nextPage" class="btn">Next</button>
+        <div id="guilds-tab" class="tab-content">
+            <div class="leaderboard-table-container">
+                <table class="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Guild</th>
+                            <th>Level</th>
+                            <th>Stats</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for guild in guilds %}
+                        <tr>
+                            <td><span class="rank rank-{{ loop.index }}">{{ loop.index }}</span></td>
+                            <td>
+                                <div class="guild-name">
+                                    {{ guild.name }}
+                                    <span class="guild-rank">Level {{ guild.level }}</span>
+                                </div>
+                            </td>
+                            <td>{{ guild.level }}</td>
+                            <td>
+                                <div class="stats">
+                                    <div class="stat">
+                                        <img src="{{ url_for('static', filename='images/members.png') }}" alt="Members" class="stat-icon">
+                                        {{ guild.member_count }} Members
+                                    </div>
+                                    <div class="stat">
+                                        <img src="{{ url_for('static', filename='images/trophy.png') }}" alt="Achievements" class="stat-icon">
+                                        {{ guild.achievement_count }} Achievements
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
-    </section>
+    </div>
+</section>
+{% endblock %}
 
-    <footer>
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-logo">
-                    <h3>Terminusa Online</h3>
-                    <p>Rise as a Hunter</p>
-                </div>
-                <div class="footer-links">
-                    <a href="#">Terms of Service</a>
-                    <a href="#">Privacy Policy</a>
-                    <a href="#">Contact Us</a>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2025 Terminusa Online. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
+{% block scripts %}
+<script>
+function showTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+        if (button.textContent.toLowerCase().includes(tabName)) {
+            button.classList.add('active');
+        }
+    });
 
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/leaderboard.js') }}"></script>
-</body>
-</html>
+    // Update tab content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(`${tabName}-tab`).classList.add('active');
+}
+</script>
+{% endblock %}

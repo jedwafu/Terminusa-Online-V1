@@ -1,120 +1,225 @@
-{% extends "base.html" %}
+{% extends "base_new.html" %}
 
 {% block head %}
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+.auth-section {
+    min-height: calc(100vh - 60px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/static/images/login-bg.jpg');
+    background-size: cover;
+    background-position: center;
+}
+
+.auth-container {
+    display: flex;
+    max-width: 1200px;
+    width: 100%;
+    gap: 2rem;
+}
+
+.auth-box {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 2rem;
+    border-radius: 10px;
+    border: 2px solid var(--accent-color);
+    box-shadow: 0 0 30px rgba(108, 49, 255, 0.3);
+}
+
+.auth-form {
+    margin-top: 2rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--accent-color);
+    font-size: 1.1rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.8rem;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--accent-color);
+    border-radius: 5px;
+    color: white;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #b931ff;
+    box-shadow: 0 0 10px rgba(185, 49, 255, 0.5);
+}
+
+.login-btn {
+    width: 100%;
+    padding: 1rem;
+    margin-top: 1rem;
+    background: linear-gradient(45deg, #6c31ff, #b931ff);
+    border: none;
+    border-radius: 5px;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.login-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(108, 49, 255, 0.4);
+}
+
+.auth-links {
+    margin-top: 2rem;
+    text-align: center;
+}
+
+.auth-links a {
+    color: var(--accent-color);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.auth-links a:hover {
+    color: #b931ff;
+}
+
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 2rem;
+    border-radius: 5px;
+    background: var(--accent-color);
+    color: white;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.notification.hidden {
+    transform: translateX(120%);
+    opacity: 0;
+}
+
+.notification.error {
+    background: #e74c3c;
+}
+
+.notification.success {
+    background: #27ae60;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0;
+    margin-left: 1rem;
+}
+</style>
 {% endblock %}
 
 {% block content %}
-
 <section class="auth-section">
-        <div class="container">
-            <div class="auth-container">
-                <div class="auth-box">
-                    <h1 class="glow-text">Login</h1>
-                    <form id="loginForm" class="auth-form">
-                        <div class="form-group">
-                            <label for="username">Username</label>
-                            <input type="text" id="username" name="username" required 
-                                   class="glow-input" autocomplete="username">
-                        </div>
-                        <div class="form-group">
-                            <label for="password">Password</label>
-                            <input type="password" id="password" name="password" required 
-                                   class="glow-input" autocomplete="current-password">
-                        </div>
-                        <button type="submit" class="btn login-btn">Enter the Gate</button>
-                    </form>
-                    <div class="auth-links">
-                        <p>Don't have an account? <a href="{{ url_for('register_page') }}" class="glow-link">Register as a Hunter</a></p>
-                        <a href="#" class="forgot-password glow-link">Forgot Password?</a>
-                    </div>
+    <div class="auth-container">
+        <div class="auth-box">
+            <h1 class="glow-text">Login</h1>
+            <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required 
+                           autocomplete="username" placeholder="Enter your username">
                 </div>
-                <div class="auth-decoration">
-                    <div class="magic-circle"></div>
-                    <div class="floating-crystals">
-                        <div class="crystal"></div>
-                        <div class="crystal"></div>
-                        <div class="crystal"></div>
-                    </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required 
+                           autocomplete="current-password" placeholder="Enter your password">
                 </div>
+                <button type="submit" class="login-btn">Enter the Gate</button>
+            </form>
+            <div class="auth-links">
+                <p>Don't have an account? <a href="{{ url_for('register_page') }}">Register as a Hunter</a></p>
+                <a href="#" class="forgot-password">Forgot Password?</a>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
 <div id="notification" class="notification hidden">
     <span class="notification-message"></span>
     <button class="notification-close">&times;</button>
 </div>
-
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/main.js') }}"></script>
 <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const loginForm = document.getElementById('loginForm');
-            const notification = document.getElementById('notification');
-            const notificationMessage = document.querySelector('.notification-message');
-            const notificationClose = document.querySelector('.notification-close');
+document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('loginForm');
+    const notification = document.getElementById('notification');
+    const notificationMessage = document.querySelector('.notification-message');
+    const notificationClose = document.querySelector('.notification-close');
 
-            loginForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const username = document.getElementById('username').value;
-                const password = document.getElementById('password').value;
+    loginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
 
-                try {
-                    const response = await fetch('/api/login', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ username, password })
-                    });
-
-                    const data = await response.json();
-
-                    if (response.ok) {
-                        localStorage.setItem('auth_token', data.token);
-                        localStorage.setItem('user_data', JSON.stringify(data.user));
-                        showNotification('Login successful! Entering the gate...', 'success');
-                        setTimeout(() => {
-                            window.location.href = '/play';
-                        }, 1500);
-                    } else {
-                        showNotification(data.message || 'Login failed', 'error');
-                    }
-                } catch (error) {
-                    console.error('Login error:', error);
-                    showNotification('Login failed. Please try again.', 'error');
-                }
+        try {
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
             });
 
-            function showNotification(message, type) {
-                notificationMessage.textContent = message;
-                notification.className = `notification ${type}`;
-                notification.classList.remove('hidden');
+            const data = await response.json();
+
+            if (response.ok) {
+                localStorage.setItem('auth_token', data.token);
+                localStorage.setItem('user_data', JSON.stringify(data.user));
+                showNotification('Login successful! Redirecting...', 'success');
                 setTimeout(() => {
-                    notification.classList.add('hidden');
-                }, 3000);
+                    window.location.href = data.redirect_url || 'https://play.terminusa.online';
+                }, 1500);
+            } else {
+                showNotification(data.message || 'Login failed', 'error');
             }
+        } catch (error) {
+            console.error('Login error:', error);
+            showNotification('Login failed. Please try again.', 'error');
+        }
+    });
 
-            notificationClose.addEventListener('click', () => {
-                notification.classList.add('hidden');
-            });
+    function showNotification(message, type) {
+        notificationMessage.textContent = message;
+        notification.className = `notification ${type}`;
+        notification.classList.remove('hidden');
+        setTimeout(() => {
+            notification.classList.add('hidden');
+        }, 3000);
+    }
 
-            // Add particle effects
-            const magicCircle = document.querySelector('.magic-circle');
-            const crystals = document.querySelectorAll('.crystal');
-
-            function animateParticles() {
-                crystals.forEach((crystal, index) => {
-                    const delay = index * 0.2;
-                    crystal.style.animation = `float 3s ${delay}s infinite`;
-                });
-            }
-
-            animateParticles();
-        });
+    notificationClose.addEventListener('click', () => {
+        notification.classList.add('hidden');
+    });
+});
 </script>
 {% endblock %}
