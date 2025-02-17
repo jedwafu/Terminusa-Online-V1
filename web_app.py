@@ -23,11 +23,19 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 # Initialize Flask app
-app = Flask(__name__)
+app = Flask(__name__, 
+            static_url_path='/static',
+            static_folder='static')
 CORS(app)
+
+# Ensure static directory exists
+os.makedirs('static/images', exist_ok=True)
+os.makedirs('static/css', exist_ok=True)
+os.makedirs('static/js', exist_ok=True)
 
 # Configure app
 app.config.update(
+    SEND_FILE_MAX_AGE_DEFAULT=0,  # Disable caching during development
     SECRET_KEY=os.getenv('FLASK_SECRET_KEY', 'dev-key-please-change'),
     JWT_SECRET_KEY=os.getenv('JWT_SECRET_KEY', 'jwt-key-please-change'),
     SQLALCHEMY_DATABASE_URI=os.getenv('DATABASE_URL'),
@@ -39,14 +47,78 @@ app.config.update(
 jwt = JWTManager(app)
 init_db(app)
 
+# Ensure required static files exist
+def ensure_static_files():
+    """Ensure required static files exist"""
+    static_dir = os.path.join(os.path.dirname(__file__), 'static')
+    images_dir = os.path.join(static_dir, 'images')
+    
+    # Create directories if they don't exist
+    os.makedirs(images_dir, exist_ok=True)
+    
+    # Create placeholder images if they don't exist
+    for i in range(1, 4):
+        image_path = os.path.join(images_dir, f'news{i}.jpg')
+        if not os.path.exists(image_path):
+            # Create a simple colored rectangle as placeholder
+            from PIL import Image, ImageDraw
+            img = Image.new('RGB', (800, 400), color='purple')
+            d = ImageDraw.Draw(img)
+            d.text((400, 200), f'News {i}', fill='white', anchor='mm')
+            img.save(image_path)
+
+# Initialize static files
+ensure_static_files()
+
 @app.route('/')
 def index():
     """Main landing page"""
     try:
-        return render_template('index.html', title='Home')
+        # Get top players for the leaderboard section
+        top_players = PlayerCharacter.query.order_by(
+            PlayerCharacter.level.desc(),
+            PlayerCharacter.gates_cleared.desc()
+        ).limit(3).all()
+
+        if not top_players:
+            # Add placeholder data if no players exist
+            top_players = [
+                {'user': {'username': 'Shadow Monarch'}, 'level': 100, 'gates_cleared': 1234, 'rank': 'S'},
+                {'user': {'username': 'Frost Queen'}, 'level': 98, 'gates_cleared': 1156, 'rank': 'S'},
+                {'user': {'username': 'Dragon Slayer'}, 'level': 95, 'gates_cleared': 1089, 'rank': 'S'}
+            ]
+
+        # Get latest news
+        news = [
+            {
+                'date': '2025-02-17',
+                'title': 'New Gate System Released',
+                'content': 'Experience the thrill of our new gate system. Challenge powerful monsters and earn legendary rewards.',
+                'image': 'news1.jpg'
+            },
+            {
+                'date': '2025-02-16',
+                'title': 'Season 1 Rankings',
+                'content': 'The first season rankings are in! See who made it to the top of the hunter rankings.',
+                'image': 'news2.jpg'
+            },
+            {
+                'date': '2025-02-15',
+                'title': 'New Magic Beasts Discovered',
+                'content': 'Mysterious new magic beasts have appeared in the gates. Can you defeat them?',
+                'image': 'news3.jpg'
+            }
+        ]
+
+        return render_template('index_new.html', 
+                             title='Home',
+                             top_players=top_players,
+                             news=news)
     except Exception as e:
         logger.error(f"Error rendering index page: {str(e)}")
-        return jsonify({'status': 'error', 'message': 'Failed to render page'}), 500
+        logger.exception(e)  # Log full traceback
+        return render_template('error.html', 
+                             error_message='An error occurred while loading the page. Please try again later.'), 500
 
 @app.route('/gates')
 @jwt_required()
@@ -362,7 +434,8 @@ def not_found_error(error):
     """Handle 404 errors"""
     if request.path.startswith('/api/'):
         return jsonify({'error': 'Not found'}), 404
-    return render_template('index.html'), 404
+    return render_template('error.html', 
+                         error_message='The page you are looking for could not be found.'), 404
 
 @app.errorhandler(500)
 def internal_error(error):
@@ -370,7 +443,18 @@ def internal_error(error):
     db.session.rollback()
     if request.path.startswith('/api/'):
         return jsonify({'error': 'Internal server error'}), 500
-    return render_template('index.html'), 500
+    return render_template('error.html', 
+                         error_message='An internal server error occurred. Please try again later.'), 500
+
+@app.errorhandler(Exception)
+def handle_exception(error):
+    """Handle all other exceptions"""
+    logger.exception(error)  # Log full traceback
+    db.session.rollback()
+    if request.path.startswith('/api/'):
+        return jsonify({'error': str(error)}), 500
+    return render_template('error.html', 
+                         error_message='An unexpected error occurred. Please try again later.'), 500
 
 if __name__ == '__main__':
     # Create logs directory
