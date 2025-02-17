@@ -297,10 +297,10 @@ start_service() {
                 source venv/bin/activate
             fi
             
-            # Start Gunicorn with eventlet worker
+            # Start Gunicorn with gevent worker
             gunicorn web_app:app \
                 --bind 0.0.0.0:$WEBAPP_PORT \
-                --worker-class eventlet \
+                --worker-class gevent \
                 --workers 1 \
                 --timeout 120 \
                 --daemon \
@@ -331,7 +331,16 @@ start_service() {
             # Start with proper environment
             source venv/bin/activate
             export PYTHONPATH=$PWD
-            nohup python main.py > logs/game-server.log 2>&1 &
+            gunicorn main:app \
+                --bind 0.0.0.0:5000 \
+                --worker-class gevent \
+                --workers 1 \
+                --timeout 120 \
+                --daemon \
+                --access-logfile logs/game-server-access.log \
+                --error-logfile logs/game-server.log \
+                --pid logs/game-server.pid \
+                --log-level debug
             
             sleep 2  # Give it time to start
             
