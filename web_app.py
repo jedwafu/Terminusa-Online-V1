@@ -96,7 +96,7 @@ def play_page():
 def login_page():
     """Login page"""
     try:
-        return render_template('login.html', 
+        return render_template('login_new.html', 
                              title='Login',
                              is_authenticated=False)
     except Exception as e:
