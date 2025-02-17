@@ -1,0 +1,351 @@
+{% extends "base_new.html" %}
+
+{% block content %}
+<div class="leaderboard-section">
+    <div class="container">
+        <div class="leaderboard-header">
+            <h1>Leaderboard</h1>
+            <p>Top players and guilds in Terminusa Online</p>
+        </div>
+
+        <div class="leaderboard-tabs">
+            <button class="tab-btn active" data-tab="hunters">
+                <i class="fas fa-user-shield"></i>
+                <span>Top Hunters</span>
+            </button>
+            <button class="tab-btn" data-tab="guilds">
+                <i class="fas fa-users"></i>
+                <span>Top Guilds</span>
+            </button>
+        </div>
+
+        <div class="tab-content active" id="hunters-tab">
+            <div class="leaderboard-grid">
+                {% for hunter in hunters %}
+                <div class="leaderboard-card hunter-card">
+                    <div class="rank-badge rank-{{ hunter.rank.lower() }}">
+                        {{ hunter.rank }}
+                    </div>
+                    <div class="card-content">
+                        <div class="hunter-info">
+                            <h3>{{ hunter.user.username }}</h3>
+                            <div class="hunter-stats">
+                                <div class="stat">
+                                    <i class="fas fa-star"></i>
+                                    <span>Level {{ hunter.level }}</span>
+                                </div>
+                                <div class="stat">
+                                    <i class="fas fa-dungeon"></i>
+                                    <span>{{ hunter.gates_cleared }} Gates</span>
+                                </div>
+                                <div class="stat">
+                                    <i class="fas fa-skull"></i>
+                                    <span>{{ hunter.monsters_defeated }} Kills</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="hunter-achievements">
+                            <div class="achievement">
+                                <i class="fas fa-trophy"></i>
+                                <span>Elite Hunter</span>
+                            </div>
+                            <div class="achievement">
+                                <i class="fas fa-medal"></i>
+                                <span>Gate Master</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="tab-content" id="guilds-tab">
+            <div class="leaderboard-grid">
+                {% for guild in guilds %}
+                <div class="leaderboard-card guild-card">
+                    <div class="guild-banner">
+                        <div class="guild-level">Level {{ guild.level }}</div>
+                    </div>
+                    <div class="card-content">
+                        <div class="guild-info">
+                            <h3>{{ guild.name }}</h3>
+                            <div class="guild-stats">
+                                <div class="stat">
+                                    <i class="fas fa-users"></i>
+                                    <span>{{ guild.member_count }} Members</span>
+                                </div>
+                                <div class="stat">
+                                    <i class="fas fa-trophy"></i>
+                                    <span>{{ guild.achievement_count }} Achievements</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="guild-achievements">
+                            <div class="achievement">
+                                <i class="fas fa-crown"></i>
+                                <span>Elite Guild</span>
+                            </div>
+                            <div class="achievement">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>Defenders</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.leaderboard-section {
+    padding: 48px 0;
+    min-height: calc(100vh - var(--header-height));
+    background: linear-gradient(135deg,
+        rgba(13, 2, 8, 0.95) 0%,
+        rgba(0, 255, 65, 0.1) 50%,
+        rgba(13, 2, 8, 0.95) 100%);
+}
+
+.leaderboard-header {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+.leaderboard-header h1 {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--primary-color);
+    font-size: 36px;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+}
+
+.leaderboard-header p {
+    color: var(--text-muted);
+    font-size: 18px;
+}
+
+.leaderboard-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 24px;
+    background: transparent;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-color);
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-speed) ease;
+}
+
+.tab-btn i {
+    font-size: 20px;
+}
+
+.tab-btn:hover {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.tab-btn.active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--background-color);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.leaderboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+    margin-top: 32px;
+}
+
+.leaderboard-card {
+    position: relative;
+    background: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all var(--transition-speed) ease;
+}
+
+.leaderboard-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px var(--shadow-color);
+}
+
+.rank-badge {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 18px;
+    z-index: 1;
+}
+
+.rank-s {
+    background: rgba(255, 215, 0, 0.1);
+    color: #ffd700;
+    border: 2px solid #ffd700;
+}
+
+.rank-a {
+    background: rgba(192, 192, 192, 0.1);
+    color: #c0c0c0;
+    border: 2px solid #c0c0c0;
+}
+
+.rank-b {
+    background: rgba(205, 127, 50, 0.1);
+    color: #cd7f32;
+    border: 2px solid #cd7f32;
+}
+
+.card-content {
+    padding: 24px;
+}
+
+.hunter-info h3,
+.guild-info h3 {
+    font-family: 'Orbitron', sans-serif;
+    color: var(--primary-color);
+    font-size: 20px;
+    margin-bottom: 16px;
+}
+
+.hunter-stats,
+.guild-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.stat i {
+    color: var(--primary-color);
+}
+
+.hunter-achievements,
+.guild-achievements {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.achievement {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: rgba(0, 255, 65, 0.1);
+    border-radius: 4px;
+    color: var(--primary-color);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.guild-banner {
+    height: 80px;
+    background: linear-gradient(45deg,
+        rgba(0, 255, 65, 0.1),
+        rgba(0, 255, 65, 0.2)
+    );
+    position: relative;
+}
+
+.guild-level {
+    position: absolute;
+    bottom: -12px;
+    left: 24px;
+    padding: 4px 12px;
+    background: var(--primary-color);
+    color: var(--background-color);
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+@media (max-width: 768px) {
+    .leaderboard-header h1 {
+        font-size: 28px;
+    }
+
+    .leaderboard-header p {
+        font-size: 16px;
+    }
+
+    .leaderboard-tabs {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .tab-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .hunter-stats,
+    .guild-stats {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+</style>
+
+<script>
+const tabButtons = document.querySelectorAll('.tab-btn');
+const tabContents = document.querySelectorAll('.tab-content');
+
+tabButtons.forEach(button => {
+    button.addEventListener('click', () => {
+        const tab = button.dataset.tab;
+        
+        // Update active button
+        tabButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        
+        // Update active content
+        tabContents.forEach(content => {
+            content.classList.remove('active');
+            if (content.id === `${tab}-tab`) {
+                content.classList.add('active');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

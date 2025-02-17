@@ -267,11 +267,10 @@ def leaderboard_page():
             }
         ]
 
-        return render_template('leaderboard.html', 
+        return render_template('leaderboard_new.html', 
                              title='Leaderboard',
                              hunters=hunters,
-                             guilds=guilds,
-                             is_authenticated=get_jwt_identity() is not None)
+                             guilds=guilds)
     except Exception as e:
         logger.error(f"Error rendering leaderboard page: {str(e)}")
         return render_template('error.html',
