@@ -4,60 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Terminusa Online</title>
-    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>Welcome to Terminusa Online</h1>
-            <nav>
-                <ul>
-                    <li><a href="/">Home</a></li>
-                    <li><a href="/play">Play</a></li>
-                    <li><a href="/marketplace">Marketplace</a></li>
-                    <li><a href="/gates">Gates</a></li>
-                </ul>
-            </nav>
-        </header>
-
-        <main>
-            <section class="hero">
-                <h2>Begin Your Adventure</h2>
-                <p>Enter a world of magic, mystery, and endless possibilities.</p>
-                <div class="cta-buttons">
-                    <a href="/register" class="button primary">Register</a>
-                    <a href="/login" class="button secondary">Login</a>
-                </div>
-            </section>
-
-            <section class="features">
-                <h2>Game Features</h2>
-                <div class="feature-grid">
-                    <div class="feature-card">
-                        <h3>Gates System</h3>
-                        <p>Explore mysterious gates and battle powerful creatures.</p>
-                    </div>
-                    <div class="feature-card">
-                        <h3>Marketplace</h3>
-                        <p>Trade items and resources with other players.</p>
-                    </div>
-                    <div class="feature-card">
-                        <h3>Guilds</h3>
-                        <p>Join forces with other players to tackle challenges.</p>
-                    </div>
-                    <div class="feature-card">
-                        <h3>Achievements</h3>
-                        <p>Complete tasks and earn rewards.</p>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <footer>
-            <p>&copy; 2025 Terminusa Online. All rights reserved.</p>
-        </footer>
+        <h1>Welcome to Terminusa Online</h1>
+        <div class="nav-buttons">
+            <a href="{{ url_for('login_page') }}" class="btn">Login</a>
+            <a href="{{ url_for('register_page') }}" class="btn">Register</a>
+        </div>
     </div>
-
-    <script src="/static/js/main.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

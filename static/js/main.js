@@ -1,145 +1,104 @@
-// Authentication state management
-class Auth {
-    static getToken() {
-        return localStorage.getItem('auth_token');
-    }
+document.addEventListener('DOMContentLoaded', function() {
+    // Login form handling
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
 
-    static getUserData() {
-        const data = localStorage.getItem('user_data');
-        return data ? JSON.parse(data) : null;
-    }
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
 
-    static isAuthenticated() {
-        return !!this.getToken();
-    }
+                const data = await response.json();
 
-    static setAuth(token, userData) {
-        localStorage.setItem('auth_token', token);
-        localStorage.setItem('user_data', JSON.stringify(userData));
-        this.updateUI();
-    }
-
-    static logout() {
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('user_data');
-        window.location.href = '/';
-    }
-
-    static updateUI() {
-        const isAuth = this.isAuthenticated();
-        const userData = this.getUserData();
-
-        document.querySelectorAll('.logged-out').forEach(el => {
-            el.style.display = isAuth ? 'none' : 'inline-block';
+                if (response.ok) {
+                    localStorage.setItem('token', data.token);
+                    window.location.href = '/play';
+                } else {
+                    alert(data.message || 'Login failed');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Login failed. Please try again.');
+            }
         });
-
-        document.querySelectorAll('.logged-in').forEach(el => {
-            el.style.display = isAuth ? 'inline-block' : 'none';
-        });
-
-        document.querySelectorAll('.username').forEach(el => {
-            el.textContent = userData ? userData.username : '';
-        });
-
-        // Handle protected routes
-        const authRequired = document.querySelector('.auth-required');
-        if (authRequired && !isAuth && 
-            window.location.pathname !== '/login' && 
-            window.location.pathname !== '/register') {
-            window.location.href = '/login';
-        }
     }
-}
 
-// API client with authentication
-class ApiClient {
-    static async fetch(url, options = {}) {
-        const token = Auth.getToken();
-        if (token) {
-            options.headers = {
-                ...options.headers,
-                'Authorization': `Bearer ${token}`
-            };
-        }
-        
-        try {
-            const response = await fetch(url, options);
-            const data = await response.json();
+    // Registration form handling
+    const registerForm = document.getElementById('registerForm');
+    if (registerForm) {
+        registerForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
 
-            if (response.status === 401) {
-                Auth.logout();
-                return null;
+            if (password !== confirmPassword) {
+                alert('Passwords do not match');
+                return;
             }
 
-            return { response, data };
-        } catch (error) {
-            console.error('API Error:', error);
-            return { error };
-        }
-    }
-}
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, email, password })
+                });
 
-// Navigation highlighting
-function highlightCurrentPage() {
-    const currentPath = window.location.pathname;
-    document.querySelectorAll('nav a').forEach(link => {
-        if (link.getAttribute('href') === currentPath) {
-            link.classList.add('active');
-        } else {
-            link.classList.remove('active');
-        }
-    });
-}
+                const data = await response.json();
 
-// Feature card hover effects
-function initFeatureCards() {
-    document.querySelectorAll('.feature-card').forEach(card => {
-        card.addEventListener('mouseenter', function() {
-            this.style.transform = 'translateY(-5px)';
+                if (response.ok) {
+                    alert('Registration successful! Please check your email to verify your account.');
+                    window.location.href = '/login';
+                } else {
+                    alert(data.message || 'Registration failed');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                alert('Registration failed. Please try again.');
+            }
         });
-
-        card.addEventListener('mouseleave', function() {
-            this.style.transform = 'translateY(0)';
-        });
-    });
-}
-
-// Form validation
-function validateForm(formData) {
-    const errors = [];
-
-    if (formData.password && formData.password.length < 8) {
-        errors.push('Password must be at least 8 characters long');
     }
 
-    if (formData.email && !formData.email.includes('@')) {
-        errors.push('Invalid email address');
-    }
-
-    return errors;
-}
-
-// Initialize
-document.addEventListener('DOMContentLoaded', function() {
-    Auth.updateUI();
-    highlightCurrentPage();
-    initFeatureCards();
-
-    // Global logout handler
-    document.querySelectorAll('[onclick="logout()"]').forEach(el => {
-        el.addEventListener('click', (e) => {
-            e.preventDefault();
-            Auth.logout();
+    // Download buttons handling
+    const downloadButtons = document.querySelectorAll('.download-btn');
+    downloadButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                e.preventDefault();
+                alert('Please log in to download the client.');
+                window.location.href = '/login';
+            }
         });
     });
+
+    // Check authentication status
+    function checkAuth() {
+        const token = localStorage.getItem('token');
+        const authButtons = document.querySelectorAll('.auth-dependent');
+        
+        authButtons.forEach(button => {
+            if (token) {
+                button.style.display = 'none';
+            } else {
+                button.style.display = 'inline-block';
+            }
+        });
+    }
+
+    // Initialize
+    checkAuth();
 });
-
-// Error handling
-window.addEventListener('error', function(e) {
-    console.error('Page Error:', e.message);
-    // You could add user-friendly error notifications here
-});
-
-// Export for use in other scripts
-window.Auth = Auth;
-window.ApiClient = ApiClient;

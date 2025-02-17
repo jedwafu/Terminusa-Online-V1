@@ -1,226 +1,39 @@
-{% extends "base.html" %}
-
-{% block title %}Terminusa Online - Play{% endblock %}
-
-{% block extra_css %}
-<style>
-    .game-container {
-        display: grid;
-        grid-template-columns: 250px 1fr 250px;
-        gap: 1rem;
-        min-height: calc(100vh - 100px);
-    }
-
-    .sidebar {
-        background-color: var(--secondary-color);
-        padding: 1rem;
-        border-radius: 0.5rem;
-    }
-
-    .main-content {
-        background-color: var(--secondary-color);
-        padding: 1rem;
-        border-radius: 0.5rem;
-    }
-
-    .character-info {
-        margin-bottom: 1rem;
-    }
-
-    .stat-bar {
-        height: 20px;
-        background-color: var(--primary-color);
-        border-radius: 10px;
-        margin-bottom: 0.5rem;
-        overflow: hidden;
-    }
-
-    .stat-bar-fill {
-        height: 100%;
-        transition: width 0.3s;
-    }
-
-    .hp-bar-fill {
-        background-color: #e74c3c;
-    }
-
-    .mp-bar-fill {
-        background-color: #3498db;
-    }
-
-    .exp-bar-fill {
-        background-color: #f1c40f;
-    }
-
-    .inventory-slot {
-        width: 50px;
-        height: 50px;
-        background-color: var(--primary-color);
-        border: 1px solid var(--accent-color);
-        border-radius: 0.25rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        position: relative;
-    }
-
-    .inventory-slot:hover {
-        border-color: #f1c40f;
-    }
-
-    .inventory-slot img {
-        max-width: 80%;
-        max-height: 80%;
-    }
-
-    .inventory-slot .durability {
-        position: absolute;
-        bottom: 2px;
-        right: 2px;
-        font-size: 0.7rem;
-        background-color: rgba(0, 0, 0, 0.7);
-        padding: 1px 3px;
-        border-radius: 2px;
-    }
-
-    .inventory-grid {
-        display: grid;
-        grid-template-columns: repeat(5, 50px);
-        gap: 0.5rem;
-        margin-top: 1rem;
-    }
-
-    .currency-display {
-        display: flex;
-        align-items: center;
-        margin-bottom: 0.5rem;
-    }
-
-    .currency-icon {
-        width: 20px;
-        height: 20px;
-        margin-right: 0.5rem;
-    }
-
-    .action-buttons {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.5rem;
-        margin-top: 1rem;
-    }
-
-    .status-effects {
-        display: flex;
-        gap: 0.5rem;
-        margin-top: 0.5rem;
-    }
-
-    .status-effect {
-        padding: 0.25rem 0.5rem;
-        border-radius: 0.25rem;
-        font-size: 0.8rem;
-    }
-
-    .status-effect.negative {
-        background-color: #c0392b;
-    }
-
-    .status-effect.positive {
-        background-color: #27ae60;
-    }
-
-    .equipment-slots {
-        display: grid;
-        grid-template-columns: repeat(3, 60px);
-        grid-template-rows: repeat(3, 60px);
-        gap: 0.5rem;
-        margin-bottom: 1rem;
-        justify-content: center;
-    }
-
-    .equipment-slot {
-        width: 60px;
-        height: 60px;
-        background-color: var(--primary-color);
-        border: 1px solid var(--accent-color);
-        border-radius: 0.25rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .equipment-slot[data-slot="head"] { grid-column: 2; grid-row: 1; }
-    .equipment-slot[data-slot="weapon"] { grid-column: 1; grid-row: 2; }
-    .equipment-slot[data-slot="chest"] { grid-column: 2; grid-row: 2; }
-    .equipment-slot[data-slot="accessory"] { grid-column: 3; grid-row: 2; }
-    .equipment-slot[data-slot="legs"] { grid-column: 2; grid-row: 3; }
-
-    .chat-container {
-        height: 300px;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .chat-messages {
-        flex-grow: 1;
-        overflow-y: auto;
-        padding: 0.5rem;
-        background-color: var(--primary-color);
-        border-radius: 0.25rem;
-        margin-bottom: 0.5rem;
-    }
-
-    .chat-input {
-        display: flex;
-        gap: 0.5rem;
-    }
-
-    .party-list {
-        margin-top: 1rem;
-    }
-
-    .party-member {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem;
-        background-color: var(--primary-color);
-        border-radius: 0.25rem;
-        margin-bottom: 0.5rem;
-    }
-
-    .party-member .hp-bar {
-        height: 5px;
-        width: 50px;
-        background-color: #c0392b;
-        border-radius: 2.5px;
-    }
-
-    .combat-message {
-        padding: 0.25rem;
-        margin-bottom: 0.25rem;
-        border-radius: 0.25rem;
-    }
-
-    .combat-message.success {
-        background-color: rgba(39, 174, 96, 0.2);
-    }
-
-    .combat-message.failure {
-        background-color: rgba(192, 57, 43, 0.2);
-    }
-
-    .chat-message {
-        padding: 0.25rem;
-        margin-bottom: 0.25rem;
-    }
-
-    .chat-message .username {
-        font-weight: bold;
-        color: #f1c40f;
-    }
-</style>
-{% endblock %}
-
-[Previous content after the style block remains the same...]
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Play - Terminusa Online</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Terminusa Online</h1>
+        <div id="gameContent">
+            <p>Please download and use the Terminusa Client to play the game.</p>
+            <div class="download-section">
+                <h2>Download Client</h2>
+                <div class="download-buttons">
+                    <a href="/static/downloads/terminusa-client-windows.zip" class="btn download-btn">Windows Client</a>
+                    <a href="/static/downloads/terminusa-client-linux.tar.gz" class="btn download-btn">Linux Client</a>
+                    <a href="/static/downloads/terminusa-client-mac.dmg" class="btn download-btn">Mac Client</a>
+                </div>
+            </div>
+            <div class="instructions">
+                <h2>Getting Started</h2>
+                <ol>
+                    <li>Download the client for your operating system</li>
+                    <li>Extract the files (if needed)</li>
+                    <li>Run the client application</li>
+                    <li>Log in with your account</li>
+                    <li>Start your adventure!</li>
+                </ol>
+            </div>
+        </div>
+        <div class="footer">
+            <a href="{{ url_for('index') }}" class="btn">Back to Home</a>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
