@@ -100,7 +100,8 @@ def index():
         return render_template('index.html', 
                              title='Home',
                              top_players=top_players,
-                             news=news)
+                             news=news,
+                             is_authenticated=get_jwt_identity() is not None)
     except Exception as e:
         logger.error(f"Error rendering index page: {str(e)}")
         logger.exception(e)  # Log full traceback
@@ -111,7 +112,9 @@ def index():
 def login_page():
     """Login page"""
     try:
-        return render_template('login.html', title='Login')
+        return render_template('login.html', 
+                             title='Login',
+                             is_authenticated=False)
     except Exception as e:
         logger.error(f"Error rendering login page: {str(e)}")
         return render_template('error.html', 
@@ -180,7 +183,8 @@ def marketplace_page():
         return render_template('marketplace.html', 
                              title='Marketplace',
                              items=items,
-                             is_authenticated=get_jwt_identity() is not None)
+                             is_authenticated=get_jwt_identity() is not None,
+                             can_edit=get_jwt_identity() is not None)
     except Exception as e:
         logger.error(f"Error rendering marketplace page: {str(e)}")
         return render_template('error.html',
@@ -278,7 +282,8 @@ def leaderboard_page():
         return render_template('leaderboard.html', 
                              title='Leaderboard',
                              hunters=hunters,
-                             guilds=guilds)
+                             guilds=guilds,
+                             is_authenticated=get_jwt_identity() is not None)
     except Exception as e:
         logger.error(f"Error rendering leaderboard page: {str(e)}")
         return render_template('error.html',
@@ -316,7 +321,8 @@ def login():
                 'username': user.username,
                 'role': user.role
             },
-            'redirect_url': 'https://play.terminusa.online'
+            'redirect_url': 'https://play.terminusa.online',
+            'message': 'Login successful! Redirecting to game...'
         }), 200
 
     except Exception as e:
