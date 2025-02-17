@@ -6,59 +6,43 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${YELLOW}Setting up PostgreSQL user and database...${NC}"
-
-# Check if running as root
-if [ "$EUID" -ne 0 ]; then 
-    echo -e "${RED}Please run as root${NC}"
+# Load environment variables
+if [ -f .env ]; then
+    source .env
+    # Extract database credentials from DATABASE_URL
+    if [[ $DATABASE_URL =~ postgresql://([^:]+):([^@]+)@([^/]+)/(.+) ]]; then
+        DB_USER="${BASH_REMATCH[1]}"
+        DB_PASSWORD="${BASH_REMATCH[2]}"
+        DB_HOST="${BASH_REMATCH[3]}"
+        DB_NAME="${BASH_REMATCH[4]}"
+    else
+        echo -e "${RED}Invalid DATABASE_URL format in .env file${NC}"
+        exit 1
+    fi
+else
+    echo -e "${RED}.env file not found${NC}"
     exit 1
 fi
 
-# Default values
-DB_USER="terminusa_user"
-DB_PASSWORD="strongpassword"
-DB_NAME="terminusa"
-
-# Create PostgreSQL user
-echo -e "${YELLOW}Creating PostgreSQL user...${NC}"
-su - postgres -c "psql -c \"CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD';\""
+# Create database user
+echo -e "${YELLOW}Creating database user...${NC}"
+sudo -u postgres createuser $DB_USER 2>/dev/null || true
+sudo -u postgres psql -c "ALTER USER $DB_USER WITH PASSWORD '$DB_PASSWORD';"
+sudo -u postgres psql -c "ALTER USER $DB_USER WITH SUPERUSER;"
 
 # Create database
 echo -e "${YELLOW}Creating database...${NC}"
-su - postgres -c "psql -c \"CREATE DATABASE $DB_NAME OWNER $DB_USER;\""
+sudo -u postgres createdb $DB_NAME -O $DB_USER 2>/dev/null || true
 
-# Grant privileges
-echo -e "${YELLOW}Granting privileges...${NC}"
-su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;\""
+echo -e "${YELLOW}Database URL: $DATABASE_URL${NC}"
 
-# Update pg_hba.conf to allow password authentication
-PG_HBA_PATH=$(su - postgres -c "psql -t -P format=unaligned -c 'SHOW hba_file';")
-echo -e "${YELLOW}Updating PostgreSQL authentication configuration...${NC}"
+# Test connection
+echo -e "${YELLOW}Testing database connection...${NC}"
+PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -U $DB_USER -d $DB_NAME -c "\dt" >/dev/null 2>&1
 
-# Add the new configuration if it doesn't exist
-if ! grep -q "host    $DB_NAME    $DB_USER    127.0.0.1/32    md5" "$PG_HBA_PATH"; then
-    echo "host    $DB_NAME    $DB_USER    127.0.0.1/32    md5" >> "$PG_HBA_PATH"
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}Database setup completed successfully!${NC}"
+else
+    echo -e "${RED}Failed to connect to database. Please check your configuration.${NC}"
+    exit 1
 fi
-
-# Restart PostgreSQL to apply changes
-echo -e "${YELLOW}Restarting PostgreSQL...${NC}"
-systemctl restart postgresql
-
-# Update .env file
-echo -e "${YELLOW}Updating .env file...${NC}"
-if [ -f ".env" ]; then
-    # Backup existing .env
-    cp .env .env.backup
-fi
-
-# Create new .env from example if it doesn't exist
-if [ ! -f ".env" ]; then
-    cp .env.example .env
-fi
-
-# Update DATABASE_URL in .env
-sed -i "s#DATABASE_URL=.*#DATABASE_URL=postgresql://$DB_USER:$DB_PASSWORD@localhost/$DB_NAME#" .env
-
-echo -e "${GREEN}Database setup completed successfully!${NC}"
-echo -e "${YELLOW}Database URL: postgresql://$DB_USER:$DB_PASSWORD@localhost/$DB_NAME${NC}"
-echo -e "${YELLOW}Please ensure this URL matches the DATABASE_URL in your .env file${NC}"
