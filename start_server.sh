@@ -298,16 +298,17 @@ start_service() {
             fi
             
             # Start Gunicorn with gevent worker
-            gunicorn web_app:app \
-                --bind 0.0.0.0:$WEBAPP_PORT \
-                --worker-class gevent \
-                --workers 1 \
-                --timeout 120 \
+            gunicorn "web_app:app" \
+                --bind "0.0.0.0:$WEBAPP_PORT" \
+                --worker-class "gevent" \
+                --workers "1" \
+                --timeout "120" \
                 --daemon \
-                --access-logfile logs/gunicorn-access.log \
-                --error-logfile logs/gunicorn-error.log \
-                --pid logs/gunicorn.pid \
-                --log-level debug
+                --capture-output \
+                --access-logfile "logs/gunicorn-access.log" \
+                --error-logfile "logs/gunicorn-error.log" \
+                --pid "logs/gunicorn.pid" \
+                --log-level "debug"
             
             sleep 2  # Give it time to start
             
@@ -331,16 +332,17 @@ start_service() {
             # Start with proper environment
             source venv/bin/activate
             export PYTHONPATH=$PWD
-            gunicorn main:app \
-                --bind 0.0.0.0:5000 \
-                --worker-class gevent \
-                --workers 1 \
-                --timeout 120 \
+            gunicorn "main:app" \
+                --bind "0.0.0.0:5000" \
+                --worker-class "gevent" \
+                --workers "1" \
+                --timeout "120" \
                 --daemon \
-                --access-logfile logs/game-server-access.log \
-                --error-logfile logs/game-server.log \
-                --pid logs/game-server.pid \
-                --log-level debug
+                --capture-output \
+                --access-logfile "logs/game-server-access.log" \
+                --error-logfile "logs/game-server.log" \
+                --pid "logs/game-server.pid" \
+                --log-level "debug"
             
             sleep 2  # Give it time to start
             
