@@ -10,6 +10,7 @@ import logging
 import secrets
 from datetime import datetime
 import smtplib
+import email.utils
 from email.mime.text import MIMEText
 
 # Configure logging
@@ -392,36 +393,38 @@ def register():
         return jsonify({'status': 'error', 'message': 'Registration failed'}), 500
 
 def send_verification_email(email, username, verification_url):
-    """Send verification email"""
+    """Send verification email using local Postfix SMTP server"""
     try:
         subject = "Verify your Terminusa Online account"
         body = f"""
-        Welcome to Terminusa Online, {username}!
+Welcome to Terminusa Online, {username}!
 
-        Please click the link below to verify your email address:
-        {verification_url}
+Please click the link below to verify your email address:
+{verification_url}
 
-        This link will expire in 24 hours.
+This link will expire in 24 hours.
 
-        If you did not create an account, please ignore this email.
+If you did not create an account, please ignore this email.
 
-        Best regards,
-        The Terminusa Online Team
-        """
+Best regards,
+The Terminusa Online Team
+"""
 
         msg = MIMEText(body)
         msg['Subject'] = subject
-        msg['From'] = os.getenv('SMTP_USER')
+        msg['From'] = f"Terminusa Online <noreply@terminusa.online>"
         msg['To'] = email
+        msg['Date'] = email.utils.formatdate(localtime=True)
+        msg['Message-ID'] = email.utils.make_msgid(domain='terminusa.online')
 
-        with smtplib.SMTP(os.getenv('SMTP_SERVER'), int(os.getenv('SMTP_PORT'))) as server:
-            server.starttls()
-            server.login(os.getenv('SMTP_USER'), os.getenv('SMTP_PASSWORD'))
+        # Connect to local Postfix server
+        with smtplib.SMTP('localhost', 25) as server:
             server.send_message(msg)
 
         logger.info(f"Verification email sent to {email}")
     except Exception as e:
         logger.error(f"Error sending verification email: {str(e)}")
+        logger.exception(e)  # Log full traceback
         raise
 
 @app.route('/verify_email/<token>')
