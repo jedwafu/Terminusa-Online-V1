@@ -49,7 +49,7 @@ fi
 # Install Python dependencies
 echo -e "${YELLOW}Installing Python dependencies...${NC}"
 python3 -m pip install --upgrade pip
-python3 -m pip install -r requirements-base.txt
+python3 -m pip install -r requirements-updated.txt
 
 # Run database migrations
 echo -e "${YELLOW}Running database migrations...${NC}"
