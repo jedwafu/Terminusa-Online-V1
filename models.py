@@ -289,6 +289,44 @@ class Gate(db.Model):
     clear_conditions = Column(JSON)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    @property
+    def grade(self):
+        """Calculate grade based on level requirement and monster rank"""
+        grades = ['E', 'D', 'C', 'B', 'A', 'S', 'SS', 'SSS']
+        base_index = min(self.level_requirement // 10, len(grades) - 1)
+        rank_bonus = {'F': 0, 'E': 0, 'D': 1, 'C': 1, 'B': 2, 'A': 2, 'S': 3}
+        index = min(base_index + rank_bonus.get(self.monster_rank, 0), len(grades) - 1)
+        return grades[index]
+
+    @property
+    def min_level(self):
+        """Alias for level_requirement"""
+        return self.level_requirement
+
+    @property
+    def crystal_reward(self):
+        """Calculate crystal reward based on grade"""
+        base_rewards = {
+            'E': 10, 'D': 20, 'C': 40, 'B': 80,
+            'A': 160, 'S': 320, 'SS': 640, 'SSS': 1280
+        }
+        return base_rewards.get(self.grade, 10)
+
+    @property
+    def magic_beasts(self):
+        """Get magic beasts for this gate from monster data"""
+        from sqlalchemy import text
+        result = db.session.execute(
+            text("""
+                SELECT mb.* FROM magic_beasts mb
+                WHERE mb.level <= :monster_level
+                AND mb.rank = :monster_rank
+                LIMIT 3
+            """),
+            {'monster_level': self.monster_level, 'monster_rank': self.monster_rank}
+        )
+        return [dict(r) for r in result]
+
 class GateSession(db.Model):
     __tablename__ = 'gate_sessions'
 

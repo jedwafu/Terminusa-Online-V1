@@ -43,10 +43,110 @@ init_db(app)
 def index():
     """Main landing page"""
     try:
-        return render_template('index.html')
+        return render_template('index.html', title='Home')
     except Exception as e:
         logger.error(f"Error rendering index page: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Failed to render page'}), 500
+
+@app.route('/gates')
+@jwt_required()
+def gates_page():
+    """Gates page"""
+    try:
+        current_user = User.query.filter_by(username=get_jwt_identity()).first()
+        available_gates = Gate.query.all()
+        return render_template('gates.html', 
+                             title='Gates',
+                             user=current_user,
+                             available_gates=available_gates)
+    except Exception as e:
+        logger.error(f"Error rendering gates page: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to render page'}), 500
+
+@app.route('/gates/<int:gate_id>/enter', methods=['POST'])
+@jwt_required()
+def enter_gate(gate_id):
+    """Enter a gate"""
+    try:
+        gate = Gate.query.get_or_404(gate_id)
+        current_user = User.query.filter_by(username=get_jwt_identity()).first()
+        
+        # Check if user meets requirements
+        if current_user.level < gate.min_level:
+            return jsonify({
+                'status': 'error',
+                'message': f'Required level: {gate.min_level}'
+            }), 400
+        
+        return jsonify({
+            'status': 'success',
+            'gate_state': {
+                'id': gate.id,
+                'name': gate.name,
+                'grade': gate.grade,
+                'party': [{
+                    'username': current_user.username,
+                    'hp': 100,
+                    'max_hp': 100
+                }]
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error entering gate: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to enter gate'}), 500
+
+@app.route('/gates/<int:gate_id>/exit', methods=['POST'])
+@jwt_required()
+def exit_gate(gate_id):
+    """Exit a gate"""
+    try:
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        logger.error(f"Error exiting gate: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to exit gate'}), 500
+
+@app.route('/party/create', methods=['POST'])
+@jwt_required()
+def create_party():
+    """Create a new party"""
+    try:
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        logger.error(f"Error creating party: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to create party'}), 500
+
+@app.route('/party/list', methods=['GET'])
+@jwt_required()
+def list_parties():
+    """List available parties"""
+    try:
+        return jsonify({
+            'status': 'success',
+            'parties': []
+        })
+    except Exception as e:
+        logger.error(f"Error listing parties: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to list parties'}), 500
+
+@app.route('/party/invite', methods=['POST'])
+@jwt_required()
+def invite_to_party():
+    """Invite a player to party"""
+    try:
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        logger.error(f"Error inviting to party: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to send invitation'}), 500
+
+@app.route('/party/leave', methods=['POST'])
+@jwt_required()
+def leave_party():
+    """Leave current party"""
+    try:
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        logger.error(f"Error leaving party: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to leave party'}), 500
 
 @app.route('/health')
 def health_check():
@@ -63,7 +163,7 @@ def health_check():
 def login_page():
     """Login page"""
     try:
-        return render_template('login.html')
+        return render_template('login.html', title='Login')
     except Exception as e:
         logger.error(f"Error rendering login page: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Failed to render page'}), 500
@@ -72,25 +172,27 @@ def login_page():
 def register_page():
     """Registration page"""
     try:
-        return render_template('register.html')
+        return render_template('register.html', title='Register')
     except Exception as e:
         logger.error(f"Error rendering register page: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Failed to render page'}), 500
 
 @app.route('/play')
+@jwt_required()
 def play_page():
     """Game page"""
     try:
-        return render_template('play.html')
+        return render_template('play.html', title='Play')
     except Exception as e:
         logger.error(f"Error rendering play page: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Failed to render page'}), 500
 
 @app.route('/marketplace')
+@jwt_required()
 def marketplace_page():
     """Marketplace page"""
     try:
-        return render_template('marketplace.html')
+        return render_template('marketplace.html', title='Marketplace')
     except Exception as e:
         logger.error(f"Error rendering marketplace page: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Failed to render page'}), 500
@@ -103,7 +205,7 @@ def leaderboard_page():
             PlayerCharacter.level.desc(),
             PlayerCharacter.gates_cleared.desc()
         ).limit(100).all()
-        return render_template('leaderboard.html', players=top_players)
+        return render_template('leaderboard.html', title='Leaderboard', players=top_players)
     except Exception as e:
         logger.error(f"Error rendering leaderboard page: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Failed to render page'}), 500

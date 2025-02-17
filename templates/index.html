@@ -1,25 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Terminusa Online - Rise as a Hunter</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
-</head>
-<body>
-    <nav class="navbar">
-        <div class="nav-content">
-            <a href="{{ url_for('index') }}" class="logo">Terminusa</a>
-            <div class="nav-links">
-                <a href="{{ url_for('index') }}" class="btn">Home</a>
-                <a href="{{ url_for('marketplace_page') }}" class="btn">Marketplace</a>
-                <a href="{{ url_for('leaderboard_page') }}" class="btn">Leaderboard</a>
-                <a href="{{ url_for('login_page') }}" class="btn auth-dependent">Login</a>
-                <a href="{{ url_for('register_page') }}" class="btn auth-dependent">Register</a>
-            </div>
-        </div>
-    </nav>
+{% extends "base.html" %}
+
+{% block head %}
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
 
     <section class="hero">
         <div class="hero-content">
@@ -124,25 +109,35 @@
         </div>
     </section>
 
-    <footer>
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-logo">
-                    <h3>Terminusa Online</h3>
-                    <p>Rise as a Hunter</p>
-                </div>
-                <div class="footer-links">
-                    <a href="#">Terms of Service</a>
-                    <a href="#">Privacy Policy</a>
-                    <a href="#">Contact Us</a>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2025 Terminusa Online. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
+{% endblock %}
 
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-</body>
-</html>
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check authentication status
+        const token = localStorage.getItem('auth_token');
+        const authDependentElements = document.querySelectorAll('.auth-dependent');
+        
+        if (token) {
+            // Hide login/register buttons if logged in
+            authDependentElements.forEach(el => {
+                if (el.classList.contains('logged-out')) {
+                    el.style.display = 'none';
+                } else if (el.classList.contains('logged-in')) {
+                    el.style.display = 'inline-block';
+                }
+            });
+        } else {
+            // Show login/register buttons if logged out
+            authDependentElements.forEach(el => {
+                if (el.classList.contains('logged-in')) {
+                    el.style.display = 'none';
+                } else if (el.classList.contains('logged-out')) {
+                    el.style.display = 'inline-block';
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

@@ -1,25 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Terminusa Online</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
-</head>
-<body>
-    <nav class="navbar">
-        <div class="nav-content">
-            <a href="{{ url_for('index') }}" class="logo">Terminusa</a>
-            <div class="nav-links">
-                <a href="{{ url_for('index') }}" class="btn">Home</a>
-                <a href="{{ url_for('marketplace_page') }}" class="btn">Marketplace</a>
-                <a href="{{ url_for('leaderboard_page') }}" class="btn">Leaderboard</a>
-            </div>
-        </div>
-    </nav>
+{% extends "base.html" %}
 
-    <section class="auth-section">
+{% block head %}
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+
+<section class="auth-section">
         <div class="container">
             <div class="auth-container">
                 <div class="auth-box">
@@ -54,13 +41,16 @@
         </div>
     </section>
 
-    <div id="notification" class="notification hidden">
-        <span class="notification-message"></span>
-        <button class="notification-close">&times;</button>
-    </div>
+<div id="notification" class="notification hidden">
+    <span class="notification-message"></span>
+    <button class="notification-close">&times;</button>
+</div>
 
-    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
-    <script>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
         document.addEventListener('DOMContentLoaded', function() {
             const loginForm = document.getElementById('loginForm');
             const notification = document.getElementById('notification');
@@ -85,7 +75,8 @@
                     const data = await response.json();
 
                     if (response.ok) {
-                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('auth_token', data.token);
+                        localStorage.setItem('user_data', JSON.stringify(data.user));
                         showNotification('Login successful! Entering the gate...', 'success');
                         setTimeout(() => {
                             window.location.href = '/play';
@@ -125,6 +116,5 @@
 
             animateParticles();
         });
-    </script>
-</body>
-</html>
+</script>
+{% endblock %}
