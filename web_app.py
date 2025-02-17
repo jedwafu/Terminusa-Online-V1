@@ -71,47 +71,14 @@ def index():
         # Check JWT but don't require it
         verify_jwt_in_request(optional=True)
         
-        # Get top players for the leaderboard section
-        top_players = PlayerCharacter.query.order_by(
-            PlayerCharacter.level.desc(),
-            PlayerCharacter.gates_cleared.desc()
+        # Get latest announcements for the news section
+        latest_announcements = Announcement.query.order_by(
+            Announcement.created_at.desc()
         ).limit(3).all()
 
-        if not top_players:
-            # Add placeholder data if no players exist
-            top_players = [
-                {'user': {'username': 'Shadow Monarch'}, 'level': 100, 'gates_cleared': 1234, 'rank': 'S'},
-                {'user': {'username': 'Frost Queen'}, 'level': 98, 'gates_cleared': 1156, 'rank': 'S'},
-                {'user': {'username': 'Dragon Slayer'}, 'level': 95, 'gates_cleared': 1089, 'rank': 'S'}
-            ]
-
-        # Get latest news
-        news = [
-            {
-                'date': '2025-02-17',
-                'title': 'New Gate System Released',
-                'content': 'Experience the thrill of our new gate system. Challenge powerful monsters and earn legendary rewards.',
-                'image': 'news1.jpg'
-            },
-            {
-                'date': '2025-02-16',
-                'title': 'Season 1 Rankings',
-                'content': 'The first season rankings are in! See who made it to the top of the hunter rankings.',
-                'image': 'news2.jpg'
-            },
-            {
-                'date': '2025-02-15',
-                'title': 'New Magic Beasts Discovered',
-                'content': 'Mysterious new magic beasts have appeared in the gates. Can you defeat them?',
-                'image': 'news3.jpg'
-            }
-        ]
-
-        return render_template('index.html', 
+        return render_template('index_new.html', 
                              title='Home',
-                             top_players=top_players,
-                             news=news,
-                             is_authenticated=get_jwt_identity() is not None)
+                             latest_announcements=latest_announcements)
     except Exception as e:
         logger.error(f"Error rendering index page: {str(e)}")
         logger.exception(e)  # Log full traceback
@@ -508,9 +475,19 @@ def internal_error(error):
                          error_message='An internal server error occurred. Please try again later.'), 500
 
 @app.route('/announcements', methods=['GET'])
-def get_announcements():
-    announcements = Announcement.query.all()
-    return render_template('announcements.html', announcements=announcements)
+def announcements_page():
+    """Render announcements page"""
+    try:
+        announcements = Announcement.query.order_by(
+            Announcement.created_at.desc()
+        ).all()
+        return render_template('announcements_updated.html',
+                             title='Announcements',
+                             announcements=announcements)
+    except Exception as e:
+        logger.error(f"Error rendering announcements page: {str(e)}")
+        return render_template('error.html',
+                             error_message='Failed to load announcements. Please try again later.'), 500
 
 @app.route('/announcements', methods=['POST'])
 def create_announcement():
