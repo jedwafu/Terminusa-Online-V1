@@ -297,7 +297,7 @@ start_service() {
                 source venv/bin/activate
             fi
             
-            # Start Gunicorn with proper configuration
+            # Start Gunicorn with gevent-websocket
             gunicorn web_app:app \
                 --bind 0.0.0.0:$WEBAPP_PORT \
                 --workers 4 \
@@ -306,7 +306,7 @@ start_service() {
                 --access-logfile logs/gunicorn-access.log \
                 --error-logfile logs/gunicorn-error.log \
                 --pid logs/gunicorn.pid \
-                --worker-class gevent \
+                --worker-class geventwebsocket.gunicorn.workers.GeventWebSocketWorker \
                 --log-level debug
             
             sleep 2  # Give it time to start
@@ -330,6 +330,7 @@ start_service() {
             
             # Start with proper environment
             source venv/bin/activate
+            export PYTHONPATH=$PWD
             nohup python main.py > logs/game-server.log 2>&1 &
             
             sleep 2  # Give it time to start
