@@ -3,7 +3,7 @@ monkey.patch_all()
 
 from flask import Flask, render_template, jsonify, request, redirect, url_for
 from flask_cors import CORS
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, verify_jwt_in_request_optional
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, verify_jwt_in_request
 from dotenv import load_dotenv
 from database import db, init_db
 from models import User, PlayerCharacter, Wallet, Inventory, Transaction, Gate, Guild, Item
@@ -67,7 +67,7 @@ def index():
     """Main landing page"""
     try:
         # Check JWT but don't require it
-        verify_jwt_in_request_optional()
+        verify_jwt_in_request(optional=True)
         
         # Get top players for the leaderboard section
         top_players = PlayerCharacter.query.order_by(
@@ -140,7 +140,7 @@ def marketplace_page():
     """Marketplace page"""
     try:
         # Check JWT but don't require it
-        verify_jwt_in_request_optional()
+        verify_jwt_in_request(optional=True)
         
         # Create sample items if none exist
         items = [
@@ -225,7 +225,7 @@ def leaderboard_page():
     """Leaderboard page"""
     try:
         # Check JWT but don't require it
-        verify_jwt_in_request_optional()
+        verify_jwt_in_request(optional=True)
         
         # Create sample hunters if none exist
         hunters = [
