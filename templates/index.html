@@ -4,78 +4,73 @@
 <style>
     .hero {
         position: relative;
-        height: 100vh;
+        height: calc(100vh - var(--header-height));
         display: flex;
         align-items: center;
         justify-content: center;
         text-align: center;
-        overflow: hidden;
-    }
-
-    .hero-background {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
         background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.9)),
-                    url('/static/images/hero-bg.jpg');
+                    url('https://i.imgur.com/XZOyZmY.jpg');
         background-size: cover;
         background-position: center;
-        z-index: -1;
+        margin-top: -40px;
     }
 
     .hero-content {
         max-width: 800px;
-        padding: 2rem;
+        padding: 40px;
         z-index: 1;
     }
 
     .hero-title {
-        font-size: 4.5rem;
+        font-size: 48px;
         font-weight: 700;
-        margin-bottom: 1.5rem;
+        margin-bottom: 20px;
         text-transform: uppercase;
-        letter-spacing: 4px;
-        line-height: 1.2;
-        position: relative;
-        text-shadow: 0 0 20px rgba(123, 104, 238, 0.5);
+        letter-spacing: 2px;
+        color: var(--text-color);
     }
 
     .hero-subtitle {
-        font-size: 1.8rem;
-        margin-bottom: 2.5rem;
+        font-size: 24px;
+        margin-bottom: 30px;
         color: rgba(255,255,255,0.9);
-        font-weight: 500;
     }
 
     .hero-buttons {
         display: flex;
-        gap: 2rem;
+        gap: 20px;
         justify-content: center;
     }
 
     .features {
-        padding: 6rem 0;
-        background: rgba(0,0,0,0.9);
-        position: relative;
+        padding: 80px 0;
+        background: var(--card-background);
+    }
+
+    .section-title {
+        font-size: 36px;
+        text-align: center;
+        margin-bottom: 40px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: var(--primary-color);
     }
 
     .features-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 2rem;
-        margin-top: 3rem;
+        gap: 30px;
+        margin-top: 40px;
     }
 
     .feature-card {
-        background: var(--card-background);
-        padding: 2rem;
+        background: rgba(0,0,0,0.5);
+        padding: 30px;
         text-align: center;
-        position: relative;
-        overflow: hidden;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
         transition: transform 0.3s ease;
-        clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
     }
 
     .feature-card:hover {
@@ -83,49 +78,39 @@
     }
 
     .feature-icon {
-        font-size: 3rem;
-        margin-bottom: 1.5rem;
+        font-size: 48px;
+        margin-bottom: 20px;
         color: var(--primary-color);
     }
 
     .feature-title {
-        font-size: 1.8rem;
-        margin-bottom: 1rem;
+        font-size: 24px;
+        margin-bottom: 15px;
         color: var(--primary-color);
-        font-weight: 600;
     }
 
     .feature-description {
-        font-size: 1.1rem;
+        font-size: 16px;
         color: rgba(255,255,255,0.8);
         line-height: 1.6;
     }
 
     .news-section {
-        padding: 6rem 0;
-        position: relative;
-    }
-
-    .section-title {
-        font-size: 2.5rem;
-        text-align: center;
-        margin-bottom: 3rem;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        color: var(--primary-color);
+        padding: 80px 0;
+        background: var(--background-color);
     }
 
     .news-grid {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 2rem;
+        gap: 30px;
     }
 
     .news-card {
         background: var(--card-background);
+        border-radius: 8px;
         overflow: hidden;
-        position: relative;
-        clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%);
+        border: 1px solid var(--border-color);
     }
 
     .news-image {
@@ -135,64 +120,62 @@
     }
 
     .news-content {
-        padding: 1.5rem;
+        padding: 20px;
     }
 
     .news-date {
-        font-size: 0.9rem;
+        font-size: 14px;
         color: var(--primary-color);
-        margin-bottom: 0.5rem;
+        margin-bottom: 10px;
     }
 
     .news-title {
-        font-size: 1.5rem;
-        margin-bottom: 1rem;
+        font-size: 20px;
+        margin-bottom: 15px;
         color: var(--text-color);
-        font-weight: 600;
     }
 
     .news-excerpt {
         color: rgba(255,255,255,0.8);
+        font-size: 16px;
         line-height: 1.6;
     }
 
     .leaderboard-preview {
-        padding: 4rem 0;
+        padding: 80px 0;
         background: var(--card-background);
-        clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%);
     }
 
     .top-players {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 2rem;
-        margin-top: 2rem;
+        gap: 30px;
+        margin-top: 40px;
     }
 
     .player-card {
-        text-align: center;
-        padding: 2rem;
         background: rgba(0,0,0,0.5);
+        padding: 30px;
+        text-align: center;
         border: 1px solid var(--border-color);
-        clip-path: polygon(10% 0, 100% 0, 90% 100%, 0 100%);
+        border-radius: 8px;
     }
 
     .player-rank {
-        font-size: 2.5rem;
+        font-size: 36px;
         color: var(--primary-color);
-        margin-bottom: 1rem;
-        font-weight: 700;
+        margin-bottom: 15px;
     }
 
     .player-name {
-        font-size: 1.5rem;
-        margin-bottom: 0.5rem;
+        font-size: 20px;
+        margin-bottom: 10px;
         color: var(--text-color);
     }
 
     .player-stats {
         color: rgba(255,255,255,0.8);
-        font-size: 1.1rem;
+        font-size: 16px;
     }
 
     @media (max-width: 1024px) {
@@ -200,17 +183,17 @@
         .news-grid {
             grid-template-columns: repeat(2, 1fr);
         }
-    }
 
-    @media (max-width: 768px) {
         .hero-title {
-            font-size: 3rem;
+            font-size: 36px;
         }
 
         .hero-subtitle {
-            font-size: 1.4rem;
+            font-size: 20px;
         }
+    }
 
+    @media (max-width: 768px) {
         .features-grid,
         .news-grid,
         .top-players {
@@ -219,11 +202,19 @@
 
         .hero-buttons {
             flex-direction: column;
-            gap: 1rem;
+            gap: 15px;
         }
 
-        .btn {
-            width: 100%;
+        .hero-title {
+            font-size: 32px;
+        }
+
+        .hero-subtitle {
+            font-size: 18px;
+        }
+
+        .section-title {
+            font-size: 28px;
         }
     }
 </style>
@@ -231,25 +222,15 @@
 
 {% block content %}
 <section class="hero">
-    <div class="hero-background"></div>
     <div class="hero-content">
         <h1 class="hero-title">Rise as a Hunter</h1>
         <p class="hero-subtitle">Enter the gates, face powerful monsters, and become legendary</p>
         <div class="hero-buttons">
             {% if is_authenticated %}
-                <a href="https://play.terminusa.online" class="btn btn-primary">
-                    <span class="btn-text">Enter the Gate</span>
-                    <span class="btn-glow"></span>
-                </a>
+                <a href="https://play.terminusa.online" class="btn btn-primary">Enter the Gate</a>
             {% else %}
-                <a href="{{ url_for('register_page') }}" class="btn btn-primary">
-                    <span class="btn-text">Begin Your Journey</span>
-                    <span class="btn-glow"></span>
-                </a>
-                <a href="{{ url_for('login_page') }}" class="btn btn-secondary">
-                    <span class="btn-text">Return to Battle</span>
-                    <span class="btn-glow"></span>
-                </a>
+                <a href="{{ url_for('register_page') }}" class="btn btn-primary">Begin Your Journey</a>
+                <a href="{{ url_for('login_page') }}" class="btn btn-secondary">Return to Battle</a>
             {% endif %}
         </div>
     </div>
@@ -312,54 +293,4 @@
         </div>
     </div>
 </section>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    // Parallax effect for hero background
-    window.addEventListener('scroll', () => {
-        const heroBackground = document.querySelector('.hero-background');
-        const scrolled = window.pageYOffset;
-        heroBackground.style.transform = `translateY(${scrolled * 0.5}px)`;
-    });
-
-    // GSAP animations for features
-    gsap.from('.feature-card', {
-        scrollTrigger: {
-            trigger: '.features',
-            start: 'top center',
-        },
-        duration: 0.8,
-        y: 50,
-        opacity: 0,
-        stagger: 0.2,
-        ease: 'power3.out'
-    });
-
-    // GSAP animations for news cards
-    gsap.from('.news-card', {
-        scrollTrigger: {
-            trigger: '.news-section',
-            start: 'top center',
-        },
-        duration: 0.8,
-        y: 50,
-        opacity: 0,
-        stagger: 0.2,
-        ease: 'power3.out'
-    });
-
-    // GSAP animations for player cards
-    gsap.from('.player-card', {
-        scrollTrigger: {
-            trigger: '.leaderboard-preview',
-            start: 'top center',
-        },
-        duration: 0.8,
-        y: 50,
-        opacity: 0,
-        stagger: 0.2,
-        ease: 'power3.out'
-    });
-</script>
 {% endblock %}
