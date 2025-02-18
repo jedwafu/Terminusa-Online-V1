@@ -43,7 +43,7 @@ def init_routes(app):
                                 latest_announcements=latest_announcements,
                                 is_authenticated=get_jwt_identity() is not None,
                                 current_user=current_user,
-                                extra_css='index_new.css')
+                                extra_css='index_single.css')
         except Exception as e:
             logger.error(f"Error rendering index page: {str(e)}")
             logger.exception(e)  # Log full traceback

@@ -15,7 +15,7 @@ from rich.panel import Panel
 from rich.layout import Layout
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
 from dotenv import load_dotenv
-from app import app
+from app_final import app
 from models import User, PlayerCharacter, Wallet, Inventory
 from database import db, init_db
 import requests
@@ -57,7 +57,7 @@ class ServiceManager:
             'gunicorn': {
                 'name': 'Gunicorn',
                 'port': 8000,
-                'start_cmd': 'gunicorn -w 4 -b 0.0.0.0:8000 web_app:app',
+                'start_cmd': 'gunicorn -w 4 -b 0.0.0.0:8000 app_final:app',
                 'process_name': 'gunicorn'
             },
             'postfix': {

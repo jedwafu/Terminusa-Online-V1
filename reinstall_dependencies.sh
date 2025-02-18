@@ -106,7 +106,7 @@ User=www-data
 Group=www-data
 WorkingDirectory=/root/Terminusa
 Environment="PATH=/root/Terminusa/venv/bin"
-ExecStart=/root/Terminusa/venv/bin/gunicorn --workers 4 --bind 127.0.0.1:5000 app:app
+ExecStart=/root/Terminusa/venv/bin/gunicorn --workers 4 --bind 127.0.0.1:5000 app_final:app
 Restart=always
 
 [Install]

@@ -19,7 +19,7 @@
     justify-content: center;
     text-align: center;
     padding: 80px 20px;
-    background: url('/static/images/hero-bg.jpg') center/cover no-repeat;
+    background: linear-gradient(135deg, var(--background-dark), var(--matrix-dark));
     overflow: hidden;
 }
 
@@ -172,7 +172,7 @@
     position: relative;
     padding: 100px 20px;
     text-align: center;
-    background: url('/static/images/hero-bg.jpg') center/cover no-repeat;
+    background: linear-gradient(135deg, var(--matrix-dark), var(--background-dark));
 }
 
 .cta-overlay {
