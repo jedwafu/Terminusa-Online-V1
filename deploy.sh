@@ -51,11 +51,17 @@ echo -e "${YELLOW}Installing Python dependencies...${NC}"
 python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements-updated.txt
 
-# Run database migrations
-echo -e "${YELLOW}Running database migrations...${NC}"
+# Run database migrations and setup
+echo -e "${YELLOW}Running database migrations and setup...${NC}"
 export PYTHONPATH=$PWD
 export FLASK_APP=app.py
+
+# Run migrations
 flask db upgrade
+
+# Create initial announcement
+echo -e "${YELLOW}Creating initial announcement...${NC}"
+python3 create_initial_announcement.py
 
 # Create static directories if they don't exist
 echo -e "${YELLOW}Setting up static files...${NC}"
