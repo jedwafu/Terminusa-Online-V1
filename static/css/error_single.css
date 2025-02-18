@@ -1,0 +1,107 @@
+/* Error Section Styles */
+.error-section {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    background: linear-gradient(135deg, var(--background-dark) 0%, var(--matrix-dark) 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.error-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('/static/images/matrix-bg.jpg') center/cover no-repeat;
+    opacity: 0.1;
+    z-index: 1;
+}
+
+.error-container {
+    position: relative;
+    z-index: 2;
+    max-width: 500px;
+    width: 100%;
+    text-align: center;
+    padding: 40px;
+    background: rgba(13, 2, 8, 0.95);
+    border: 1px solid var(--matrix-green);
+    border-radius: 8px;
+    box-shadow: 0 0 30px var(--matrix-glow);
+    animation: glowPulse 2s infinite;
+}
+
+.error-icon {
+    font-size: 4rem;
+    color: var(--matrix-green);
+    margin-bottom: 20px;
+    animation: errorPulse 1.5s infinite;
+}
+
+.error-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.5rem;
+    color: var(--matrix-green);
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px var(--matrix-glow);
+}
+
+.error-message {
+    color: var(--text-color);
+    font-size: 1.1rem;
+    margin-bottom: 30px;
+    line-height: 1.6;
+}
+
+/* Animations */
+@keyframes glowPulse {
+    0% {
+        box-shadow: 0 0 20px var(--matrix-glow);
+    }
+    50% {
+        box-shadow: 0 0 30px var(--matrix-glow);
+    }
+    100% {
+        box-shadow: 0 0 20px var(--matrix-glow);
+    }
+}
+
+@keyframes errorPulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+    .error-container {
+        padding: 30px 20px;
+    }
+
+    .error-icon {
+        font-size: 3rem;
+    }
+
+    .error-title {
+        font-size: 2rem;
+    }
+
+    .error-message {
+        font-size: 1rem;
+    }
+}

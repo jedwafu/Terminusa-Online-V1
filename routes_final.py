@@ -38,7 +38,7 @@ def init_routes(app):
             if get_jwt_identity():
                 current_user = User.query.filter_by(username=get_jwt_identity()).first()
 
-            return render_template('index_new.html', 
+            return render_template('index_single.html', 
                                 title='Home',
                                 latest_announcements=latest_announcements,
                                 is_authenticated=get_jwt_identity() is not None,
@@ -47,11 +47,11 @@ def init_routes(app):
         except Exception as e:
             logger.error(f"Error rendering index page: {str(e)}")
             logger.exception(e)  # Log full traceback
-            return render_template('error_new.html',
+            return render_template('error_single.html',
                                 error_message='Failed to load page. Please try again later.',
                                 title='Error',
                                 is_authenticated=False,
-                                extra_css='error_new.css'), 500
+                                extra_css='error_single.css'), 500
 
     @app.route('/login')
     def login_page():
@@ -64,17 +64,17 @@ def init_routes(app):
             if get_jwt_identity():
                 return redirect(url_for('index'))
                 
-            return render_template('login_updated.html', 
+            return render_template('login_single.html', 
                                 title='Login',
                                 is_authenticated=False,
-                                extra_css='login_new.css')
+                                extra_css='auth_single.css')
         except Exception as e:
             logger.error(f"Error rendering login page: {str(e)}")
-            return render_template('error_new.html',
+            return render_template('error_single.html',
                                 error_message='Failed to load page. Please try again later.',
                                 title='Error',
                                 is_authenticated=False,
-                                extra_css='error_new.css'), 500
+                                extra_css='error_single.css'), 500
 
     @app.route('/register')
     def register_page():
@@ -87,17 +87,17 @@ def init_routes(app):
             if get_jwt_identity():
                 return redirect(url_for('index'))
                 
-            return render_template('register_new.html', 
+            return render_template('register_single.html', 
                                 title='Register',
                                 is_authenticated=False,
-                                extra_css='register_new.css')
+                                extra_css='auth_single.css')
         except Exception as e:
             logger.error(f"Error rendering register page: {str(e)}")
-            return render_template('error_new.html',
+            return render_template('error_single.html',
                                 error_message='Failed to load page. Please try again later.',
                                 title='Error',
                                 is_authenticated=False,
-                                extra_css='error_new.css'), 500
+                                extra_css='error_single.css'), 500
 
     @app.route('/announcements')
     def announcements_page():
@@ -135,11 +135,11 @@ def init_routes(app):
                                 extra_css='announcements.css')
         except Exception as e:
             logger.error(f"Error rendering announcements page: {str(e)}")
-            return render_template('error_new.html',
+            return render_template('error_single.html',
                                 error_message='Failed to load announcements. Please try again later.',
                                 title='Error',
                                 is_authenticated=False,
-                                extra_css='error_new.css'), 500
+                                extra_css='error_single.css'), 500
 
     @app.route('/api/announcements', methods=['POST'])
     @jwt_required()
