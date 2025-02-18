@@ -1,0 +1,23 @@
+{% extends "base_single.html" %}
+
+{% block content %}
+<div class="announcements-container">
+    <h1>Announcements</h1>
+    
+    {% if announcements %}
+        {% for announcement in announcements %}
+        <div class="announcement-card">
+            <h2>{{ announcement.title }}</h2>
+            <div class="announcement-meta">
+                Posted on {{ announcement.created_at.strftime('%B %d, %Y') }}
+            </div>
+            <div class="announcement-content">
+                {{ announcement.content }}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="no-announcements">No announcements yet.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -127,12 +127,12 @@ def init_routes(app):
             if get_jwt_identity():
                 current_user = User.query.filter_by(username=get_jwt_identity()).first()
 
-            return render_template('announcements_merged.html',
+            return render_template('announcements_single.html',
                                 title='Announcements',
                                 announcements=announcements,
                                 is_authenticated=get_jwt_identity() is not None,
                                 current_user=current_user,
-                                extra_css='announcements.css')
+                                extra_css='announcements_single.css')
         except Exception as e:
             logger.error(f"Error rendering announcements page: {str(e)}")
             return render_template('error_single.html',
