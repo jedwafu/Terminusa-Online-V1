@@ -298,7 +298,7 @@ start_service() {
             fi
             
             # Start Gunicorn with gevent worker
-            gunicorn "web_app:app" \
+            gunicorn "app_new:app" \
                 --bind "0.0.0.0:$WEBAPP_PORT" \
                 --worker-class "gevent" \
                 --workers "1" \
@@ -308,7 +308,8 @@ start_service() {
                 --access-logfile "logs/gunicorn-access.log" \
                 --error-logfile "logs/gunicorn-error.log" \
                 --pid "logs/gunicorn.pid" \
-                --log-level "debug"
+                --log-level "debug" \
+                --reload
             
             sleep 2  # Give it time to start
             

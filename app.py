@@ -73,7 +73,7 @@ import models
 
 # Import and initialize routes
 print("[DEBUG] Importing routes")
-from routes_fixed import init_routes
+from app_new import init_routes
 init_routes(app)
 
 # Error handlers
