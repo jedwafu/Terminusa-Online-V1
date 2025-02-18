@@ -2,7 +2,7 @@ from gevent import monkey
 monkey.patch_all()
 
 import os
-from flask import Flask, render_template, request, send_from_directory
+from flask import Flask, render_template, send_from_directory, make_response, current_app
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -30,9 +30,7 @@ if missing_vars:
 
 # Initialize Flask app
 print("[DEBUG] Creating Flask app")
-app = Flask(__name__, 
-           static_folder=os.path.abspath('static'),  # Use absolute path
-           static_url_path='/static')  # Explicitly set static URL path
+app = Flask(__name__)
 
 # Configure app
 print("[DEBUG] Configuring Flask app")
@@ -43,7 +41,8 @@ app.config.update(
     SQLALCHEMY_DATABASE_URI=os.getenv('DATABASE_URL'),
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
     CORS_HEADERS='Content-Type',
-    SEND_FILE_MAX_AGE_DEFAULT=31536000  # 1 year in seconds
+    SEND_FILE_MAX_AGE_DEFAULT=31536000,  # 1 year in seconds
+    STATIC_FOLDER=os.path.abspath('static')  # Use absolute path
 )
 
 # Initialize extensions
@@ -72,39 +71,53 @@ app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
 app.logger.info('Terminusa Online startup')
 
-# Before request handler for static files
-@app.before_request
-def before_request():
-    if request.path.startswith('/static/'):
-        app.logger.info(f'Static file request: {request.path}')
-        if request.path.endswith('.css'):
-            request.environ['CONTENT_TYPE'] = 'text/css; charset=utf-8'
-        elif request.path.endswith('.js'):
-            request.environ['CONTENT_TYPE'] = 'application/javascript; charset=utf-8'
-
-# Override static file serving
-@app.route('/static/<path:filename>')
-def serve_static(filename):
-    app.logger.info(f'Serving static file: {filename}')
+# Static file serving
+def send_static_file(filename, directory=''):
+    """Helper function to send static files with proper MIME types and headers."""
     try:
-        response = send_from_directory(app.static_folder, filename)
-        
-        # Set appropriate headers based on file type
+        path = os.path.join(current_app.config['STATIC_FOLDER'], directory, filename)
+        if not os.path.isfile(path):
+            current_app.logger.error(f'Static file not found: {path}')
+            return '', 404
+
+        mime_type = None
         if filename.endswith('.css'):
-            response.headers['Content-Type'] = 'text/css; charset=utf-8'
+            mime_type = 'text/css'
         elif filename.endswith('.js'):
-            response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
-        elif any(filename.endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif', '.ico']):
+            mime_type = 'application/javascript'
+        else:
             mime_type = mimetypes.guess_type(filename)[0]
-            if mime_type:
-                response.headers['Content-Type'] = mime_type
-        
-        # Set caching headers
+
+        response = make_response(send_from_directory(
+            os.path.join(current_app.config['STATIC_FOLDER'], directory),
+            filename,
+            conditional=True
+        ))
+
+        if mime_type:
+            response.headers['Content-Type'] = f'{mime_type}; charset=utf-8'
         response.headers['Cache-Control'] = 'public, max-age=31536000'
+        current_app.logger.info(f'Serving static file: {filename} ({mime_type})')
         return response
     except Exception as e:
-        app.logger.error(f'Error serving static file {filename}: {str(e)}')
+        current_app.logger.error(f'Error serving static file {filename}: {str(e)}')
         return '', 404
+
+@app.route('/static/css/<path:filename>')
+def serve_css(filename):
+    return send_static_file(filename, 'css')
+
+@app.route('/static/js/<path:filename>')
+def serve_js(filename):
+    return send_static_file(filename, 'js')
+
+@app.route('/static/images/<path:filename>')
+def serve_images(filename):
+    return send_static_file(filename, 'images')
+
+@app.route('/static/<path:filename>')
+def serve_static_root(filename):
+    return send_static_file(filename)
 
 # Import models and routes
 import models
