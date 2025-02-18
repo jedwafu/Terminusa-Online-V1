@@ -30,7 +30,7 @@ if missing_vars:
 # Initialize Flask app
 print("[DEBUG] Creating Flask app")
 app = Flask(__name__, 
-           static_folder='/root/Terminusa-Online-V1/static',  # Use absolute path to match nginx
+           static_folder='static',  # Use relative path since we're in the correct directory
            static_url_path='/static')  # Explicitly set static URL path
 
 # Configure app
