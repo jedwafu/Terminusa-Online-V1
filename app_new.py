@@ -109,8 +109,10 @@ def index():
                              current_user=current_user)
     except Exception as e:
         app.logger.error(f"Error rendering index page: {str(e)}")
-        return render_template('error.html',
-                             error_message='Failed to load page. Please try again later.'), 500
+        return render_template('error_new.html',
+                             error_message='Failed to load page. Please try again later.',
+                             title='Error',
+                             is_authenticated=False), 500
 
 @app.route('/login')
 def login_page():
@@ -128,8 +130,10 @@ def login_page():
                              is_authenticated=False)
     except Exception as e:
         app.logger.error(f"Error rendering login page: {str(e)}")
-        return render_template('error.html',
-                             error_message='Failed to load page. Please try again later.'), 500
+        return render_template('error_new.html',
+                             error_message='Failed to load page. Please try again later.',
+                             title='Error',
+                             is_authenticated=False), 500
 
 @app.route('/register')
 def register_page():
@@ -147,8 +151,10 @@ def register_page():
                              is_authenticated=False)
     except Exception as e:
         app.logger.error(f"Error rendering register page: {str(e)}")
-        return render_template('error.html',
-                             error_message='Failed to load page. Please try again later.'), 500
+        return render_template('error_new.html',
+                             error_message='Failed to load page. Please try again later.',
+                             title='Error',
+                             is_authenticated=False), 500
 
 # Error handlers
 @app.errorhandler(404)
