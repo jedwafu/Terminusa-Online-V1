@@ -29,7 +29,9 @@ if missing_vars:
 
 # Initialize Flask app
 print("[DEBUG] Creating Flask app")
-app = Flask(__name__)
+app = Flask(__name__, 
+           static_folder='static',  # Explicitly set static folder
+           static_url_path='/static')  # Explicitly set static URL path
 
 # Configure app
 print("[DEBUG] Configuring Flask app")
