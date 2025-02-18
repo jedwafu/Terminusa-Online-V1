@@ -1,4 +1,4 @@
-from flask import render_template, jsonify, request
+from flask import render_template, jsonify, request, redirect, url_for
 from flask_jwt_extended import jwt_required, get_jwt_identity, verify_jwt_in_request
 from datetime import datetime
 from models import User, Announcement
@@ -47,6 +47,52 @@ def init_routes(app):
         except Exception as e:
             logger.error(f"Error rendering index page: {str(e)}")
             logger.exception(e)  # Log full traceback
+            return render_template('error_new.html',
+                                error_message='Failed to load page. Please try again later.',
+                                title='Error',
+                                is_authenticated=False,
+                                extra_css='error_new.css'), 500
+
+    @app.route('/login')
+    def login_page():
+        """Login page"""
+        try:
+            # Check JWT but don't require it
+            verify_jwt_in_request(optional=True)
+            
+            # If already authenticated, redirect to home
+            if get_jwt_identity():
+                return redirect(url_for('index'))
+                
+            return render_template('login_updated.html', 
+                                title='Login',
+                                is_authenticated=False,
+                                extra_css='login_new.css')
+        except Exception as e:
+            logger.error(f"Error rendering login page: {str(e)}")
+            return render_template('error_new.html',
+                                error_message='Failed to load page. Please try again later.',
+                                title='Error',
+                                is_authenticated=False,
+                                extra_css='error_new.css'), 500
+
+    @app.route('/register')
+    def register_page():
+        """Registration page"""
+        try:
+            # Check JWT but don't require it
+            verify_jwt_in_request(optional=True)
+            
+            # If already authenticated, redirect to home
+            if get_jwt_identity():
+                return redirect(url_for('index'))
+                
+            return render_template('register_new.html', 
+                                title='Register',
+                                is_authenticated=False,
+                                extra_css='register_new.css')
+        except Exception as e:
+            logger.error(f"Error rendering register page: {str(e)}")
             return render_template('error_new.html',
                                 error_message='Failed to load page. Please try again later.',
                                 title='Error',
