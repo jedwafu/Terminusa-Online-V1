@@ -172,7 +172,7 @@
     position: relative;
     padding: 100px 20px;
     text-align: center;
-    background: url('/static/images/cta-bg.jpg') center/cover no-repeat;
+    background: url('/static/images/hero-bg.jpg') center/cover no-repeat;
 }
 
 .cta-overlay {

@@ -81,21 +81,21 @@ init_routes(app)
 @app.errorhandler(404)
 def not_found_error(error):
     app.logger.error(f'Page not found: {error}')
-    return render_template('error_new.html',
+    return render_template('error_single.html',
                          error_message='The page you are looking for could not be found.',
                          title='404 Not Found',
                          is_authenticated=False,
-                         extra_css='error_new.css'), 404
+                         extra_css='error_single.css'), 404
 
 @app.errorhandler(500)
 def internal_error(error):
     app.logger.error(f'Server error: {error}')
     db.session.rollback()
-    return render_template('error_new.html',
+    return render_template('error_single.html',
                          error_message='An internal server error occurred. Please try again later.',
                          title='500 Server Error',
                          is_authenticated=False,
-                         extra_css='error_new.css'), 500
+                         extra_css='error_single.css'), 500
 
 if __name__ == '__main__':
     port = int(os.getenv('SERVER_PORT', 5000))

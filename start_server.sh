@@ -536,7 +536,17 @@ initialize_services() {
         cat > /etc/nginx/sites-available/terminusa << EOL
 server {
     listen 80;
-    server_name play.terminusa.online;
+    server_name terminusa.online;
+
+    # SSL configuration
+    listen 443 ssl;
+    ssl_certificate /etc/letsencrypt/live/terminusa.online/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/terminusa.online/privkey.pem;
+
+    # Redirect HTTP to HTTPS
+    if (\$scheme != "https") {
+        return 301 https://\$host\$request_uri;
+    }
 
     location / {
         proxy_pass http://127.0.0.1:$WEBAPP_PORT;
@@ -546,8 +556,29 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
 
-    location /static {
-        alias /root/Terminusa/static;
+    location /static/ {
+        alias /root/Terminusa/static/;
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+        add_header Access-Control-Allow-Origin *;
+        try_files $uri $uri/ =404;
+        
+        # Enable directory listing for debugging
+        autoindex on;
+        
+        # Log static file access
+        access_log /var/log/nginx/static-access.log;
+        error_log /var/log/nginx/static-error.log;
+        
+        # Add proper MIME types
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+        
+        # Serve .css files with correct MIME type
+        types {
+            text/css css;
+            text/javascript js;
+        }
     }
 
     location /socket.io {
