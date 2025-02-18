@@ -42,14 +42,16 @@ def init_routes(app):
                                 title='Home',
                                 latest_announcements=latest_announcements,
                                 is_authenticated=get_jwt_identity() is not None,
-                                current_user=current_user)
+                                current_user=current_user,
+                                extra_css='index_new.css')
         except Exception as e:
             logger.error(f"Error rendering index page: {str(e)}")
             logger.exception(e)  # Log full traceback
-            return jsonify({
-                'status': 'error',
-                'message': str(e)
-            }), 500
+            return render_template('error_new.html',
+                                error_message='Failed to load page. Please try again later.',
+                                title='Error',
+                                is_authenticated=False,
+                                extra_css='error_new.css'), 500
 
     @app.route('/announcements')
     def announcements_page():
@@ -83,13 +85,17 @@ def init_routes(app):
                                 title='Announcements',
                                 announcements=announcements,
                                 is_authenticated=get_jwt_identity() is not None,
-                                current_user=current_user)
+                                current_user=current_user,
+                                extra_css='announcements.css')
         except Exception as e:
             logger.error(f"Error rendering announcements page: {str(e)}")
             return render_template('error_new.html',
-                                error_message='Failed to load announcements. Please try again later.'), 500
+                                error_message='Failed to load announcements. Please try again later.',
+                                title='Error',
+                                is_authenticated=False,
+                                extra_css='error_new.css'), 500
 
-    @app.route('/announcements', methods=['POST'])
+    @app.route('/api/announcements', methods=['POST'])
     @jwt_required()
     def create_announcement():
         """Create a new announcement - requires admin access"""
@@ -126,7 +132,7 @@ def init_routes(app):
             db.session.rollback()
             return jsonify({'status': 'error', 'message': 'Failed to create announcement'}), 500
 
-    @app.route('/announcements/<int:id>', methods=['PUT'])
+    @app.route('/api/announcements/<int:id>', methods=['PUT'])
     @jwt_required()
     def update_announcement(id):
         """Update an existing announcement - requires admin access"""
@@ -163,7 +169,7 @@ def init_routes(app):
             db.session.rollback()
             return jsonify({'status': 'error', 'message': 'Failed to update announcement'}), 500
 
-    @app.route('/announcements/<int:id>', methods=['DELETE'])
+    @app.route('/api/announcements/<int:id>', methods=['DELETE'])
     @jwt_required()
     def delete_announcement(id):
         """Delete an announcement - requires admin access"""
@@ -188,89 +194,3 @@ def init_routes(app):
             logger.error(f"Error deleting announcement: {str(e)}")
             db.session.rollback()
             return jsonify({'status': 'error', 'message': 'Failed to delete announcement'}), 500
-<environment_details>
-# VSCode Visible Files
-routes_merged.py
-
-# VSCode Open Tabs
-run_server.py
-email_service.py
-setup_smtp.sh
-start_server.bat
-client/client.py
-client/requirements.txt
-client/setup.sh
-client/setup.bat
-client/README.md
-migrations/versions/002_update_gate_model.py
-alembic.ini
-migrations/env.py
-static/js/marketplace_new.js
-templates/base_updated.html
-.env.example
-.env
-create_initial_announcement.py
-app.py
-static/css/login_new.css
-templates/login_updated.html
-templates/error_new.html
-setup_db_user.sh
-main.py
-static/css/main.css
-templates/base.html
-static/css/base_new.css
-templates/announcements_updated.html
-static/css/announcements_updated.css
-templates/index_new.html
-templates/register_new.html
-templates/marketplace_new.html
-templates/leaderboard_new.html
-migrations/versions/005_create_announcements.py
-migrations/versions/006_add_announcements_only.py
-create_sample_announcement.py
-database.py
-migrations/versions/004_add_missing_tables.py
-requirements-updated.txt
-static/css/base.css
-templates/index.html
-static/css/marketplace.css
-plan.md
-web_app_updated.py
-migrations/versions/003_add_user_model.py
-create_admin_user.py
-README_update.md
-announcements.patch
-routes_announcements.py
-routes_minimal.py
-static/css/announcements.css
-templates/announcements_new.html
-models.py
-start_server.sh
-nginx/terminusa.conf
-deploy_new.sh
-templates/base_new.html
-static/css/base_merged.css
-templates/base_merged.html
-app_new.py
-templates/announcements_merged.html
-routes_merged.py
-models_with_announcements.py
-templates/index_updated.html
-templates/base_fixed.html
-templates/index_fixed.html
-templates/message_fixed.html
-templates/marketplace_fixed.html
-templates/login_fixed.html
-templates/leaderboard_fixed.html
-templates/register.html
-templates/play_fixed.html
-create_admin.py
-static/js/main.js
-init_db.py
-templates/leaderboard.html
-static/js/marketplace.js
-static/js/leaderboard.js
-templates/play.html
-server_manager.py
-client.py
-</environment_details>

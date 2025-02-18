@@ -184,7 +184,7 @@ check_service() {
             fi
             ;;
         "gunicorn")
-            local pid=$(pgrep -f "gunicorn.*app_merged:app" | head -n1)
+            local pid=$(pgrep -f "gunicorn.*app_final:app" | head -n1)
             if [ ! -z "$pid" ] && ss -tuln | grep -q ":$WEBAPP_PORT "; then
                 SERVICE_STATUS[$service]="running"
                 SERVICE_PIDS[$service]=$pid
@@ -284,9 +284,9 @@ start_service() {
             fi
             ;;
         "gunicorn")
-            debug_log "Starting Gunicorn with app_merged.py on port $WEBAPP_PORT"
+            debug_log "Starting Gunicorn with app_final.py on port $WEBAPP_PORT"
             # Stop any existing gunicorn processes
-            pkill -f "gunicorn.*app_merged:app" 2>/dev/null
+            pkill -f "gunicorn.*app_final:app" 2>/dev/null
             rm -f logs/gunicorn.pid 2>/dev/null
             sleep 1
             
@@ -298,7 +298,7 @@ start_service() {
             fi
             
             # Start Gunicorn with gevent worker
-            gunicorn "app_merged:app" \
+            gunicorn "app_final:app" \
                 --bind "0.0.0.0:$WEBAPP_PORT" \
                 --worker-class "gevent" \
                 --workers "1" \

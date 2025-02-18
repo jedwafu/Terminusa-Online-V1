@@ -70,7 +70,7 @@ app.logger.info('Terminusa Online startup')
 
 # Import models and routes
 import models
-from routes_merged import init_routes
+from routes_final import init_routes
 
 # Initialize routes
 init_routes(app)
