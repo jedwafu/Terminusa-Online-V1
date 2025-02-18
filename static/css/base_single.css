@@ -1,7 +1,9 @@
 /* Base styles for Terminusa Online */
 :root {
-    --primary-color: #007bff;
-    --secondary-color: #6c757d;
+    --matrix-green: #00FF41;
+    --matrix-dark: #003B00;
+    --matrix-light: #33FF66;
+    --matrix-glow: rgba(0, 255, 65, 0.5);
     --background-color: #1a1a1a;
     --text-color: #ffffff;
     --border-color: #2d2d2d;
@@ -51,7 +53,48 @@ body {
 
 .logo i {
     margin-right: 0.5rem;
-    color: var(--primary-color);
+    color: var(--matrix-green);
+}
+
+/* Button styles */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.btn i {
+    font-size: 1.1em;
+}
+
+.btn-primary {
+    background-color: var(--matrix-green);
+    color: var(--background-color);
+}
+
+.btn-primary:hover {
+    background-color: var(--matrix-light);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--matrix-glow);
+}
+
+.btn-secondary {
+    background-color: transparent;
+    border: 2px solid var(--matrix-green);
+    color: var(--matrix-green);
+}
+
+.btn-secondary:hover {
+    background-color: var(--matrix-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--matrix-glow);
 }
 
 /* User menu styles */
@@ -71,7 +114,7 @@ body {
 }
 
 .user-menu-btn:hover {
-    color: var(--primary-color);
+    color: var(--matrix-green);
 }
 
 .user-dropdown {
@@ -106,6 +149,7 @@ body {
 
 .dropdown-item:hover {
     background-color: rgba(255, 255, 255, 0.1);
+    color: var(--matrix-green);
 }
 
 /* Notification styles */
@@ -117,8 +161,8 @@ body {
 }
 
 .notification {
-    background-color: #28a745;
-    color: white;
+    background-color: var(--matrix-green);
+    color: var(--background-color);
     padding: 1rem;
     margin-bottom: 0.5rem;
     border-radius: 4px;
@@ -132,6 +176,7 @@ body {
 
 .notification.error {
     background-color: #dc3545;
+    color: white;
 }
 
 .notification.show {
