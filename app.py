@@ -71,9 +71,10 @@ app.logger.info('Terminusa Online startup')
 # Import models to register them with SQLAlchemy
 import models
 
-# Import routes after app initialization to avoid circular imports
+# Import and initialize routes
 print("[DEBUG] Importing routes")
-import routes
+from routes_new import init_routes
+init_routes(app)
 
 # Error handlers
 @app.errorhandler(404)
