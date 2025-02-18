@@ -184,7 +184,7 @@ check_service() {
             fi
             ;;
         "gunicorn")
-            local pid=$(pgrep -f "gunicorn.*web_app:app" | head -n1)
+            local pid=$(pgrep -f "gunicorn.*app_new:app" | head -n1)
             if [ ! -z "$pid" ] && ss -tuln | grep -q ":$WEBAPP_PORT "; then
                 SERVICE_STATUS[$service]="running"
                 SERVICE_PIDS[$service]=$pid
@@ -284,9 +284,9 @@ start_service() {
             fi
             ;;
         "gunicorn")
-            debug_log "Starting Gunicorn with web_app.py on port $WEBAPP_PORT"
+            debug_log "Starting Gunicorn with app_new.py on port $WEBAPP_PORT"
             # Stop any existing gunicorn processes
-            pkill -f "gunicorn.*web_app:app" 2>/dev/null
+            pkill -f "gunicorn.*app_new:app" 2>/dev/null
             rm -f logs/gunicorn.pid 2>/dev/null
             sleep 1
             
