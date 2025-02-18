@@ -2,13 +2,19 @@ from gevent import monkey
 monkey.patch_all()
 
 import os
-from flask import Flask, render_template
+from flask import Flask, render_template, send_from_directory
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from dotenv import load_dotenv
 import logging
 from logging.handlers import RotatingFileHandler
 from database import db, init_db
+import mimetypes
+
+# Ensure proper MIME types are set
+mimetypes.add_type('text/css', '.css')
+mimetypes.add_type('application/javascript', '.js')
+mimetypes.add_type('image/svg+xml', '.svg')
 
 # Load environment variables
 print("[DEBUG] Loading environment variables")
@@ -41,7 +47,9 @@ app.config.update(
     JWT_ACCESS_TOKEN_EXPIRES=3600,  # 1 hour
     SQLALCHEMY_DATABASE_URI=os.getenv('DATABASE_URL'),
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
-    CORS_HEADERS='Content-Type'
+    CORS_HEADERS='Content-Type',
+    # Static file settings
+    SEND_FILE_MAX_AGE_DEFAULT=31536000,  # 1 year in seconds
 )
 
 # Initialize extensions
@@ -69,6 +77,22 @@ app.logger.addHandler(file_handler)
 
 app.logger.setLevel(logging.INFO)
 app.logger.info('Terminusa Online startup')
+
+# Custom static file handling
+@app.route('/static/<path:filename>')
+def custom_static(filename):
+    cache_timeout = app.get_send_file_max_age(filename)
+    response = send_from_directory(app.static_folder, filename, cache_timeout=cache_timeout)
+    
+    # Set appropriate MIME type headers
+    if filename.endswith('.css'):
+        response.headers['Content-Type'] = 'text/css; charset=utf-8'
+    elif filename.endswith('.js'):
+        response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+    
+    # Add caching headers
+    response.headers['Cache-Control'] = 'public, max-age=31536000'
+    return response
 
 # Import models and routes
 import models
