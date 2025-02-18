@@ -123,7 +123,7 @@ def login_page():
         if get_jwt_identity():
             return redirect(url_for('index'))
             
-        return render_template('login_new.html', 
+        return render_template('login_updated.html', 
                              title='Login',
                              is_authenticated=False)
     except Exception as e:

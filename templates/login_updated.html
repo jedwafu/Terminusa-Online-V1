@@ -1,0 +1,80 @@
+{% extends "base_new.html" %}
+
+{% block content %}
+<div class="login-section">
+    <div class="container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>Login</h1>
+                <p>Welcome back to Terminusa Online</p>
+            </div>
+            <form id="login-form" class="login-form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                </div>
+                <div class="form-footer">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <span>Login</span>
+                    </button>
+                    <p class="register-link">
+                        Don't have an account? 
+                        <a href="{{ url_for('register_page') }}">Register now</a>
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login_new.css') }}" type="text/css">
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('login-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            localStorage.setItem('token', data.token);
+            showNotification('Login successful! Redirecting...', 'success');
+            setTimeout(() => {
+                window.location.href = data.redirect_url || 'https://play.terminusa.online';
+            }, 1500);
+        } else {
+            showNotification(data.message || 'Login failed', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('An error occurred. Please try again.', 'error');
+    }
+});
+</script>
+{% endblock %}
