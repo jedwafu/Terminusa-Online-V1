@@ -2,7 +2,7 @@ from gevent import monkey
 monkey.patch_all()
 
 import os
-from flask import Flask, render_template, send_from_directory, make_response
+from flask import Flask, render_template, request, send_from_directory
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -30,7 +30,9 @@ if missing_vars:
 
 # Initialize Flask app
 print("[DEBUG] Creating Flask app")
-app = Flask(__name__)
+app = Flask(__name__, 
+           static_folder=os.path.abspath('static'),  # Use absolute path
+           static_url_path='/static')  # Explicitly set static URL path
 
 # Configure app
 print("[DEBUG] Configuring Flask app")
@@ -70,50 +72,38 @@ app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
 app.logger.info('Terminusa Online startup')
 
-# Static file routes
-@app.route('/static/css/<path:filename>')
-def serve_css(filename):
-    try:
-        response = make_response(send_from_directory(
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'css'),
-            filename
-        ))
-        response.headers['Content-Type'] = 'text/css; charset=utf-8'
-        response.headers['Cache-Control'] = 'public, max-age=31536000'
-        app.logger.info(f'Serving CSS file: {filename}')
-        return response
-    except Exception as e:
-        app.logger.error(f'Error serving CSS file {filename}: {str(e)}')
-        return '', 404
+# Before request handler for static files
+@app.before_request
+def before_request():
+    if request.path.startswith('/static/'):
+        app.logger.info(f'Static file request: {request.path}')
+        if request.path.endswith('.css'):
+            request.environ['CONTENT_TYPE'] = 'text/css; charset=utf-8'
+        elif request.path.endswith('.js'):
+            request.environ['CONTENT_TYPE'] = 'application/javascript; charset=utf-8'
 
-@app.route('/static/js/<path:filename>')
-def serve_js(filename):
+# Override static file serving
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    app.logger.info(f'Serving static file: {filename}')
     try:
-        response = make_response(send_from_directory(
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'js'),
-            filename
-        ))
-        response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+        response = send_from_directory(app.static_folder, filename)
+        
+        # Set appropriate headers based on file type
+        if filename.endswith('.css'):
+            response.headers['Content-Type'] = 'text/css; charset=utf-8'
+        elif filename.endswith('.js'):
+            response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+        elif any(filename.endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.gif', '.ico']):
+            mime_type = mimetypes.guess_type(filename)[0]
+            if mime_type:
+                response.headers['Content-Type'] = mime_type
+        
+        # Set caching headers
         response.headers['Cache-Control'] = 'public, max-age=31536000'
-        app.logger.info(f'Serving JS file: {filename}')
         return response
     except Exception as e:
-        app.logger.error(f'Error serving JS file {filename}: {str(e)}')
-        return '', 404
-
-@app.route('/static/images/<path:filename>')
-def serve_image(filename):
-    try:
-        file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'images')
-        response = make_response(send_from_directory(file_path, filename))
-        mime_type = mimetypes.guess_type(filename)[0]
-        if mime_type:
-            response.headers['Content-Type'] = mime_type
-        response.headers['Cache-Control'] = 'public, max-age=31536000'
-        app.logger.info(f'Serving image file: {filename}')
-        return response
-    except Exception as e:
-        app.logger.error(f'Error serving image file {filename}: {str(e)}')
+        app.logger.error(f'Error serving static file {filename}: {str(e)}')
         return '', 404
 
 # Import models and routes
