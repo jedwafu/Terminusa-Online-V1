@@ -2,7 +2,7 @@ from gevent import monkey
 monkey.patch_all()
 
 import os
-from flask import Flask, render_template, send_file, make_response
+from flask import Flask, render_template, send_from_directory, make_response
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -30,9 +30,7 @@ if missing_vars:
 
 # Initialize Flask app
 print("[DEBUG] Creating Flask app")
-app = Flask(__name__, 
-           static_folder='static',  # Use relative path since we're in the correct directory
-           static_url_path='/static')  # Explicitly set static URL path
+app = Flask(__name__)
 
 # Configure app
 print("[DEBUG] Configuring Flask app")
@@ -75,31 +73,48 @@ app.logger.info('Terminusa Online startup')
 # Static file routes
 @app.route('/static/css/<path:filename>')
 def serve_css(filename):
-    response = make_response(send_file(
-        os.path.join(app.static_folder, 'css', filename),
-        mimetype='text/css'
-    ))
-    response.headers['Content-Type'] = 'text/css; charset=utf-8'
-    response.headers['Cache-Control'] = 'public, max-age=31536000'
-    return response
+    try:
+        response = make_response(send_from_directory(
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'css'),
+            filename
+        ))
+        response.headers['Content-Type'] = 'text/css; charset=utf-8'
+        response.headers['Cache-Control'] = 'public, max-age=31536000'
+        app.logger.info(f'Serving CSS file: {filename}')
+        return response
+    except Exception as e:
+        app.logger.error(f'Error serving CSS file {filename}: {str(e)}')
+        return '', 404
 
 @app.route('/static/js/<path:filename>')
 def serve_js(filename):
-    response = make_response(send_file(
-        os.path.join(app.static_folder, 'js', filename),
-        mimetype='application/javascript'
-    ))
-    response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
-    response.headers['Cache-Control'] = 'public, max-age=31536000'
-    return response
+    try:
+        response = make_response(send_from_directory(
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'js'),
+            filename
+        ))
+        response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+        response.headers['Cache-Control'] = 'public, max-age=31536000'
+        app.logger.info(f'Serving JS file: {filename}')
+        return response
+    except Exception as e:
+        app.logger.error(f'Error serving JS file {filename}: {str(e)}')
+        return '', 404
 
 @app.route('/static/images/<path:filename>')
 def serve_image(filename):
-    file_path = os.path.join(app.static_folder, 'images', filename)
-    mime_type = mimetypes.guess_type(file_path)[0]
-    response = make_response(send_file(file_path, mimetype=mime_type))
-    response.headers['Cache-Control'] = 'public, max-age=31536000'
-    return response
+    try:
+        file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'images')
+        response = make_response(send_from_directory(file_path, filename))
+        mime_type = mimetypes.guess_type(filename)[0]
+        if mime_type:
+            response.headers['Content-Type'] = mime_type
+        response.headers['Cache-Control'] = 'public, max-age=31536000'
+        app.logger.info(f'Serving image file: {filename}')
+        return response
+    except Exception as e:
+        app.logger.error(f'Error serving image file {filename}: {str(e)}')
+        return '', 404
 
 # Import models and routes
 import models
