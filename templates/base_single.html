@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Terminusa Online</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Base styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base_merged.css') }}" type="text/css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index_single.css') }}" type="text/css">
+    
+    <!-- Page-specific styles -->
+    {% if extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/' + extra_css) }}" type="text/css">
+    {% endif %}
+    
+    <!-- Template-specific styles -->
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Minimal Header -->
+    <header class="minimal-header">
+        <div class="container">
+            <a href="/" class="logo">
+                <i class="fas fa-terminal"></i>
+                <span>Terminusa Online</span>
+            </a>
+            {% if is_authenticated %}
+            <div class="user-menu">
+                <button class="user-menu-btn">
+                    <i class="fas fa-user-circle"></i>
+                    <span>{{ current_user.username }}</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="user-dropdown">
+                    <a href="#" class="dropdown-item">
+                        <i class="fas fa-user"></i>
+                        <span>Profile</span>
+                    </a>
+                    <a href="#" class="dropdown-item">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                    <button onclick="logout()" class="dropdown-item">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    {% block content %}{% endblock %}
+
+    <!-- Notification Container -->
+    <div id="notification-container"></div>
+
+    <!-- Scripts -->
+    <script>
+        // User menu dropdown
+        const userMenuBtn = document.querySelector('.user-menu-btn');
+        if (userMenuBtn) {
+            userMenuBtn.addEventListener('click', () => {
+                const dropdown = document.querySelector('.user-dropdown');
+                dropdown.classList.toggle('active');
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.user-menu')) {
+                    const dropdown = document.querySelector('.user-dropdown');
+                    if (dropdown) {
+                        dropdown.classList.remove('active');
+                    }
+                }
+            });
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            const container = document.getElementById('notification-container');
+            container.appendChild(notification);
+
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            showNotification('Logged out successfully');
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1000);
+        }
+
+        {% block extra_js %}{% endblock %}
+    </script>
+</body>
+</html>
