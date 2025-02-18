@@ -160,13 +160,19 @@ def register_page():
 @app.errorhandler(404)
 def not_found_error(error):
     app.logger.error(f'Page not found: {error}')
-    return {'status': 'error', 'message': 'Resource not found'}, 404
+    return render_template('error_new.html',
+                         error_message='The page you are looking for could not be found.',
+                         title='404 Not Found',
+                         is_authenticated=False), 404
 
 @app.errorhandler(500)
 def internal_error(error):
     app.logger.error(f'Server error: {error}')
     db.session.rollback()
-    return {'status': 'error', 'message': 'Internal server error'}, 500
+    return render_template('error_new.html',
+                         error_message='An internal server error occurred. Please try again later.',
+                         title='500 Server Error',
+                         is_authenticated=False), 500
 
 if __name__ == '__main__':
     port = int(os.getenv('SERVER_PORT', 5000))
