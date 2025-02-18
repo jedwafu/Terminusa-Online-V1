@@ -30,7 +30,7 @@ if missing_vars:
 # Initialize Flask app
 print("[DEBUG] Creating Flask app")
 app = Flask(__name__, 
-           static_folder='static',  # Use relative path since we're running as root
+           static_folder='static',  # Use relative path for static files
            static_url_path='/static')  # Explicitly set static URL path
 
 # Configure app
