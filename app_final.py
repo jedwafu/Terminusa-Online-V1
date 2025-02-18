@@ -2,7 +2,7 @@ from gevent import monkey
 monkey.patch_all()
 
 import os
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, render_template, send_file, make_response
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -10,11 +10,6 @@ import logging
 from logging.handlers import RotatingFileHandler
 from database import db, init_db
 import mimetypes
-
-# Ensure proper MIME types are set
-mimetypes.add_type('text/css', '.css')
-mimetypes.add_type('application/javascript', '.js')
-mimetypes.add_type('image/svg+xml', '.svg')
 
 # Load environment variables
 print("[DEBUG] Loading environment variables")
@@ -48,8 +43,7 @@ app.config.update(
     SQLALCHEMY_DATABASE_URI=os.getenv('DATABASE_URL'),
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
     CORS_HEADERS='Content-Type',
-    # Static file settings
-    SEND_FILE_MAX_AGE_DEFAULT=31536000,  # 1 year in seconds
+    SEND_FILE_MAX_AGE_DEFAULT=31536000  # 1 year in seconds
 )
 
 # Initialize extensions
@@ -78,19 +72,32 @@ app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
 app.logger.info('Terminusa Online startup')
 
-# Custom static file handling
-@app.route('/static/<path:filename>')
-def custom_static(filename):
-    cache_timeout = app.get_send_file_max_age(filename)
-    response = send_from_directory(app.static_folder, filename, cache_timeout=cache_timeout)
-    
-    # Set appropriate MIME type headers
-    if filename.endswith('.css'):
-        response.headers['Content-Type'] = 'text/css; charset=utf-8'
-    elif filename.endswith('.js'):
-        response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
-    
-    # Add caching headers
+# Static file routes
+@app.route('/static/css/<path:filename>')
+def serve_css(filename):
+    response = make_response(send_file(
+        os.path.join(app.static_folder, 'css', filename),
+        mimetype='text/css'
+    ))
+    response.headers['Content-Type'] = 'text/css; charset=utf-8'
+    response.headers['Cache-Control'] = 'public, max-age=31536000'
+    return response
+
+@app.route('/static/js/<path:filename>')
+def serve_js(filename):
+    response = make_response(send_file(
+        os.path.join(app.static_folder, 'js', filename),
+        mimetype='application/javascript'
+    ))
+    response.headers['Content-Type'] = 'application/javascript; charset=utf-8'
+    response.headers['Cache-Control'] = 'public, max-age=31536000'
+    return response
+
+@app.route('/static/images/<path:filename>')
+def serve_image(filename):
+    file_path = os.path.join(app.static_folder, 'images', filename)
+    mime_type = mimetypes.guess_type(file_path)[0]
+    response = make_response(send_file(file_path, mimetype=mime_type))
     response.headers['Cache-Control'] = 'public, max-age=31536000'
     return response
 
