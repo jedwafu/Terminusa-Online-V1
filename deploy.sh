@@ -54,7 +54,7 @@ python3 -m pip install -r requirements-updated.txt
 # Run database migrations and setup
 echo -e "${YELLOW}Running database migrations and setup...${NC}"
 export PYTHONPATH=$PWD
-export FLASK_APP=app.py
+export FLASK_APP=app_new.py
 
 # Run migrations
 flask db upgrade
@@ -63,10 +63,11 @@ flask db upgrade
 echo -e "${YELLOW}Creating initial announcement...${NC}"
 python3 create_initial_announcement.py
 
-# Create static directories if they don't exist
+# Set up static files and permissions
 echo -e "${YELLOW}Setting up static files...${NC}"
 mkdir -p static/css static/js static/images
-chmod -R 755 static
+sudo chown -R www-data:www-data static
+sudo chmod -R 755 static
 
 # Set up Nginx
 echo -e "${YELLOW}Setting up Nginx...${NC}"
