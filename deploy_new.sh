@@ -38,7 +38,7 @@ fi
 # Run database migrations and setup
 echo -e "${YELLOW}Running database migrations and setup...${NC}"
 export PYTHONPATH=$PWD
-export FLASK_APP=app_new.py
+export FLASK_APP=app_merged.py
 
 # Run migrations
 flask db upgrade
