@@ -299,3 +299,8 @@ class Transaction(db.Model):
     transaction_hash = db.Column(db.String(100))  # for blockchain transactions
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+def init_db(app):
+    """Initialize database with Flask app context"""
+    db.init_app(app)
+    with app.app_context():
+        db.create_all()
