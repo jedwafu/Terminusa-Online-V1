@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Announcements - Terminusa Online{% endblock %}
+
+{% block extra_head %}
+<style>
+.announcements-section {
+    padding: 2rem;
+}
+
+.announcements-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.announcements-header h1 {
+    color: #00ff41;
+    margin-bottom: 1rem;
+}
+
+.announcements-header p {
+    color: #888;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.announcements-grid {
+    display: grid;
+    gap: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.announcement-card {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(0, 255, 65, 0.3);
+    border-radius: 4px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.announcement-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 255, 65, 0.1);
+}
+
+.announcement-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    gap: 1rem;
+}
+
+.announcement-title {
+    color: #00ff41;
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+.announcement-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #888;
+    margin-top: 0.5rem;
+}
+
+.announcement-badges {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.priority-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    background: rgba(0, 255, 65, 0.1);
+    color: #00ff41;
+    border: 1px solid rgba(0, 255, 65, 0.3);
+}
+
+.priority-urgent {
+    background: rgba(255, 0, 0, 0.1);
+    color: #ff4141;
+    border-color: rgba(255, 0, 0, 0.3);
+}
+
+.priority-important {
+    background: rgba(255, 165, 0, 0.1);
+    color: #ffa500;
+    border-color: rgba(255, 165, 0, 0.3);
+}
+
+.announcement-content {
+    color: #e0e0e0;
+    line-height: 1.6;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(0, 255, 65, 0.1);
+}
+
+.no-announcements {
+    text-align: center;
+    padding: 3rem;
+    color: #888;
+}
+
+.announcement-divider {
+    height: 1px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(0, 255, 65, 0.3),
+        transparent
+    );
+    margin: 2rem 0;
+}
+
+@media (max-width: 768px) {
+    .announcements-section {
+        padding: 1rem;
+    }
+
+    .announcement-header {
+        flex-direction: column;
+    }
+
+    .announcement-badges {
+        margin-top: 0.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="announcements-section">
+    <div class="announcements-header">
+        <h1>System Announcements</h1>
+        <p>Stay updated with the latest news, updates, and events in Terminusa Online</p>
+    </div>
+
+    <div class="announcements-grid">
+        {% for announcement in announcements %}
+        <article class="announcement-card">
+            <header class="announcement-header">
+                <div class="announcement-info">
+                    <h2 class="announcement-title">{{ announcement.title }}</h2>
+                    <div class="announcement-meta">
+                        <span>Posted by {{ announcement.author.username }}</span>
+                        <span>•</span>
+                        <span>{{ announcement.created_at.strftime('%B %d, %Y') }}</span>
+                        {% if announcement.updated_at %}
+                        <span>•</span>
+                        <span>Updated {{ announcement.updated_at.strftime('%B %d, %Y') }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="announcement-badges">
+                    {% if announcement.priority == 2 %}
+                    <span class="priority-badge priority-urgent">Urgent</span>
+                    {% elif announcement.priority == 1 %}
+                    <span class="priority-badge priority-important">Important</span>
+                    {% else %}
+                    <span class="priority-badge">Announcement</span>
+                    {% endif %}
+                </div>
+            </header>
+
+            <div class="announcement-content">
+                {{ announcement.content | safe }}
+            </div>
+        </article>
+
+        {% if not loop.last %}
+        <div class="announcement-divider"></div>
+        {% endif %}
+        
+        {% else %}
+        <div class="no-announcements">
+            <p>No announcements available at this time.</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add fade-in animation for announcements
+    const announcements = document.querySelectorAll('.announcement-card');
+    announcements.forEach((announcement, index) => {
+        announcement.style.opacity = '0';
+        announcement.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            announcement.style.transition = 'all 0.5s ease';
+            announcement.style.opacity = '1';
+            announcement.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+});
+</script>
+{% endblock %}

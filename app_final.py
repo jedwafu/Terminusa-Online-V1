@@ -2,14 +2,18 @@ from gevent import monkey
 monkey.patch_all()
 
 import os
-from flask import Flask, render_template, send_from_directory, make_response, current_app
+from flask import Flask, render_template, redirect, url_for, flash, request, jsonify
+from flask_login import LoginManager, current_user, login_user, logout_user, login_required
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from dotenv import load_dotenv
 import logging
 from logging.handlers import RotatingFileHandler
-from database import db, init_db
-import mimetypes
+from datetime import datetime, timedelta
+from functools import wraps
+
+from models import db, User, Announcement, init_db
+from routes_announcements import announcements
 
 # Load environment variables
 print("[DEBUG] Loading environment variables")
@@ -42,13 +46,16 @@ app.config.update(
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
     CORS_HEADERS='Content-Type',
     SEND_FILE_MAX_AGE_DEFAULT=31536000,  # 1 year in seconds
-    STATIC_FOLDER=os.path.abspath('static')  # Use absolute path
+    STATIC_FOLDER=os.path.abspath('static')
 )
 
 # Initialize extensions
 print("[DEBUG] Initializing extensions")
 jwt = JWTManager(app)
-cors = CORS(app, resources={r"/api/*": {"origins": "*"}})  # Enable CORS for API routes
+cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
 
 # Initialize database
 init_db(app)
@@ -71,80 +78,127 @@ app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
 app.logger.info('Terminusa Online startup')
 
-# Static file serving
-def send_static_file(filename, directory=''):
-    """Helper function to send static files with proper MIME types and headers."""
-    try:
-        path = os.path.join(current_app.config['STATIC_FOLDER'], directory, filename)
-        if not os.path.isfile(path):
-            current_app.logger.error(f'Static file not found: {path}')
-            return '', 404
+# User loader for Flask-Login
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
-        mime_type = None
-        if filename.endswith('.css'):
-            mime_type = 'text/css'
-        elif filename.endswith('.js'):
-            mime_type = 'application/javascript'
-        else:
-            mime_type = mimetypes.guess_type(filename)[0]
+# Admin required decorator
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_admin():
+            flash('You do not have permission to access this page.', 'error')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
 
-        response = make_response(send_from_directory(
-            os.path.join(current_app.config['STATIC_FOLDER'], directory),
-            filename,
-            conditional=True
-        ))
+# Register blueprints
+app.register_blueprint(announcements, url_prefix='/announcements')
 
-        if mime_type:
-            response.headers['Content-Type'] = f'{mime_type}; charset=utf-8'
-        response.headers['Cache-Control'] = 'public, max-age=31536000'
-        current_app.logger.info(f'Serving static file: {filename} ({mime_type})')
-        return response
-    except Exception as e:
-        current_app.logger.error(f'Error serving static file {filename}: {str(e)}')
-        return '', 404
+# Routes
+@app.route('/')
+def index():
+    announcements = Announcement.query.filter_by(is_active=True)\
+        .order_by(Announcement.priority.desc(), Announcement.created_at.desc())\
+        .limit(3)\
+        .all()
+    return render_template('index.html', announcements=announcements)
 
-@app.route('/static/css/<path:filename>')
-def serve_css(filename):
-    return send_static_file(filename, 'css')
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = User.query.filter_by(username=username).first()
+        
+        if user and user.check_password(password):
+            login_user(user)
+            user.last_login = datetime.utcnow()
+            db.session.commit()
+            
+            next_page = request.args.get('next')
+            if not next_page or not next_page.startswith('/'):
+                next_page = 'https://play.terminusa.online'
+            return redirect(next_page)
+        
+        flash('Invalid username or password', 'error')
+    return render_template('login.html')
 
-@app.route('/static/js/<path:filename>')
-def serve_js(filename):
-    return send_static_file(filename, 'js')
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('index'))
+    
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        if User.query.filter_by(username=username).first():
+            flash('Username already exists', 'error')
+            return redirect(url_for('register'))
+        
+        if User.query.filter_by(email=email).first():
+            flash('Email already registered', 'error')
+            return redirect(url_for('register'))
+        
+        user = User(username=username, email=email)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        
+        flash('Registration successful! Please log in.', 'success')
+        return redirect(url_for('login'))
+    
+    return render_template('register.html')
 
-@app.route('/static/images/<path:filename>')
-def serve_images(filename):
-    return send_static_file(filename, 'images')
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('index'))
 
-@app.route('/static/<path:filename>')
-def serve_static_root(filename):
-    return send_static_file(filename)
+@app.route('/profile')
+@login_required
+def profile():
+    return render_template('profile.html')
 
-# Import models and routes
-import models
-from routes_final import init_routes
-
-# Initialize routes
-init_routes(app)
+@app.route('/api/connect-wallet', methods=['POST'])
+@login_required
+def connect_wallet():
+    data = request.get_json()
+    wallet_address = data.get('wallet_address')
+    
+    if not wallet_address:
+        return jsonify({'error': 'Wallet address is required'}), 400
+    
+    current_user.web3_wallet = wallet_address
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Wallet connected successfully',
+        'wallet_address': wallet_address
+    })
 
 # Error handlers
 @app.errorhandler(404)
 def not_found_error(error):
     app.logger.error(f'Page not found: {error}')
-    return render_template('error_single.html',
+    return render_template('error.html',
                          error_message='The page you are looking for could not be found.',
-                         title='404 Not Found',
-                         is_authenticated=False,
-                         extra_css='error_single.css'), 404
+                         title='404 Not Found'), 404
 
 @app.errorhandler(500)
 def internal_error(error):
     app.logger.error(f'Server error: {error}')
     db.session.rollback()
-    return render_template('error_single.html',
+    return render_template('error.html',
                          error_message='An internal server error occurred. Please try again later.',
-                         title='500 Server Error',
-                         is_authenticated=False,
-                         extra_css='error_single.css'), 500
+                         title='500 Server Error'), 500
 
 if __name__ == '__main__':
     port = int(os.getenv('SERVER_PORT', 5000))

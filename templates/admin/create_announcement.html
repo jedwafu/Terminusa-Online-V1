@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Create Announcement{% endblock %}
+
+{% block extra_head %}
+<style>
+.admin-form {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid #00ff41;
+    border-radius: 4px;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #00ff41;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(0, 255, 65, 0.3);
+    border-radius: 4px;
+    color: #fff;
+    font-family: 'Rajdhani', sans-serif;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #00ff41;
+    box-shadow: 0 0 5px rgba(0, 255, 65, 0.5);
+}
+
+textarea.form-control {
+    min-height: 200px;
+    resize: vertical;
+}
+
+.priority-select {
+    width: 200px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.preview-panel {
+    margin-top: 2rem;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(0, 255, 65, 0.3);
+    border-radius: 4px;
+    display: none;
+}
+
+.preview-title {
+    color: #00ff41;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="admin-form">
+        <h2>Create New Announcement</h2>
+        
+        <form id="announcementForm" method="POST">
+            <div class="form-group">
+                <label for="title" class="form-label">Title</label>
+                <input type="text" id="title" name="title" class="form-control" required
+                       placeholder="Enter announcement title">
+            </div>
+
+            <div class="form-group">
+                <label for="content" class="form-label">Content</label>
+                <textarea id="content" name="content" class="form-control" required
+                          placeholder="Enter announcement content"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="priority" class="form-label">Priority</label>
+                <select id="priority" name="priority" class="form-control priority-select">
+                    <option value="0">Normal</option>
+                    <option value="1">Important</option>
+                    <option value="2">Urgent</option>
+                </select>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Create Announcement</button>
+                <button type="button" class="btn btn-secondary" id="previewBtn">Preview</button>
+                <a href="{{ url_for('announcements.admin_announcements') }}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+
+        <div id="previewPanel" class="preview-panel">
+            <h3 class="preview-title">Preview</h3>
+            <div class="announcement-item">
+                <div class="announcement-header">
+                    <div class="announcement-info">
+                        <h3 id="previewTitle" class="announcement-title"></h3>
+                        <div class="announcement-meta">
+                            <span>By {{ current_user.username }}</span>
+                            <span>•</span>
+                            <span>{{ datetime.now().strftime('%Y-%m-%d %H:%M') }}</span>
+                        </div>
+                    </div>
+                    <div class="announcement-status">
+                        <span id="previewPriority" class="priority-badge"></span>
+                        <span class="status-badge status-active">Active</span>
+                    </div>
+                </div>
+                <div id="previewContent" class="announcement-content"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('announcementForm');
+    const previewBtn = document.getElementById('previewBtn');
+    const previewPanel = document.getElementById('previewPanel');
+    const titleInput = document.getElementById('title');
+    const contentInput = document.getElementById('content');
+    const prioritySelect = document.getElementById('priority');
+    
+    // Preview functionality
+    previewBtn.addEventListener('click', function() {
+        document.getElementById('previewTitle').textContent = titleInput.value;
+        document.getElementById('previewContent').textContent = contentInput.value;
+        document.getElementById('previewPriority').textContent = 
+            'Priority: ' + prioritySelect.options[prioritySelect.selectedIndex].text;
+        
+        previewPanel.style.display = 'block';
+    });
+
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        if (!titleInput.value.trim() || !contentInput.value.trim()) {
+            e.preventDefault();
+            alert('Please fill in all required fields.');
+        }
+    });
+
+    // Auto-expand textarea
+    contentInput.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+    });
+});
+</script>
+{% endblock %}

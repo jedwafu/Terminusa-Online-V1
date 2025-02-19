@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - Terminusa Online{% endblock %}
+
+{% block extra_head %}
+<style>
+.profile-section {
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.profile-card {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(0, 255, 65, 0.3);
+    border-radius: 4px;
+    padding: 2rem;
+}
+
+.profile-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.profile-avatar {
+    width: 100px;
+    height: 100px;
+    background: rgba(0, 255, 65, 0.1);
+    border: 2px solid #00ff41;
+    border-radius: 50%;
+    margin: 0 auto 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: #00ff41;
+}
+
+.profile-name {
+    color: #00ff41;
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.profile-role {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.profile-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 2rem 0;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 4px;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-value {
+    color: #00ff41;
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.wallet-section {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(0, 255, 65, 0.1);
+}
+
+.wallet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.wallet-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.status-connected {
+    background: #00ff41;
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+}
+
+.status-disconnected {
+    background: #ff4141;
+    box-shadow: 0 0 10px rgba(255, 65, 65, 0.5);
+}
+
+.wallet-address {
+    font-family: monospace;
+    color: #888;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    word-break: break-all;
+}
+
+.connect-wallet-btn {
+    background: transparent;
+    color: #00ff41;
+    border: 1px solid #00ff41;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.connect-wallet-btn:hover {
+    background: rgba(0, 255, 65, 0.1);
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+}
+
+.loading {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="profile-section">
+    <div class="profile-card">
+        <div class="profile-header">
+            <div class="profile-avatar">
+                {{ current_user.username[0].upper() }}
+            </div>
+            <h2 class="profile-name">{{ current_user.username }}</h2>
+            <div class="profile-role">{{ current_user.role.title() }}</div>
+        </div>
+
+        <div class="profile-stats">
+            <div class="stat-item">
+                <div class="stat-value">{{ current_user.hunter_level }}</div>
+                <div class="stat-label">Hunter Level</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ current_user.crystals }}</div>
+                <div class="stat-label">Crystals</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">{{ "%.2f"|format(current_user.exons_balance) }}</div>
+                <div class="stat-label">Exons Balance</div>
+            </div>
+        </div>
+
+        <div class="wallet-section">
+            <div class="wallet-header">
+                <h3>Web3 Wallet</h3>
+                <div class="wallet-status">
+                    <div class="status-indicator {{ 'status-connected' if current_user.web3_wallet else 'status-disconnected' }}"></div>
+                    <span>{{ 'Connected' if current_user.web3_wallet else 'Not Connected' }}</span>
+                </div>
+            </div>
+
+            {% if current_user.web3_wallet %}
+            <div class="wallet-address">{{ current_user.web3_wallet }}</div>
+            {% else %}
+            <button id="connectWalletBtn" class="connect-wallet-btn">
+                Connect Wallet
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const connectWalletBtn = document.getElementById('connectWalletBtn');
+    
+    if (connectWalletBtn) {
+        connectWalletBtn.addEventListener('click', async function() {
+            try {
+                // Check if Phantom is installed
+                const isPhantomInstalled = window.solana && window.solana.isPhantom;
+                
+                if (!isPhantomInstalled) {
+                    alert('Please install Phantom wallet to continue');
+                    window.open('https://phantom.app/', '_blank');
+                    return;
+                }
+
+                // Request wallet connection
+                connectWalletBtn.textContent = 'Connecting...';
+                connectWalletBtn.classList.add('loading');
+                
+                const resp = await window.solana.connect();
+                const walletAddress = resp.publicKey.toString();
+
+                // Send wallet address to server
+                const response = await fetch('/api/connect-wallet', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ wallet_address: walletAddress })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to connect wallet');
+                }
+
+                // Reload page to show updated wallet status
+                window.location.reload();
+
+            } catch (error) {
+                console.error('Error connecting wallet:', error);
+                alert('Failed to connect wallet. Please try again.');
+                connectWalletBtn.textContent = 'Connect Wallet';
+                connectWalletBtn.classList.remove('loading');
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
