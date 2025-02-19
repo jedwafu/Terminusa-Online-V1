@@ -56,5 +56,15 @@ def init_database():
         # Pop the application context
         ctx.pop()
 
+def print_users_table_columns():
+    """Print the columns of the users table."""
+    with app.app_context():
+        inspector = db.inspect(db.engine)
+        columns = inspector.get_columns('users')
+        print("Columns in 'users' table:")
+        for column in columns:
+            print(column['name'])
+
 if __name__ == '__main__':
     init_database()
+    print_users_table_columns()
