@@ -1,64 +1,52 @@
 {% extends "base.html" %}
 
-{% block title %}Terminusa Online - Solo-leveling Inspired MMORPG{% endblock %}
+{% block title %}Terminusa Online - Enter the Digital Dungeon{% endblock %}
 
 {% block content %}
 <section class="hero">
-    <div class="hero-content">
-        <h1>Welcome to Terminusa Online</h1>
-        <p class="hero-subtitle">A Solo-leveling inspired MMORPG with both CLI and web interfaces</p>
-        <div class="hero-buttons">
-            <a href="/register" class="btn btn-primary">Get Started</a>
-            <a href="/features" class="btn btn-secondary">Learn More</a>
+    <div class="container">
+        <div class="hero-content">
+            <div class="matrix-code"></div>
+            <h1 class="glitch">Welcome to Terminusa Online</h1>
+            <p class="hero-subtitle">Where The Matrix meets Solo Leveling</p>
+            <div class="hero-text">
+                <p class="typing-effect">A new generation of hunters rises in the digital realm</p>
+            </div>
+            <div class="hero-buttons">
+                <a href="{{ url_for('register') }}" class="btn btn-primary">Initialize System</a>
+                <a href="{{ url_for('login') }}" class="btn btn-secondary">Access Gateway</a>
+            </div>
         </div>
     </div>
 </section>
 
 <section class="features">
     <div class="container">
-        <h2 class="section-title">Key Features</h2>
+        <h2 class="section-title glitch">System Protocols</h2>
         <div class="feature-grid">
             <div class="feature-card">
                 <i class="fas fa-terminal"></i>
                 <h3>Dual Interface</h3>
-                <p>Play through our modern web interface or classic CLI experience</p>
+                <p>Navigate through the Matrix via CLI or Web Interface</p>
+                <div class="feature-glow"></div>
             </div>
             <div class="feature-card">
                 <i class="fas fa-level-up-alt"></i>
-                <h3>Solo Leveling</h3>
-                <p>Progress through challenging dungeons and become stronger</p>
+                <h3>System Evolution</h3>
+                <p>Upgrade your abilities through digital dungeons</p>
+                <div class="feature-glow"></div>
             </div>
             <div class="feature-card">
-                <i class="fas fa-store"></i>
-                <h3>Marketplace</h3>
-                <p>Trade items and equipment with other players</p>
+                <i class="fas fa-network-wired"></i>
+                <h3>Neural Network</h3>
+                <p>Connect and trade with other system operators</p>
+                <div class="feature-glow"></div>
             </div>
             <div class="feature-card">
-                <i class="fas fa-trophy"></i>
-                <h3>Leaderboards</h3>
-                <p>Compete with players worldwide and climb the rankings</p>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="game-modes">
-    <div class="container">
-        <h2 class="section-title">Game Modes</h2>
-        <div class="mode-grid">
-            <div class="mode-card">
-                <div class="mode-content">
-                    <h3>Solo Dungeons</h3>
-                    <p>Challenge yourself in procedurally generated dungeons with increasing difficulty</p>
-                    <a href="/play" class="btn btn-primary">Start Adventure</a>
-                </div>
-            </div>
-            <div class="mode-card">
-                <div class="mode-content">
-                    <h3>Guild Raids</h3>
-                    <p>Team up with your guild members to tackle epic boss battles</p>
-                    <a href="/guilds" class="btn btn-primary">Join Guild</a>
-                </div>
+                <i class="fas fa-code-branch"></i>
+                <h3>Protocol Rankings</h3>
+                <p>Climb the system hierarchy and prove your worth</p>
+                <div class="feature-glow"></div>
             </div>
         </div>
     </div>
@@ -66,151 +54,301 @@
 
 <section class="cta">
     <div class="container">
-        <h2>Ready to Begin Your Journey?</h2>
-        <p>Join thousands of players in this unique gaming experience</p>
-        <a href="/register" class="btn btn-primary">Create Account</a>
+        <div class="matrix-rain"></div>
+        <h2 class="glitch">Ready to Enter the System?</h2>
+        <p>Join the ranks of digital hunters in this unique reality</p>
+        <a href="{{ url_for('register') }}" class="btn btn-primary">Initialize Connection</a>
     </div>
 </section>
+
+{% if latest_announcements %}
+<section class="announcements">
+    <div class="container">
+        <h2 class="section-title">System Updates</h2>
+        <div class="announcements-grid">
+            {% for announcement in latest_announcements %}
+            <div class="announcement-card">
+                <div class="card-header">
+                    <h3>{{ announcement.title }}</h3>
+                    <span class="date-chip">{{ announcement.created_at.strftime('%Y.%m.%d') }}</span>
+                </div>
+                <div class="announcement-content">
+                    {{ announcement.content }}
+                </div>
+                <div class="card-glow"></div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="announcements-footer">
+            <a href="{{ url_for('announcements_page') }}" class="btn btn-secondary">Access Archives</a>
+        </div>
+    </div>
+</section>
+{% endif %}
 {% endblock %}
 
 {% block extra_css %}
 <style>
 .hero {
-    background: linear-gradient(rgba(44, 62, 80, 0.9), rgba(44, 62, 80, 0.9)), url('/static/images/hero-bg.jpg');
+    position: relative;
+    background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), 
+                url('/static/images/hero-bg.jpg');
     background-size: cover;
     background-position: center;
-    color: white;
-    padding: 6rem 2rem;
+    color: var(--text-color);
+    padding: 8rem 2rem;
     text-align: center;
+    overflow: hidden;
+}
+
+.matrix-code {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('/static/images/matrix-code.png');
+    opacity: 0.1;
+    animation: scrollBackground 20s linear infinite;
 }
 
 .hero-content {
+    position: relative;
     max-width: 800px;
     margin: 0 auto;
+    z-index: 1;
 }
 
 .hero h1 {
-    font-size: 3rem;
+    font-size: 3.5rem;
     margin-bottom: 1rem;
+    color: var(--matrix-green);
+    text-shadow: 0 0 10px var(--matrix-green);
 }
 
 .hero-subtitle {
-    font-size: 1.5rem;
+    font-size: 1.8rem;
     margin-bottom: 2rem;
-    opacity: 0.9;
+    color: var(--neon-blue);
+    text-shadow: 0 0 10px var(--neon-blue);
+}
+
+.typing-effect {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    min-height: 1.5em;
 }
 
 .hero-buttons {
     display: flex;
-    gap: 1rem;
+    gap: 2rem;
     justify-content: center;
+}
+
+.features {
+    padding: 6rem 0;
+    background-color: var(--matrix-dark);
+    position: relative;
+    overflow: hidden;
 }
 
 .section-title {
     text-align: center;
-    margin-bottom: 3rem;
-    font-size: 2rem;
-    color: var(--primary-color);
+    margin-bottom: 4rem;
+    font-size: 2.5rem;
+    color: var(--matrix-green);
+    text-shadow: 0 0 10px var(--matrix-green);
 }
 
 .feature-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 2rem;
-    margin-bottom: 4rem;
 }
 
 .feature-card {
+    position: relative;
     text-align: center;
-    padding: 2rem;
-    background: white;
+    padding: 2.5rem;
+    background: rgba(0, 255, 65, 0.05);
+    border: 1px solid var(--matrix-green);
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease;
+    transition: all 0.3s ease;
+    overflow: hidden;
 }
 
 .feature-card:hover {
     transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
 }
 
 .feature-card i {
     font-size: 2.5rem;
-    color: var(--secondary-color);
-    margin-bottom: 1rem;
+    color: var(--matrix-green);
+    margin-bottom: 1.5rem;
+    text-shadow: 0 0 10px var(--matrix-green);
 }
 
 .feature-card h3 {
     margin-bottom: 1rem;
-    color: var(--primary-color);
+    color: var(--matrix-green);
+    font-size: 1.5rem;
+    text-shadow: 0 0 10px var(--matrix-green);
 }
 
-.mode-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-    margin-bottom: 4rem;
+.feature-card p {
+    color: var(--text-color);
 }
 
-.mode-card {
-    background: white;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+.feature-glow {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at 50% 50%, rgba(0, 255, 65, 0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
-.mode-content {
-    padding: 2rem;
-    text-align: center;
-}
-
-.mode-content h3 {
-    margin-bottom: 1rem;
-    color: var(--primary-color);
-}
-
-.mode-content p {
-    margin-bottom: 1.5rem;
+.feature-card:hover .feature-glow {
+    opacity: 1;
 }
 
 .cta {
-    background-color: var(--primary-color);
-    color: white;
+    position: relative;
+    background-color: var(--matrix-black);
+    color: var(--text-color);
     text-align: center;
-    padding: 4rem 2rem;
-    margin-top: 4rem;
+    padding: 6rem 2rem;
+    overflow: hidden;
+}
+
+.matrix-rain {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('/static/images/matrix-rain.png');
+    opacity: 0.1;
+    animation: rain 20s linear infinite;
 }
 
 .cta h2 {
-    font-size: 2rem;
+    font-size: 2.5rem;
     margin-bottom: 1rem;
+    color: var(--matrix-green);
+    position: relative;
+    z-index: 1;
 }
 
 .cta p {
     margin-bottom: 2rem;
-    opacity: 0.9;
+    position: relative;
+    z-index: 1;
+}
+
+.announcements {
+    padding: 6rem 0;
+    background-color: var(--matrix-dark);
+}
+
+.announcements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+.announcement-card {
+    position: relative;
+    background: rgba(0, 255, 65, 0.05);
+    padding: 2rem;
+    border: 1px solid var(--matrix-green);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.announcement-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.card-header h3 {
+    color: var(--matrix-green);
+    text-shadow: 0 0 10px var(--matrix-green);
+}
+
+.date-chip {
+    background: rgba(0, 255, 65, 0.1);
+    color: var(--matrix-green);
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    border: 1px solid var(--matrix-green);
+}
+
+@keyframes scrollBackground {
+    from { background-position: 0 0; }
+    to { background-position: 0 100%; }
+}
+
+@keyframes rain {
+    from { transform: translateY(-100%); }
+    to { transform: translateY(100%); }
 }
 
 @media (max-width: 768px) {
     .hero h1 {
-        font-size: 2rem;
+        font-size: 2.5rem;
     }
     
     .hero-subtitle {
-        font-size: 1.2rem;
+        font-size: 1.3rem;
     }
     
     .hero-buttons {
         flex-direction: column;
         align-items: center;
+        gap: 1rem;
     }
     
     .feature-grid {
         grid-template-columns: 1fr;
     }
     
-    .mode-grid {
+    .announcements-grid {
         grid-template-columns: 1fr;
     }
 }
 </style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Typing effect
+    const text = "A new generation of hunters rises in the digital realm";
+    const typingElement = document.querySelector('.typing-effect');
+    let index = 0;
+
+    function type() {
+        if (index < text.length) {
+            typingElement.textContent += text.charAt(index);
+            index++;
+            setTimeout(type, 50);
+        }
+    }
+
+    type();
+});
+</script>
 {% endblock %}
