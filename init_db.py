@@ -6,45 +6,49 @@ import os
 # Load environment variables
 load_dotenv()
 
-# Initialize Flask app
-app = Flask(__name__)
-
-# Configure app
-app.config.update(
-    SECRET_KEY=os.getenv('FLASK_SECRET_KEY'),
-    SQLALCHEMY_DATABASE_URI=os.getenv('DATABASE_URL', 'sqlite:///terminusa.db'),
-    SQLALCHEMY_TRACK_MODIFICATIONS=False
-)
-
-# Initialize database
-init_db(app)
-
-# Import models after db initialization
-from models import User
-
 def init_database():
     """Initialize database and create admin user"""
     print("Initializing database...")
     
+    # Initialize Flask app
+    app = Flask(__name__)
+
+    # Configure app
+    app.config.update(
+        SECRET_KEY=os.getenv('FLASK_SECRET_KEY'),
+        SQLALCHEMY_DATABASE_URI=os.getenv('DATABASE_URL', 'sqlite:///terminusa.db'),
+        SQLALCHEMY_TRACK_MODIFICATIONS=False
+    )
+
+    # Initialize database
+    init_db(app)
+
+    # Import models after db initialization
+    from models import User
+    
     with app.app_context():
-        # Create database tables
-        db.create_all()
-        
-        # Create admin user if it doesn't exist
-        admin = User.query.filter_by(username=os.getenv('ADMIN_USERNAME', 'adminbb')).first()
-        if not admin:
-            admin = User(
-                username=os.getenv('ADMIN_USERNAME', 'adminbb'),
-                email=os.getenv('ADMIN_EMAIL', 'admin@terminusa.online'),
-                role='admin',
-                web3_wallet=os.getenv('ADMIN_WALLET', 'FNEdD3PWMLwbNKxtaHy3W2NVfRJ7wqDNx4M9je8Xc6Mw')
-            )
-            admin.set_password(os.getenv('ADMIN_PASSWORD', 'admin123'))
-            db.session.add(admin)
-            db.session.commit()
-            print("Admin user created")
-        
-        print("Database initialized successfully")
+        try:
+            # Create database tables
+            db.create_all()
+            
+            # Create admin user if it doesn't exist
+            admin = User.query.filter_by(username=os.getenv('ADMIN_USERNAME', 'adminbb')).first()
+            if not admin:
+                admin = User(
+                    username=os.getenv('ADMIN_USERNAME', 'adminbb'),
+                    email=os.getenv('ADMIN_EMAIL', 'admin@terminusa.online'),
+                    role='admin',
+                    web3_wallet=os.getenv('ADMIN_WALLET', 'FNEdD3PWMLwbNKxtaHy3W2NVfRJ7wqDNx4M9je8Xc6Mw')
+                )
+                admin.set_password(os.getenv('ADMIN_PASSWORD', 'admin123'))
+                db.session.add(admin)
+                db.session.commit()
+                print("Admin user created")
+            
+            print("Database initialized successfully")
+        except Exception as e:
+            print(f"Error initializing database: {str(e)}")
+            raise
 
 if __name__ == '__main__':
     init_database()
