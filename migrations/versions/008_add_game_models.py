@@ -52,9 +52,15 @@ def has_enum(enum_name):
 
 def create_enum_if_not_exists(name, values):
     """Create enum if it doesn't exist"""
-    if not has_enum(name):
-        values_str = "', '".join(values)
-        execute_with_retry(f"CREATE TYPE {name} AS ENUM ('{values_str}')")
+    values_str = "', '".join(values)
+    execute_with_retry(f"""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = '{name}') THEN
+                CREATE TYPE {name} AS ENUM ('{values_str}');
+            END IF;
+        END$$;
+    """)
 
 def upgrade():
     # Create enums if they don't exist
@@ -108,9 +114,17 @@ def upgrade():
     # Add foreign key constraints if they don't exist
     try:
         execute_with_retry("""
-            ALTER TABLE users 
-            ADD CONSTRAINT fk_users_guild 
-            FOREIGN KEY (guild_id) REFERENCES guilds(id)
+            DO $$
+            BEGIN
+                IF NOT EXISTS (
+                    SELECT 1 FROM information_schema.table_constraints 
+                    WHERE constraint_name = 'fk_users_guild'
+                ) THEN
+                    ALTER TABLE users 
+                    ADD CONSTRAINT fk_users_guild 
+                    FOREIGN KEY (guild_id) REFERENCES guilds(id);
+                END IF;
+            END$$;
         """)
     except Exception:
         # Constraint might already exist
