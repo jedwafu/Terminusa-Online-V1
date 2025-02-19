@@ -70,21 +70,6 @@ class User(db.Model):
     level = db.Column(db.Integer, default=1)
     exp = db.Column(db.BigInteger, default=0)
     hunter_class = db.Column(db.Enum(HunterClass), default=HunterClass.F)
-    job_class = db.Column(db.Enum(JobClass))  # Added job_class
-    job_level = db.Column(db.Integer, default=1)  # Added job_level
-    solana_balance = db.Column(db.Float, default=0.0)  # Added solana_balance
-    strength = db.Column(db.Integer, default=10)  # Added strength
-    agility = db.Column(db.Integer, default=10)  # Added agility
-    intelligence = db.Column(db.Integer, default=10)  # Added intelligence
-    vitality = db.Column(db.Integer, default=10)  # Added vitality
-    luck = db.Column(db.Integer, default=10)  # Added luck
-    hp = db.Column(db.Integer, default=100)  # Added hp
-    max_hp = db.Column(db.Integer, default=100)  # Added max_hp
-    mp = db.Column(db.Integer, default=100)  # Added mp
-    max_mp = db.Column(db.Integer, default=100)  # Added max_mp
-    level = db.Column(db.Integer, default=1)
-    exp = db.Column(db.BigInteger, default=0)
-    hunter_class = db.Column(db.Enum(HunterClass), default=HunterClass.F)
     job_class = db.Column(db.Enum(JobClass))
     job_level = db.Column(db.Integer, default=1)
     
@@ -130,6 +115,21 @@ class User(db.Model):
 
     def is_admin(self):
         return self.role == 'admin'
+
+class Announcement(db.Model):
+    __tablename__ = 'announcements'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    author_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+    priority = db.Column(db.Integer, default=0)  # Higher number = higher priority
+    
+    # Relationships
+    author = db.relationship('User', backref='announcements', lazy=True)
 
 class Guild(db.Model):
     __tablename__ = 'guilds'
