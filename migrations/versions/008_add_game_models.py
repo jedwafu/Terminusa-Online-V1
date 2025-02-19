@@ -8,7 +8,7 @@ Create Date: 2024-02-19 10:30:00.000000
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
-from sqlalchemy import inspect, text
+from sqlalchemy import text, exc
 from datetime import datetime
 
 # revision identifiers, used by Alembic.
@@ -17,35 +17,35 @@ down_revision = '007_add_web3_and_announcements'
 branch_labels = None
 depends_on = None
 
-def has_table(table_name):
-    """Check if a table exists"""
+def execute_with_retry(statement, parameters=None):
+    """Execute a statement with retry logic for transaction errors"""
+    conn = op.get_bind()
     try:
-        conn = op.get_bind()
-        result = conn.execute(text(
-            "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = :table)"
-        ), {"table": table_name})
-        return result.scalar()
-    except Exception:
-        return False
-
-def has_column(table_name, column_name):
-    """Check if a column exists in a table"""
-    try:
-        conn = op.get_bind()
-        result = conn.execute(text(
-            "SELECT EXISTS (SELECT FROM information_schema.columns WHERE table_name = :table AND column_name = :column)"
-        ), {"table": table_name, "column": column_name})
-        return result.scalar()
-    except Exception:
-        return False
+        if parameters:
+            conn.execute(text(statement), parameters)
+        else:
+            conn.execute(text(statement))
+    except exc.DBAPIError as e:
+        if 'current transaction is aborted' in str(e):
+            # Rollback and retry once
+            try:
+                conn.execute(text('ROLLBACK'))
+                if parameters:
+                    conn.execute(text(statement), parameters)
+                else:
+                    conn.execute(text(statement))
+            except Exception as retry_error:
+                raise retry_error from e
+        else:
+            raise
 
 def has_enum(enum_name):
     """Check if an enum type exists"""
     try:
-        conn = op.get_bind()
-        result = conn.execute(text(
-            "SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = :enum)"
-        ), {"enum": enum_name})
+        result = execute_with_retry(
+            "SELECT EXISTS (SELECT 1 FROM pg_type WHERE typname = :enum)",
+            {"enum": enum_name}
+        )
         return result.scalar()
     except Exception:
         return False
@@ -53,12 +53,8 @@ def has_enum(enum_name):
 def create_enum_if_not_exists(name, values):
     """Create enum if it doesn't exist"""
     if not has_enum(name):
-        try:
-            enum = postgresql.ENUM(*values, name=name)
-            enum.create(op.get_bind())
-        except Exception:
-            # If creation fails, the enum might have been created in a parallel transaction
-            pass
+        values_str = "', '".join(values)
+        execute_with_retry(f"CREATE TYPE {name} AS ENUM ('{values_str}')")
 
 def upgrade():
     # Create enums if they don't exist
@@ -70,73 +66,65 @@ def upgrade():
     create_enum_if_not_exists('healthstatus', ['Normal', 'Burned', 'Poisoned', 'Frozen', 'Feared', 'Confused', 'Dismembered', 'Decapitated', 'Shadow'])
 
     # Add columns to users table if they don't exist
-    if has_table('users'):
-        columns_to_add = [
-            ('level', sa.Integer(), False, '1'),
-            ('exp', sa.BigInteger(), False, '0'),
-            ('job_class', sa.Enum('Fighter', 'Mage', 'Assassin', 'Archer', 'Healer', name='jobclass'), True, None),
-            ('job_level', sa.Integer(), False, '1'),
-            ('strength', sa.Integer(), False, '10'),
-            ('agility', sa.Integer(), False, '10'),
-            ('intelligence', sa.Integer(), False, '10'),
-            ('vitality', sa.Integer(), False, '10'),
-            ('luck', sa.Integer(), False, '10'),
-            ('hp', sa.Integer(), False, '100'),
-            ('max_hp', sa.Integer(), False, '100'),
-            ('mp', sa.Integer(), False, '100'),
-            ('max_mp', sa.Integer(), False, '100')
-        ]
-        
-        for col_name, col_type, nullable, default in columns_to_add:
-            if not has_column('users', col_name):
-                try:
-                    if default is not None:
-                        op.add_column('users', sa.Column(col_name, col_type, nullable=nullable, server_default=default))
-                    else:
-                        op.add_column('users', sa.Column(col_name, col_type, nullable=nullable))
-                except Exception:
-                    # Column might have been added in a parallel transaction
-                    pass
+    columns_to_add = [
+        ('level', 'INTEGER NOT NULL DEFAULT 1'),
+        ('exp', 'BIGINT NOT NULL DEFAULT 0'),
+        ('job_class', 'jobclass'),
+        ('job_level', 'INTEGER NOT NULL DEFAULT 1'),
+        ('strength', 'INTEGER NOT NULL DEFAULT 10'),
+        ('agility', 'INTEGER NOT NULL DEFAULT 10'),
+        ('intelligence', 'INTEGER NOT NULL DEFAULT 10'),
+        ('vitality', 'INTEGER NOT NULL DEFAULT 10'),
+        ('luck', 'INTEGER NOT NULL DEFAULT 10'),
+        ('hp', 'INTEGER NOT NULL DEFAULT 100'),
+        ('max_hp', 'INTEGER NOT NULL DEFAULT 100'),
+        ('mp', 'INTEGER NOT NULL DEFAULT 100'),
+        ('max_mp', 'INTEGER NOT NULL DEFAULT 100')
+    ]
 
-    # Create tables if they don't exist
-    if not has_table('guilds'):
+    for col_name, col_type in columns_to_add:
         try:
-            op.create_table(
-                'guilds',
-                sa.Column('id', sa.Integer(), nullable=False),
-                sa.Column('name', sa.String(100), nullable=False),
-                sa.Column('leader_id', sa.Integer(), sa.ForeignKey('users.id')),
-                sa.Column('created_at', sa.DateTime(), nullable=False, server_default=sa.text('now()')),
-                sa.Column('level', sa.Integer(), nullable=False, server_default='1'),
-                sa.Column('exp', sa.BigInteger(), nullable=False, server_default='0'),
-                sa.Column('crystals', sa.Integer(), nullable=False, server_default='0'),
-                sa.Column('exons_balance', sa.Float(), nullable=False, server_default='0.0'),
-                sa.PrimaryKeyConstraint('id'),
-                sa.UniqueConstraint('name')
+            execute_with_retry(
+                f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col_name} {col_type}"
             )
         except Exception:
+            # Column might already exist
             pass
 
-    # Add foreign key constraints if tables exist
-    if has_table('users') and has_table('guilds'):
-        try:
-            op.create_foreign_key('fk_users_guild', 'users', 'guilds', ['guild_id'], ['id'])
-        except Exception:
-            pass
+    # Create guilds table if it doesn't exist
+    execute_with_retry("""
+        CREATE TABLE IF NOT EXISTS guilds (
+            id SERIAL PRIMARY KEY,
+            name VARCHAR(100) NOT NULL UNIQUE,
+            leader_id INTEGER REFERENCES users(id),
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            level INTEGER NOT NULL DEFAULT 1,
+            exp BIGINT NOT NULL DEFAULT 0,
+            crystals INTEGER NOT NULL DEFAULT 0,
+            exons_balance FLOAT NOT NULL DEFAULT 0.0
+        )
+    """)
+
+    # Add foreign key constraints if they don't exist
+    try:
+        execute_with_retry("""
+            ALTER TABLE users 
+            ADD CONSTRAINT fk_users_guild 
+            FOREIGN KEY (guild_id) REFERENCES guilds(id)
+        """)
+    except Exception:
+        # Constraint might already exist
+        pass
 
 def downgrade():
     # Drop foreign key constraints if they exist
     try:
-        op.drop_constraint('fk_users_guild', 'users')
+        execute_with_retry("ALTER TABLE users DROP CONSTRAINT IF EXISTS fk_users_guild")
     except Exception:
         pass
 
     # Drop tables if they exist
-    if has_table('guilds'):
-        try:
-            op.drop_table('guilds')
-        except Exception:
-            pass
+    execute_with_retry("DROP TABLE IF EXISTS guilds")
 
     # Drop columns from users table if they exist
     columns_to_drop = [
@@ -145,11 +133,10 @@ def downgrade():
         'hp', 'max_hp', 'mp', 'max_mp'
     ]
     for column in columns_to_drop:
-        if has_column('users', column):
-            try:
-                op.drop_column('users', column)
-            except Exception:
-                pass
+        try:
+            execute_with_retry(f"ALTER TABLE users DROP COLUMN IF EXISTS {column}")
+        except Exception:
+            pass
 
     # Drop enums if they exist
     enums_to_drop = [
@@ -157,8 +144,7 @@ def downgrade():
         'mountpetrarity', 'healthstatus'
     ]
     for enum in enums_to_drop:
-        if has_enum(enum):
-            try:
-                op.execute(text(f'DROP TYPE IF EXISTS {enum}'))
-            except Exception:
-                pass
+        try:
+            execute_with_retry(f"DROP TYPE IF EXISTS {enum}")
+        except Exception:
+            pass
