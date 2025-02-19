@@ -3,6 +3,7 @@ from __future__ import with_statement
 import logging
 from flask import current_app
 from alembic import context
+from sqlalchemy import engine_from_config, pool
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -25,11 +26,6 @@ config.set_main_option(
 )
 target_metadata = current_app.extensions['migrate'].db.metadata
 
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
-
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
 
@@ -40,25 +36,24 @@ def run_migrations_offline():
 
     Calls to context.execute() here emit the given string to the
     script output.
-
     """
     url = current_app.config.get('SQLALCHEMY_DATABASE_URI')
     context.configure(
-        url=url, target_metadata=target_metadata, literal_binds=True
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        compare_type=True
     )
 
     with context.begin_transaction():
         context.run_migrations()
-
 
 def run_migrations_online():
     """Run migrations in 'online' mode.
 
     In this scenario we need to create an Engine
     and associate a connection with the context.
-
     """
-
     # this callback is used to prevent an auto-migration from being generated
     # when there are no changes to the schema
     # reference: http://alembic.zzzcomputing.com/en/latest/cookbook.html
@@ -69,19 +64,32 @@ def run_migrations_online():
                 directives[:] = []
                 logger.info('No changes in schema detected.')
 
-    connectable = current_app.extensions['migrate'].db.get_engine()
+    # Get the database engine
+    engine = current_app.extensions['migrate'].db.get_engine()
 
-    with connectable.connect() as connection:
+    # Configure the migration context with retry logic
+    def run_migrations(connection):
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
             process_revision_directives=process_revision_directives,
+            compare_type=True,
+            transaction_per_migration=True,
             **current_app.extensions['migrate'].configure_args
         )
 
-        with context.begin_transaction():
-            context.run_migrations()
+        try:
+            with context.begin_transaction():
+                context.run_migrations()
+        except Exception as e:
+            logger.error(f"Error during migration: {str(e)}")
+            # Explicitly rollback the transaction
+            connection.rollback()
+            raise
 
+    # Run migrations with connection handling
+    with engine.connect() as connection:
+        run_migrations(connection)
 
 if context.is_offline_mode():
     run_migrations_offline()
