@@ -16,6 +16,7 @@
 </head>
 <body class="scan-line">
     <div class="matrix-rain"></div>
+    <div class="particle-container"></div>
     
     <header class="main-header system-access">
         <nav class="main-nav">
@@ -63,9 +64,9 @@
             <div class="footer-section">
                 <h3 class="neon-text">Connect</h3>
                 <div class="social-links">
-                    <a href="#" class="social-link energy-surge"><i class="fab fa-discord"></i></a>
-                    <a href="#" class="social-link energy-surge"><i class="fab fa-github"></i></a>
-                    <a href="#" class="social-link energy-surge"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="social-link energy-surge portal-frame"><i class="fab fa-discord"></i></a>
+                    <a href="#" class="social-link energy-surge portal-frame"><i class="fab fa-github"></i></a>
+                    <a href="#" class="social-link energy-surge portal-frame"><i class="fab fa-twitter"></i></a>
                 </div>
             </div>
         </div>
@@ -76,6 +77,7 @@
     </footer>
 
     <script src="{{ url_for('static', filename='js/matrix-effects.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/particle-effects.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
