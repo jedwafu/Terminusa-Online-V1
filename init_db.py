@@ -30,6 +30,9 @@ migrate = Migrate(app, db)
 
 def init_database():
     """Initialize database and create admin user"""
+    print(f"Current app context: {app}")  # Debugging statement
+    print(f"SQLAlchemy instance: {db}")  # Debugging statement
+    """Initialize database and create admin user"""
     with app.app_context():
         # Create database tables
         db.create_all()
