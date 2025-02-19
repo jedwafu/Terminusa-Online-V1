@@ -5,25 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Terminusa Online{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% if extra_css %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/' + extra_css) }}">
+    {% endif %}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
-    {% block extra_css %}{% endblock %}
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
-    <header>
+    <header class="main-header">
         <nav class="main-nav">
             <div class="nav-brand">
                 <a href="/">
-                    <img src="{{ url_for('static', filename='images/favicon-32x32.png') }}" alt="Terminusa Logo">
+                    <span class="logo">T</span>
                     <span>Terminusa Online</span>
                 </a>
             </div>
             <div class="nav-links">
                 <a href="/" class="nav-link">Home</a>
                 <a href="/features" class="nav-link">Features</a>
+                {% if is_authenticated %}
                 <a href="/marketplace" class="nav-link">Marketplace</a>
                 <a href="/leaderboard" class="nav-link">Leaderboard</a>
                 <a href="/play" class="nav-button">Play Now</a>
+                <a href="/logout" class="nav-link">Logout</a>
+                {% else %}
+                <a href="/login" class="nav-link">Login</a>
+                <a href="/register" class="nav-button">Sign Up</a>
+                {% endif %}
             </div>
         </nav>
     </header>
@@ -32,7 +41,7 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer>
+    <footer class="main-footer">
         <div class="footer-content">
             <div class="footer-section">
                 <h3>About Terminusa</h3>
