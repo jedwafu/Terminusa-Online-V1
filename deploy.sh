@@ -80,11 +80,17 @@ if ! sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw terminusa; then
 fi
 check_status
 
-# Run database migrations
-echo -e "\n${YELLOW}Running database migrations...${NC}"
+# Initialize Flask-Migrate
+echo -e "\n${YELLOW}Initializing Flask-Migrate...${NC}"
 cd /opt/terminusa
 source venv/bin/activate
 export FLASK_APP=app_final.py
+flask db init || true
+check_status
+
+# Run database migrations
+echo -e "\n${YELLOW}Running database migrations...${NC}"
+flask db migrate -m "Initial migration"
 flask db upgrade
 check_status
 
