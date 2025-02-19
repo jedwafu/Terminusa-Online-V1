@@ -75,8 +75,12 @@ echo -e "\n${YELLOW}Setting up database...${NC}"
 if ! sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw terminusa; then
     sudo -u postgres createuser terminusa
     sudo -u postgres createdb terminusa
-    sudo -u postgres psql -c "ALTER USER terminusa WITH PASSWORD '$(openssl rand -hex 16)';"
+    DB_PASSWORD=$(openssl rand -hex 16)
+    sudo -u postgres psql -c "ALTER USER terminusa WITH PASSWORD '$DB_PASSWORD';"
     sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE terminusa TO terminusa;"
+    
+    # Update DATABASE_URL in .env
+    sed -i "s|DATABASE_URL=.*|DATABASE_URL=postgresql://terminusa:$DB_PASSWORD@localhost:5432/terminusa|g" /opt/terminusa/.env
 fi
 check_status
 
@@ -84,8 +88,11 @@ check_status
 echo -e "\n${YELLOW}Initializing database...${NC}"
 cd /opt/terminusa
 source venv/bin/activate
+
+# Set environment variables
 export FLASK_APP=init_db.py
 export PYTHONPATH=/opt/terminusa
+export $(cat .env | xargs)
 
 # Initialize database
 python init_db.py

@@ -3,6 +3,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from dotenv import load_dotenv
+from werkzeug.security import generate_password_hash
 
 # Load environment variables
 load_dotenv()
@@ -18,15 +19,17 @@ app.config.update(
 )
 
 # Initialize SQLAlchemy
-db = SQLAlchemy(app)
+db = SQLAlchemy()
+db.init_app(app)
 
-# Import models after db initialization
-from models import *
+# Import models
+from models import User, Gate, Guild, Party, InventoryItem, Item, Mount, Pet, Skill, Quest, GuildQuest, Achievement
 
 # Initialize Flask-Migrate
 migrate = Migrate(app, db)
 
-if __name__ == '__main__':
+def init_database():
+    """Initialize database and create admin user"""
     with app.app_context():
         # Create database tables
         db.create_all()
@@ -45,4 +48,7 @@ if __name__ == '__main__':
             db.session.commit()
             print("Admin user created")
         
-        print("Database initialized")
+        print("Database initialized successfully")
+
+if __name__ == '__main__':
+    init_database()
