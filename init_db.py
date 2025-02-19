@@ -1,8 +1,6 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
 from dotenv import load_dotenv
-from werkzeug.security import generate_password_hash
+from database import db, init_db
 import os
 
 # Load environment variables
@@ -14,26 +12,20 @@ app = Flask(__name__)
 # Configure app
 app.config.update(
     SECRET_KEY=os.getenv('FLASK_SECRET_KEY'),
-    SQLALCHEMY_DATABASE_URI=os.getenv('DATABASE_URL'),
+    SQLALCHEMY_DATABASE_URI=os.getenv('DATABASE_URL', 'sqlite:///terminusa.db'),
     SQLALCHEMY_TRACK_MODIFICATIONS=False
 )
 
-# Initialize SQLAlchemy
-db = SQLAlchemy()
-db.init_app(app)
+# Initialize database
+init_db(app)
 
-# Import models
-from models import User, Gate, Guild, Party, InventoryItem, Item, Mount, Pet, Skill, Quest, GuildQuest, Achievement
-
-# Initialize Flask-Migrate
-migrate = Migrate(app, db)
+# Import models after db initialization
+from models import User
 
 def init_database():
     """Initialize database and create admin user"""
-    print(f"Current app context: {app}")  # Debugging statement
-    print(f"SQLAlchemy instance: {db}")  # Debugging statement
-    print("Initializing database...")  # Additional debugging statement
-
+    print("Initializing database...")
+    
     with app.app_context():
         # Create database tables
         db.create_all()
