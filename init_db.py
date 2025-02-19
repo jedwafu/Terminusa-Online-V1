@@ -20,35 +20,41 @@ def init_database():
         SQLALCHEMY_TRACK_MODIFICATIONS=False
     )
 
+    # Push application context
+    ctx = app.app_context()
+    ctx.push()
+
     # Initialize database
     init_db(app)
 
-    # Import models after db initialization
-    from models import User
-    
-    with app.app_context():
-        try:
-            # Create database tables
-            db.create_all()
-            
-            # Create admin user if it doesn't exist
-            admin = User.query.filter_by(username=os.getenv('ADMIN_USERNAME', 'adminbb')).first()
-            if not admin:
-                admin = User(
-                    username=os.getenv('ADMIN_USERNAME', 'adminbb'),
-                    email=os.getenv('ADMIN_EMAIL', 'admin@terminusa.online'),
-                    role='admin',
-                    web3_wallet=os.getenv('ADMIN_WALLET', 'FNEdD3PWMLwbNKxtaHy3W2NVfRJ7wqDNx4M9je8Xc6Mw')
-                )
-                admin.set_password(os.getenv('ADMIN_PASSWORD', 'admin123'))
-                db.session.add(admin)
-                db.session.commit()
-                print("Admin user created")
-            
-            print("Database initialized successfully")
-        except Exception as e:
-            print(f"Error initializing database: {str(e)}")
-            raise
+    try:
+        # Import models after db initialization and within app context
+        from models import User
+        
+        # Create database tables
+        db.create_all()
+        
+        # Create admin user if it doesn't exist
+        admin = User.query.filter_by(username=os.getenv('ADMIN_USERNAME', 'adminbb')).first()
+        if not admin:
+            admin = User(
+                username=os.getenv('ADMIN_USERNAME', 'adminbb'),
+                email=os.getenv('ADMIN_EMAIL', 'admin@terminusa.online'),
+                role='admin',
+                web3_wallet=os.getenv('ADMIN_WALLET', 'FNEdD3PWMLwbNKxtaHy3W2NVfRJ7wqDNx4M9je8Xc6Mw')
+            )
+            admin.set_password(os.getenv('ADMIN_PASSWORD', 'admin123'))
+            db.session.add(admin)
+            db.session.commit()
+            print("Admin user created")
+        
+        print("Database initialized successfully")
+    except Exception as e:
+        print(f"Error initializing database: {str(e)}")
+        raise
+    finally:
+        # Pop the application context
+        ctx.pop()
 
 if __name__ == '__main__':
     init_database()
