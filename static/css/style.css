@@ -1,6 +1,6 @@
 :root {
     --matrix-black: #000000;
-    --matrix-dark: #0D0208;
+    --matrix-dark: #001800;
     --matrix-green: #00FF41;
     --matrix-light-green: #03C03C;
     --neon-blue: #00F3FF;
@@ -9,6 +9,7 @@
     --accent-red: #FF0000;
     --text-color: #E0E0E0;
     --text-shadow: 0 0 10px var(--matrix-green);
+    --background-gradient: linear-gradient(135deg, var(--matrix-black) 0%, var(--matrix-dark) 100%);
 }
 
 * {
@@ -21,7 +22,7 @@ body {
     font-family: 'Rajdhani', 'Segoe UI', sans-serif;
     line-height: 1.6;
     color: var(--text-color);
-    background-color: var(--matrix-dark);
+    background: var(--background-gradient);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -31,14 +32,17 @@ body {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 1rem;
+    position: relative;
+    z-index: 1;
 }
 
 /* Header Styles */
 .main-header {
-    background-color: rgba(0, 0, 0, 0.9);
+    background-color: rgba(0, 24, 0, 0.95);
     padding: 1rem 0;
     border-bottom: 1px solid var(--matrix-green);
     box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+    position: relative;
 }
 
 .main-nav {
@@ -70,8 +74,8 @@ body {
 .logo {
     background-color: var(--matrix-black);
     color: var(--matrix-green);
-    width: 32px;
-    height: 32px;
+    width: 40px;
+    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -79,6 +83,7 @@ body {
     font-weight: bold;
     border: 1px solid var(--matrix-green);
     box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
+    font-size: 1.5rem;
 }
 
 .nav-links {
@@ -94,6 +99,7 @@ body {
     position: relative;
     text-transform: uppercase;
     font-weight: 500;
+    letter-spacing: 1px;
 }
 
 .nav-link:hover {
@@ -101,32 +107,17 @@ body {
     text-shadow: var(--text-shadow);
 }
 
-.nav-link::after {
-    content: '';
-    position: absolute;
-    width: 0;
-    height: 2px;
-    bottom: -5px;
-    left: 0;
-    background-color: var(--matrix-green);
-    transition: width 0.3s ease;
-    box-shadow: 0 0 10px var(--matrix-green);
-}
-
-.nav-link:hover::after {
-    width: 100%;
-}
-
 .nav-button {
     background-color: transparent;
     color: var(--matrix-green);
-    padding: 0.5rem 1.5rem;
+    padding: 0.75rem 1.5rem;
     border: 1px solid var(--matrix-green);
     border-radius: 4px;
     text-decoration: none;
     transition: all 0.3s ease;
     text-transform: uppercase;
     font-weight: 600;
+    letter-spacing: 1px;
     position: relative;
     overflow: hidden;
 }
@@ -150,6 +141,7 @@ body {
     letter-spacing: 1px;
     position: relative;
     overflow: hidden;
+    cursor: pointer;
 }
 
 .btn-primary {
@@ -176,13 +168,31 @@ body {
     box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
 }
 
+/* Section Styles */
+section {
+    position: relative;
+    padding: 4rem 0;
+    overflow: hidden;
+}
+
+.section-title {
+    color: var(--matrix-green);
+    text-align: center;
+    margin-bottom: 3rem;
+    font-size: 2.5rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: var(--text-shadow);
+}
+
 /* Footer Styles */
 .main-footer {
-    background-color: var(--matrix-black);
+    background-color: rgba(0, 24, 0, 0.95);
     color: var(--text-color);
     padding: 3rem 0 0;
     margin-top: auto;
     border-top: 1px solid var(--matrix-green);
+    position: relative;
 }
 
 .footer-content {
@@ -198,6 +208,8 @@ body {
     color: var(--matrix-green);
     margin-bottom: 1rem;
     font-size: 1.2rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
     text-shadow: var(--text-shadow);
 }
 
@@ -242,6 +254,7 @@ body {
     padding: 1.5rem 0;
     margin-top: 2rem;
     border-top: 1px solid rgba(0, 255, 65, 0.1);
+    position: relative;
 }
 
 /* Form Styles */
@@ -288,33 +301,17 @@ body {
     .social-links {
         justify-content: center;
     }
-}
 
-/* Animation */
-@keyframes glitch {
-    0% {
-        text-shadow: 0.05em 0 0 var(--matrix-green), -0.05em -0.025em 0 var(--neon-blue);
-    }
-    14% {
-        text-shadow: 0.05em 0 0 var(--matrix-green), -0.05em -0.025em 0 var(--neon-blue);
-    }
-    15% {
-        text-shadow: -0.05em -0.025em 0 var(--matrix-green), 0.025em 0.025em 0 var(--neon-blue);
-    }
-    49% {
-        text-shadow: -0.05em -0.025em 0 var(--matrix-green), 0.025em 0.025em 0 var(--neon-blue);
-    }
-    50% {
-        text-shadow: 0.025em 0.05em 0 var(--matrix-green), 0.05em 0 0 var(--neon-blue);
-    }
-    99% {
-        text-shadow: 0.025em 0.05em 0 var(--matrix-green), 0.05em 0 0 var(--neon-blue);
-    }
-    100% {
-        text-shadow: -0.025em 0 0 var(--matrix-green), -0.025em -0.025em 0 var(--neon-blue);
+    .section-title {
+        font-size: 2rem;
     }
 }
 
-.glitch {
-    animation: glitch 1s infinite;
-}
+/* Utility Classes */
+.text-center { text-align: center; }
+.mt-1 { margin-top: 1rem; }
+.mt-2 { margin-top: 2rem; }
+.mt-3 { margin-top: 3rem; }
+.mb-1 { margin-bottom: 1rem; }
+.mb-2 { margin-bottom: 2rem; }
+.mb-3 { margin-bottom: 3rem; }
