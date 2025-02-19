@@ -22,7 +22,7 @@
             <div class="nav-brand">
                 <a href="/" class="portal-frame">
                     <span class="logo energy-surge">T</span>
-                    <span class="neon-text">Terminusa Online</span>
+                    <span class="neon-text glitch" data-text="Terminusa Online">Terminusa Online</span>
                 </a>
             </div>
             <div class="nav-links">
@@ -31,11 +31,11 @@
                 {% if is_authenticated %}
                 <a href="/marketplace" class="nav-link digital-distortion">Marketplace</a>
                 <a href="/leaderboard" class="nav-link digital-distortion">Leaderboard</a>
-                <a href="/play" class="nav-button energy-surge">Enter System</a>
+                <a href="/play" class="nav-button energy-surge portal-frame">Enter System</a>
                 <a href="/logout" class="nav-link digital-distortion">Logout</a>
                 {% else %}
                 <a href="/login" class="nav-link digital-distortion">Login</a>
-                <a href="/register" class="nav-button energy-surge">Initialize</a>
+                <a href="/register" class="nav-button energy-surge portal-frame">Initialize</a>
                 {% endif %}
             </div>
         </nav>
@@ -49,7 +49,7 @@
         <div class="footer-content">
             <div class="footer-section">
                 <h3 class="neon-text">About Terminusa</h3>
-                <p>A Solo-leveling inspired MMORPG with CLI and web interfaces. Join the digital hunt today!</p>
+                <p class="digital-distortion">A Solo-leveling inspired MMORPG with CLI and web interfaces. Join the digital hunt today!</p>
             </div>
             <div class="footer-section">
                 <h3 class="neon-text">System Links</h3>
@@ -75,24 +75,7 @@
         </div>
     </footer>
 
+    <script src="{{ url_for('static', filename='js/matrix-effects.js') }}"></script>
     {% block scripts %}{% endblock %}
-    <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Add glitch effect to elements with data-text attribute
-        document.querySelectorAll('[data-text]').forEach(element => {
-            element.classList.add('glitch');
-        });
-
-        // Add power-up effect to buttons on hover
-        document.querySelectorAll('.btn, .nav-button').forEach(button => {
-            button.addEventListener('mouseenter', () => {
-                button.classList.add('power-up');
-            });
-            button.addEventListener('animationend', () => {
-                button.classList.remove('power-up');
-            });
-        });
-    });
-    </script>
 </body>
 </html>
