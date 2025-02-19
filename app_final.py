@@ -6,6 +6,7 @@ from flask import Flask, render_template, redirect, url_for, flash, request, jso
 from flask_login import LoginManager, current_user, login_user, logout_user, login_required
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
+from flask_migrate import Migrate
 from dotenv import load_dotenv
 import logging
 from logging.handlers import RotatingFileHandler
@@ -58,7 +59,10 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 
 # Initialize database
-init_db(app)
+db.init_app(app)
+
+# Initialize Flask-Migrate
+migrate = Migrate(app, db)
 
 # Configure logging
 if not os.path.exists('logs'):

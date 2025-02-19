@@ -16,6 +16,15 @@ check_status() {
     fi
 }
 
+# Function to run Flask command with proper environment
+run_flask_command() {
+    cd /opt/terminusa
+    source venv/bin/activate
+    export FLASK_APP=app_final.py
+    export PYTHONPATH=/opt/terminusa
+    "$@"
+}
+
 echo -e "${YELLOW}Starting Terminusa Online deployment...${NC}"
 
 # Check if running as root
@@ -85,12 +94,22 @@ echo -e "\n${YELLOW}Initializing Flask-Migrate...${NC}"
 cd /opt/terminusa
 source venv/bin/activate
 export FLASK_APP=app_final.py
-flask db init || true
+export PYTHONPATH=/opt/terminusa
+
+# Remove existing migrations if any
+rm -rf migrations
+
+# Initialize migrations
+flask db init
 check_status
 
-# Run database migrations
-echo -e "\n${YELLOW}Running database migrations...${NC}"
+# Create initial migration
+echo -e "\n${YELLOW}Creating initial migration...${NC}"
 flask db migrate -m "Initial migration"
+check_status
+
+# Apply migration
+echo -e "\n${YELLOW}Applying database migration...${NC}"
 flask db upgrade
 check_status
 
