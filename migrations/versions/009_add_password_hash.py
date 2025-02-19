@@ -20,18 +20,20 @@ def execute_with_retry(statement, parameters=None):
     conn = op.get_bind()
     try:
         if parameters:
-            conn.execute(text(statement), parameters)
+            result = conn.execute(text(statement), parameters)
         else:
-            conn.execute(text(statement))
+            result = conn.execute(text(statement))
+        return result
     except exc.DBAPIError as e:
         if 'current transaction is aborted' in str(e):
             # Rollback and retry once
             try:
                 conn.execute(text('ROLLBACK'))
                 if parameters:
-                    conn.execute(text(statement), parameters)
+                    result = conn.execute(text(statement), parameters)
                 else:
-                    conn.execute(text(statement))
+                    result = conn.execute(text(statement))
+                return result
             except Exception as retry_error:
                 raise retry_error from e
         else:
@@ -40,28 +42,33 @@ def execute_with_retry(statement, parameters=None):
 def has_column(table_name, column_name):
     """Check if a column exists in a table"""
     try:
-        result = execute_with_retry(
-            "SELECT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = :table AND column_name = :column)",
-            {"table": table_name, "column": column_name}
-        )
+        result = execute_with_retry("""
+            SELECT EXISTS (
+                SELECT 1 
+                FROM information_schema.columns 
+                WHERE table_name = :table 
+                AND column_name = :column
+            )
+        """, {"table": table_name, "column": column_name})
         return result.scalar()
     except Exception:
         return False
 
 def upgrade():
-    # First update alembic_version to prevent transaction issues
+    # First check if column exists
+    if not has_column('users', 'password_hash'):
+        # Add password_hash column if it doesn't exist
+        execute_with_retry("""
+            ALTER TABLE users 
+            ADD COLUMN IF NOT EXISTS password_hash VARCHAR(128)
+        """)
+    
+    # Update alembic_version regardless of whether we added the column
     execute_with_retry("""
         UPDATE alembic_version 
         SET version_num = '009_add_password_hash' 
         WHERE version_num = '008_add_game_models'
     """)
-
-    # Add password_hash column if it doesn't exist
-    if not has_column('users', 'password_hash'):
-        execute_with_retry("""
-            ALTER TABLE users 
-            ADD COLUMN password_hash VARCHAR(128)
-        """)
 
 def downgrade():
     # First update alembic_version
@@ -75,5 +82,5 @@ def downgrade():
     if has_column('users', 'password_hash'):
         execute_with_retry("""
             ALTER TABLE users 
-            DROP COLUMN password_hash
+            DROP COLUMN IF EXISTS password_hash
         """)
