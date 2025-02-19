@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/matrix-effects.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/rank-effects.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/system-patterns.css') }}">
     {% if extra_css %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/' + extra_css) }}">
     {% endif %}
@@ -16,8 +17,37 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body class="scan-line">
+    <!-- System Boot Animation -->
+    <div class="system-boot">
+        <div class="loading-bar"></div>
+    </div>
+
+    <!-- Background Patterns -->
+    <div class="system-pattern"></div>
+    <div class="hex-grid"></div>
     <div class="matrix-rain"></div>
     <div class="particle-container"></div>
+    <div class="edge-glow"></div>
+
+    <!-- Corner Decorations -->
+    <div class="corner-decoration corner-top-left"></div>
+    <div class="corner-decoration corner-top-right"></div>
+    <div class="corner-decoration corner-bottom-left"></div>
+    <div class="corner-decoration corner-bottom-right"></div>
+
+    <!-- System Lines -->
+    <div class="system-lines">
+        <div class="system-line"></div>
+        <div class="system-line"></div>
+        <div class="system-line"></div>
+        <div class="system-line"></div>
+    </div>
+
+    <!-- System Status Indicators -->
+    <div class="system-status-corner status-top-left">System: Online</div>
+    <div class="system-status-corner status-top-right">Security: Active</div>
+    <div class="system-status-corner status-bottom-left">Network: Connected</div>
+    <div class="system-status-corner status-bottom-right">Version: 1.0.0</div>
     
     <header class="main-header system-access">
         <nav class="main-nav">
@@ -99,6 +129,11 @@
         document.querySelectorAll('.feature-card').forEach(card => {
             observer.observe(card);
         });
+
+        // Remove system boot animation after delay
+        setTimeout(() => {
+            document.querySelector('.system-boot').style.display = 'none';
+        }, 2000);
     });
     </script>
     {% block scripts %}{% endblock %}

@@ -1,0 +1,230 @@
+/* System Interface Patterns */
+.system-pattern {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -2;
+}
+
+.system-pattern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: 
+        linear-gradient(to right, rgba(0, 255, 65, 0.05) 1px, transparent 1px) 0 0 / 50px 50px,
+        linear-gradient(to bottom, rgba(0, 255, 65, 0.05) 1px, transparent 1px) 0 0 / 50px 50px;
+}
+
+.system-pattern::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, 
+        rgba(0, 255, 65, 0.1) 0%,
+        transparent 60%);
+    animation: pulsePattern 4s ease-in-out infinite;
+}
+
+/* Hexagonal Grid Pattern */
+.hex-grid {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+    opacity: 0.1;
+    background:
+        linear-gradient(60deg, rgba(0, 255, 65, 0.1) 25%, transparent 25.5%, transparent 75%, rgba(0, 255, 65, 0.1) 75.5%),
+        linear-gradient(-60deg, rgba(0, 255, 65, 0.1) 25%, transparent 25.5%, transparent 75%, rgba(0, 255, 65, 0.1) 75.5%);
+    background-size: 60px 103.92px;
+    background-position: 0 0, 30px 51.96px;
+}
+
+/* Corner Decorations */
+.corner-decoration {
+    position: fixed;
+    width: 150px;
+    height: 150px;
+    pointer-events: none;
+}
+
+.corner-decoration::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border: 2px solid var(--matrix-green);
+    opacity: 0.3;
+}
+
+.corner-top-left {
+    top: 0;
+    left: 0;
+}
+
+.corner-top-right {
+    top: 0;
+    right: 0;
+    transform: scaleX(-1);
+}
+
+.corner-bottom-left {
+    bottom: 0;
+    left: 0;
+    transform: scaleY(-1);
+}
+
+.corner-bottom-right {
+    bottom: 0;
+    right: 0;
+    transform: scale(-1);
+}
+
+/* System Lines */
+.system-lines {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.system-line {
+    position: absolute;
+    background: linear-gradient(90deg, 
+        transparent,
+        rgba(0, 255, 65, 0.2),
+        transparent);
+    height: 1px;
+    width: 100%;
+    animation: systemLineScan 10s linear infinite;
+    opacity: 0;
+}
+
+.system-line:nth-child(1) { top: 20%; animation-delay: 0s; }
+.system-line:nth-child(2) { top: 40%; animation-delay: 2s; }
+.system-line:nth-child(3) { top: 60%; animation-delay: 4s; }
+.system-line:nth-child(4) { top: 80%; animation-delay: 6s; }
+
+/* Edge Glow */
+.edge-glow {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+    box-shadow: inset 0 0 50px rgba(0, 255, 65, 0.1);
+}
+
+/* Animations */
+@keyframes pulsePattern {
+    0% { opacity: 0.1; }
+    50% { opacity: 0.2; }
+    100% { opacity: 0.1; }
+}
+
+@keyframes systemLineScan {
+    0% {
+        opacity: 0;
+        transform: translateY(-50%);
+    }
+    20% {
+        opacity: 1;
+    }
+    80% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(50%);
+    }
+}
+
+/* System Status Indicators */
+.system-status-corner {
+    position: fixed;
+    padding: 10px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem;
+    color: var(--matrix-green);
+    pointer-events: none;
+    text-transform: uppercase;
+    opacity: 0.7;
+}
+
+.status-top-left {
+    top: 10px;
+    left: 10px;
+}
+
+.status-top-right {
+    top: 10px;
+    right: 10px;
+    text-align: right;
+}
+
+.status-bottom-left {
+    bottom: 10px;
+    left: 10px;
+}
+
+.status-bottom-right {
+    bottom: 10px;
+    right: 10px;
+    text-align: right;
+}
+
+/* System Boot Animation */
+.system-boot {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--matrix-black);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: systemBoot 2s ease-out forwards;
+}
+
+@keyframes systemBoot {
+    0% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        pointer-events: none;
+    }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .corner-decoration {
+        width: 100px;
+        height: 100px;
+    }
+
+    .system-status-corner {
+        font-size: 0.7rem;
+    }
+}
