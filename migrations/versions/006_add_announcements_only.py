@@ -1,7 +1,7 @@
 """add announcements only
 
-Revision ID: 006
-Revises: 005
+Revision ID: 006_add_announcements_only
+Revises: 005_create_announcements
 Create Date: 2025-02-17 17:00:00.000000
 
 """
@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '006'
-down_revision = '005'
+revision = '006_add_announcements_only'
+down_revision = '005_create_announcements'
 branch_labels = None
 depends_on = None
 
