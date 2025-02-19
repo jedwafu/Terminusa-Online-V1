@@ -150,7 +150,15 @@ class Party(db.Model):
     gate_id = db.Column(db.Integer, db.ForeignKey('gates.id'))
     is_in_combat = db.Column(db.Boolean, default=False)
     
-    members = db.relationship('User', backref='party', lazy=True)
+    # Specify foreign_keys for the relationships to resolve ambiguity
+    members = db.relationship('User',
+                            foreign_keys=[User.party_id],
+                            backref='party',
+                            lazy=True)
+    leader = db.relationship('User',
+                           foreign_keys=[leader_id],
+                           backref='led_party',
+                           lazy=True)
 
 class Gate(db.Model):
     __tablename__ = 'gates'
