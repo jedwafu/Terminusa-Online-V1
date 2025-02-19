@@ -1,0 +1,72 @@
+{% extends "base_single.html" %}
+
+{% block title %}Login - Terminusa Online{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="container">
+        <div class="auth-container">
+            <div class="auth-content">
+                <h1>Welcome Back</h1>
+                <p class="subtitle">Log in to continue your adventure</p>
+
+                <form class="auth-form" method="POST" action="{{ url_for('login') }}">
+                    <div class="form-group">
+                        <label for="username" class="form-label">Username or Email</label>
+                        <input type="text" id="username" name="username" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" id="password" name="password" class="form-input" required>
+                        <div class="password-options">
+                            <label class="remember-me">
+                                <input type="checkbox" name="remember" id="remember">
+                                <span>Remember me</span>
+                            </label>
+                            <a href="/forgot-password" class="forgot-password">Forgot Password?</a>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">Log In</button>
+                </form>
+
+                <div class="form-footer">
+                    <p>Don't have an account? <a href="{{ url_for('register_page') }}">Sign Up</a></p>
+                </div>
+
+                <div class="cli-login-info">
+                    <h3>CLI Users</h3>
+                    <p>To log in via CLI, use the following command:</p>
+                    <div class="code-block">
+                        <code>terminusa login --username YOUR_USERNAME</code>
+                    </div>
+                </div>
+            </div>
+
+            <div class="auth-sidebar">
+                <div class="news-card">
+                    <h3>Latest Updates</h3>
+                    <div class="news-items">
+                        <div class="news-item">
+                            <span class="news-date">New</span>
+                            <h4>Guild Raids Released</h4>
+                            <p>Team up with your guild members for epic boss battles!</p>
+                        </div>
+                        <div class="news-item">
+                            <span class="news-date">New</span>
+                            <h4>Marketplace Update</h4>
+                            <p>Enhanced trading system with new features</p>
+                        </div>
+                        <div class="news-item">
+                            <span class="news-date">Coming Soon</span>
+                            <h4>New Region: Crystal Caves</h4>
+                            <p>Prepare for new challenges and rewards</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

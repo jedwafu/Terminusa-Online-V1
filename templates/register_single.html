@@ -1,0 +1,97 @@
+{% extends "base_single.html" %}
+
+{% block title %}Register - Terminusa Online{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="container">
+        <div class="auth-container">
+            <div class="auth-content">
+                <h1>Create Your Account</h1>
+                <p class="subtitle">Join the adventure in Terminusa Online</p>
+                
+                <form class="auth-form" method="POST" action="{{ url_for('register') }}">
+                    <div class="form-group">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" id="username" name="username" class="form-input" required 
+                               minlength="3" maxlength="20" pattern="[a-zA-Z0-9_-]+" 
+                               title="Username can only contain letters, numbers, underscores and hyphens">
+                        <small class="form-help">3-20 characters, letters, numbers, _ and - only</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" id="email" name="email" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" id="password" name="password" class="form-input" required 
+                               minlength="8"
+                               pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+                               title="Must contain at least one number, one uppercase and lowercase letter, and be at least 8 characters long">
+                        <small class="form-help">Minimum 8 characters, at least one uppercase letter, one lowercase letter, and one number</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirm_password" class="form-label">Confirm Password</label>
+                        <input type="password" id="confirm_password" name="confirm_password" class="form-input" required>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="terms" name="terms" required>
+                        <label for="terms">I agree to the <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a></label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+                </form>
+
+                <div class="form-footer">
+                    <p>Already have an account? <a href="{{ url_for('login_page') }}">Log In</a></p>
+                </div>
+            </div>
+            
+            <div class="auth-sidebar">
+                <div class="benefits-card">
+                    <h3>Why Join Terminusa Online?</h3>
+                    <div class="news-items">
+                        <div class="news-item">
+                            <i class="fas fa-terminal"></i>
+                            <h4>Dual Interface</h4>
+                            <p>Access to both Web and CLI interfaces</p>
+                        </div>
+                        <div class="news-item">
+                            <i class="fas fa-users"></i>
+                            <h4>Active Community</h4>
+                            <p>Join a thriving community of players</p>
+                        </div>
+                        <div class="news-item">
+                            <i class="fas fa-store"></i>
+                            <h4>Player Economy</h4>
+                            <p>Trade items in the marketplace</p>
+                        </div>
+                        <div class="news-item">
+                            <i class="fas fa-trophy"></i>
+                            <h4>Competitive Play</h4>
+                            <p>Compete in global leaderboards</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('confirm_password').addEventListener('input', function() {
+    const password = document.getElementById('password');
+    if (this.value !== password.value) {
+        this.setCustomValidity('Passwords must match');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+</script>
+{% endblock %}
