@@ -1,20 +1,31 @@
 {% extends "base.html" %}
 
-{% block title %}Terminusa Online - Enter the Digital Dungeon{% endblock %}
+{% block title %}Terminusa Online - Enter the Digital Realm{% endblock %}
 
 {% block content %}
-<section class="hero">
+<section class="hero scan-line">
+    <div class="matrix-code"></div>
     <div class="container">
         <div class="hero-content">
-            <div class="matrix-code"></div>
-            <h1 class="glitch">Welcome to Terminusa Online</h1>
-            <p class="hero-subtitle">Where The Matrix meets Solo Leveling</p>
+            <h1 class="glitch" data-text="Welcome to Terminusa Online">Welcome to Terminusa Online</h1>
+            <p class="hero-subtitle neon-text">Where The Matrix meets Solo Leveling</p>
             <div class="hero-text">
-                <p class="typing-effect">A new generation of hunters rises in the digital realm</p>
+                <p class="typing-effect"></p>
+            </div>
+            <div class="system-status">
+                <div class="status-line">
+                    <span class="label digital-distortion">System Status:</span>
+                    <span class="value neon-text">ONLINE</span>
+                </div>
+                <div class="status-line">
+                    <span class="label digital-distortion">Active Hunters:</span>
+                    <span class="value neon-text">1,337</span>
+                </div>
+                <div class="loading-bar"></div>
             </div>
             <div class="hero-buttons">
-                <a href="{{ url_for('register') }}" class="btn btn-primary">Initialize System</a>
-                <a href="{{ url_for('login') }}" class="btn btn-secondary">Access Gateway</a>
+                <a href="{{ url_for('register') }}" class="btn btn-primary energy-surge">Initialize System</a>
+                <a href="{{ url_for('login') }}" class="btn btn-secondary system-access">Access Gateway</a>
             </div>
         </div>
     </div>
@@ -22,29 +33,29 @@
 
 <section class="features">
     <div class="container">
-        <h2 class="section-title glitch">System Protocols</h2>
+        <h2 class="section-title glitch" data-text="System Protocols">System Protocols</h2>
         <div class="feature-grid">
-            <div class="feature-card">
-                <i class="fas fa-terminal"></i>
-                <h3>Dual Interface</h3>
+            <div class="feature-card portal-frame">
+                <i class="fas fa-terminal neon-text"></i>
+                <h3 class="digital-distortion">Dual Interface</h3>
                 <p>Navigate through the Matrix via CLI or Web Interface</p>
                 <div class="feature-glow"></div>
             </div>
-            <div class="feature-card">
-                <i class="fas fa-level-up-alt"></i>
-                <h3>System Evolution</h3>
+            <div class="feature-card portal-frame">
+                <i class="fas fa-level-up-alt neon-text"></i>
+                <h3 class="digital-distortion">System Evolution</h3>
                 <p>Upgrade your abilities through digital dungeons</p>
                 <div class="feature-glow"></div>
             </div>
-            <div class="feature-card">
-                <i class="fas fa-network-wired"></i>
-                <h3>Neural Network</h3>
+            <div class="feature-card portal-frame">
+                <i class="fas fa-network-wired neon-text"></i>
+                <h3 class="digital-distortion">Neural Network</h3>
                 <p>Connect and trade with other system operators</p>
                 <div class="feature-glow"></div>
             </div>
-            <div class="feature-card">
-                <i class="fas fa-code-branch"></i>
-                <h3>Protocol Rankings</h3>
+            <div class="feature-card portal-frame">
+                <i class="fas fa-code-branch neon-text"></i>
+                <h3 class="digital-distortion">Protocol Rankings</h3>
                 <p>Climb the system hierarchy and prove your worth</p>
                 <div class="feature-glow"></div>
             </div>
@@ -52,25 +63,29 @@
     </div>
 </section>
 
-<section class="cta">
+<section class="cta scan-line">
+    <div class="matrix-rain"></div>
     <div class="container">
-        <div class="matrix-rain"></div>
-        <h2 class="glitch">Ready to Enter the System?</h2>
-        <p>Join the ranks of digital hunters in this unique reality</p>
-        <a href="{{ url_for('register') }}" class="btn btn-primary">Initialize Connection</a>
+        <h2 class="glitch" data-text="Ready to Enter the System?">Ready to Enter the System?</h2>
+        <p class="digital-distortion">Join the ranks of digital hunters in this unique reality</p>
+        <div class="cta-status">
+            <div class="status-indicator energy-surge"></div>
+            <span class="neon-text">System Access Available</span>
+        </div>
+        <a href="{{ url_for('register') }}" class="btn btn-primary portal-frame">Initialize Connection</a>
     </div>
 </section>
 
 {% if latest_announcements %}
 <section class="announcements">
     <div class="container">
-        <h2 class="section-title">System Updates</h2>
+        <h2 class="section-title neon-text">System Updates</h2>
         <div class="announcements-grid">
             {% for announcement in latest_announcements %}
-            <div class="announcement-card">
+            <div class="announcement-card system-access">
                 <div class="card-header">
-                    <h3>{{ announcement.title }}</h3>
-                    <span class="date-chip">{{ announcement.created_at.strftime('%Y.%m.%d') }}</span>
+                    <h3 class="digital-distortion">{{ announcement.title }}</h3>
+                    <span class="date-chip neon-text">{{ announcement.created_at.strftime('%Y.%m.%d') }}</span>
                 </div>
                 <div class="announcement-content">
                     {{ announcement.content }}
@@ -80,7 +95,7 @@
             {% endfor %}
         </div>
         <div class="announcements-footer">
-            <a href="{{ url_for('announcements_page') }}" class="btn btn-secondary">Access Archives</a>
+            <a href="{{ url_for('announcements_page') }}" class="btn btn-secondary energy-surge">Access Archives</a>
         </div>
     </div>
 </section>
@@ -101,17 +116,6 @@
     overflow: hidden;
 }
 
-.matrix-code {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('/static/images/matrix-code.png');
-    opacity: 0.1;
-    animation: scrollBackground 20s linear infinite;
-}
-
 .hero-content {
     position: relative;
     max-width: 800px;
@@ -123,187 +127,62 @@
     font-size: 3.5rem;
     margin-bottom: 1rem;
     color: var(--matrix-green);
-    text-shadow: 0 0 10px var(--matrix-green);
 }
 
 .hero-subtitle {
     font-size: 1.8rem;
     margin-bottom: 2rem;
-    color: var(--neon-blue);
-    text-shadow: 0 0 10px var(--neon-blue);
 }
 
-.typing-effect {
-    font-size: 1.2rem;
-    margin-bottom: 2rem;
-    min-height: 1.5em;
+.system-status {
+    background: rgba(0, 255, 65, 0.1);
+    border: 1px solid var(--matrix-green);
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 2rem auto;
+    max-width: 400px;
 }
 
-.hero-buttons {
+.status-line {
     display: flex;
-    gap: 2rem;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    background-color: var(--matrix-green);
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    display: inline-block;
+}
+
+.cta-status {
+    display: flex;
+    align-items: center;
     justify-content: center;
-}
-
-.features {
-    padding: 6rem 0;
-    background-color: var(--matrix-dark);
-    position: relative;
-    overflow: hidden;
-}
-
-.section-title {
-    text-align: center;
-    margin-bottom: 4rem;
-    font-size: 2.5rem;
-    color: var(--matrix-green);
-    text-shadow: 0 0 10px var(--matrix-green);
-}
-
-.feature-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
+    margin-bottom: 2rem;
 }
 
 .feature-card {
-    position: relative;
-    text-align: center;
-    padding: 2.5rem;
     background: rgba(0, 255, 65, 0.05);
     border: 1px solid var(--matrix-green);
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    overflow: hidden;
-}
-
-.feature-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
 }
 
 .feature-card i {
     font-size: 2.5rem;
-    color: var(--matrix-green);
     margin-bottom: 1.5rem;
-    text-shadow: 0 0 10px var(--matrix-green);
-}
-
-.feature-card h3 {
-    margin-bottom: 1rem;
-    color: var(--matrix-green);
-    font-size: 1.5rem;
-    text-shadow: 0 0 10px var(--matrix-green);
-}
-
-.feature-card p {
-    color: var(--text-color);
-}
-
-.feature-glow {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle at 50% 50%, rgba(0, 255, 65, 0.1), transparent);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.feature-card:hover .feature-glow {
-    opacity: 1;
-}
-
-.cta {
-    position: relative;
-    background-color: var(--matrix-black);
-    color: var(--text-color);
-    text-align: center;
-    padding: 6rem 2rem;
-    overflow: hidden;
-}
-
-.matrix-rain {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('/static/images/matrix-rain.png');
-    opacity: 0.1;
-    animation: rain 20s linear infinite;
-}
-
-.cta h2 {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-    color: var(--matrix-green);
-    position: relative;
-    z-index: 1;
-}
-
-.cta p {
-    margin-bottom: 2rem;
-    position: relative;
-    z-index: 1;
-}
-
-.announcements {
-    padding: 6rem 0;
-    background-color: var(--matrix-dark);
-}
-
-.announcements-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-    margin-bottom: 3rem;
 }
 
 .announcement-card {
-    position: relative;
     background: rgba(0, 255, 65, 0.05);
-    padding: 2rem;
     border: 1px solid var(--matrix-green);
-    border-radius: 8px;
-    transition: all 0.3s ease;
-}
-
-.announcement-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
-}
-
-.card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.card-header h3 {
-    color: var(--matrix-green);
-    text-shadow: 0 0 10px var(--matrix-green);
 }
 
 .date-chip {
     background: rgba(0, 255, 65, 0.1);
-    color: var(--matrix-green);
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.875rem;
     border: 1px solid var(--matrix-green);
-}
-
-@keyframes scrollBackground {
-    from { background-position: 0 0; }
-    to { background-position: 0 100%; }
-}
-
-@keyframes rain {
-    from { transform: translateY(-100%); }
-    to { transform: translateY(100%); }
 }
 
 @media (max-width: 768px) {
@@ -315,18 +194,8 @@
         font-size: 1.3rem;
     }
     
-    .hero-buttons {
-        flex-direction: column;
-        align-items: center;
-        gap: 1rem;
-    }
-    
-    .feature-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .announcements-grid {
-        grid-template-columns: 1fr;
+    .system-status {
+        margin: 2rem 1rem;
     }
 }
 </style>
@@ -349,6 +218,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     type();
+
+    // Random matrix code effect
+    function createMatrixCode() {
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        const codes = document.querySelectorAll('.matrix-code');
+        
+        codes.forEach(code => {
+            setInterval(() => {
+                code.textContent = Array.from({length: 10}, () => 
+                    chars.charAt(Math.floor(Math.random() * chars.length))
+                ).join('');
+            }, 100);
+        });
+    }
+
+    createMatrixCode();
 });
 </script>
 {% endblock %}
