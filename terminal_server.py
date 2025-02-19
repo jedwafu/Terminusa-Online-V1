@@ -1,15 +1,16 @@
 import asyncio
 import websockets
 import json
-from datetime import datetime
+import jwt
 import logging
+from datetime import datetime
 from logging.handlers import RotatingFileHandler
 import os
-import jwt
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from models import User, InventoryItem
+
+from models import db, User
+from terminal_commands import TerminalCommands
+from game_handler import GameHandler
 
 # Load environment variables
 load_dotenv()
@@ -30,19 +31,22 @@ handler.setFormatter(logging.Formatter(
 ))
 logger.addHandler(handler)
 
-# Database setup
-engine = create_engine(os.getenv('DATABASE_URL'))
-Session = sessionmaker(bind=engine)
+# Initialize handlers
+terminal_commands = TerminalCommands()
+game_handler = GameHandler()
+
+# Active sessions
+active_sessions = {}
 
 class TerminalSession:
     def __init__(self, websocket, user):
         self.websocket = websocket
         self.user = user
-        self.current_location = "hub"
-        self.in_dungeon = False
-        self.dungeon_level = 0
+        self.command_history = []
+        self.last_command_time = datetime.utcnow()
 
     async def send_message(self, message, color="white"):
+        """Send formatted message to terminal"""
         colors = {
             "red": "\x1b[31m",
             "green": "\x1b[32m",
@@ -55,224 +59,104 @@ class TerminalSession:
         reset = "\x1b[0m"
         await self.websocket.send(f"{colors.get(color, '')}{message}{reset}")
 
-    async def handle_command(self, command):
-        cmd_parts = command.strip().lower().split()
-        if not cmd_parts:
+    async def handle_command(self, command_text):
+        """Handle terminal command"""
+        # Split command and args
+        parts = command_text.strip().split()
+        if not parts:
             return
-
-        cmd = cmd_parts[0]
-        args = cmd_parts[1:]
-
+            
+        command = parts[0].lower()
+        args = parts[1:]
+        
+        # Add to command history
+        self.command_history.append(command_text)
+        self.last_command_time = datetime.utcnow()
+        
         try:
-            if cmd == "help":
-                await self.cmd_help()
-            elif cmd == "status":
-                await self.cmd_status()
-            elif cmd == "inventory":
-                await self.cmd_inventory()
-            elif cmd == "explore":
-                await self.cmd_explore()
-            elif cmd == "enter":
-                await self.cmd_enter_dungeon(args)
-            elif cmd == "attack":
-                await self.cmd_attack()
-            elif cmd == "flee":
-                await self.cmd_flee()
-            elif cmd == "market":
-                await self.cmd_market()
-            elif cmd == "balance":
-                await self.cmd_balance()
+            # Process command
+            result = terminal_commands.handle_command(self.user, command, args)
+            
+            # Send response
+            if result['success']:
+                await self.send_message(result['message'], "green")
             else:
-                await self.send_message(f"Unknown command: {cmd}. Type 'help' for available commands.", "red")
+                await self.send_message(result['message'], "red")
+                
+            # Handle special commands
+            if command == 'enter' and result['success']:
+                await self.start_combat_session(result['session_id'])
+                
         except Exception as e:
-            logger.error(f"Error handling command {cmd}: {str(e)}")
-            await self.send_message("An error occurred while processing your command.", "red")
+            logger.error(f"Error handling command '{command}': {str(e)}")
+            await self.send_message(
+                "An error occurred while processing your command.",
+                "red"
+            )
 
-    async def cmd_help(self):
-        help_text = """
-Available Commands:
-  help        - Show this help message
-  status      - Show your hunter status
-  inventory   - Show your inventory
-  explore     - Look for dungeons
-  enter [lvl] - Enter a dungeon of specified level
-  attack      - Attack monsters in dungeon
-  flee        - Escape from dungeon
-  market      - Access the marketplace
-  balance     - Check your crystal and Exon balance
-"""
-        await self.send_message(help_text, "cyan")
-
-    async def cmd_status(self):
-        session = Session()
-        user = session.query(User).get(self.user.id)
-        status_text = f"""
-Hunter Status:
-  Name: {user.username}
-  Level: {user.hunter_level}
-  Class: {user.hunter_class or 'Unassigned'}
-  Location: {self.current_location.title()}
-  Crystals: {user.crystals}
-  Exons Balance: {user.exons_balance:.2f}
-"""
-        session.close()
-        await self.send_message(status_text, "green")
-
-    async def cmd_inventory(self):
-        session = Session()
-        items = session.query(InventoryItem).filter_by(user_id=self.user.id).all()
-        if not items:
-            await self.send_message("Your inventory is empty.", "yellow")
-        else:
-            inventory_text = "\nInventory:\n"
-            for item in items:
-                inventory_text += f"  {item.name} (x{item.quantity}) - {item.description}\n"
-        session.close()
-        await self.send_message(inventory_text, "cyan")
-
-    async def cmd_explore(self):
-        if self.in_dungeon:
-            await self.send_message("You are already in a dungeon!", "red")
-            return
-
-        await self.send_message("Searching for dungeons...", "yellow")
-        await asyncio.sleep(2)  # Simulated search delay
-        
-        dungeons = [
-            {"level": 1, "difficulty": "Easy"},
-            {"level": 3, "difficulty": "Medium"},
-            {"level": 5, "difficulty": "Hard"}
-        ]
-        
-        result = "\nAvailable Dungeons:\n"
-        for dungeon in dungeons:
-            result += f"  Level {dungeon['level']} Dungeon - {dungeon['difficulty']}\n"
-        result += "\nUse 'enter [level]' to enter a dungeon."
-        
-        await self.send_message(result, "green")
-
-    async def cmd_enter_dungeon(self, args):
-        if self.in_dungeon:
-            await self.send_message("You are already in a dungeon!", "red")
-            return
-
-        if not args:
-            await self.send_message("Please specify a dungeon level: 'enter [level]'", "red")
-            return
-
+    async def start_combat_session(self, session_id):
+        """Start combat session in gate"""
         try:
-            level = int(args[0])
-            if level < 1:
-                await self.send_message("Invalid dungeon level.", "red")
-                return
-
-            session = Session()
-            user = session.query(User).get(self.user.id)
-            if level > user.hunter_level + 2:
-                await self.send_message("This dungeon is too dangerous for your current level!", "red")
-                session.close()
-                return
-
-            self.in_dungeon = True
-            self.dungeon_level = level
-            self.current_location = f"dungeon_level_{level}"
+            await self.send_message("\nEntering gate...", "yellow")
             
-            await self.send_message(f"Entering level {level} dungeon...", "yellow")
-            await asyncio.sleep(1)
-            await self.send_message("You are now in the dungeon. Use 'attack' to fight monsters or 'flee' to escape.", "green")
-            
-            session.close()
-        except ValueError:
-            await self.send_message("Invalid dungeon level.", "red")
-
-    async def cmd_attack(self):
-        if not self.in_dungeon:
-            await self.send_message("You must be in a dungeon to attack!", "red")
-            return
-
-        # Simulate combat
-        await self.send_message("Engaging in combat...", "yellow")
-        await asyncio.sleep(1)
-
-        # Random outcome
-        import random
-        success = random.random() > 0.3
-
-        session = Session()
-        user = session.query(User).get(self.user.id)
-
-        if success:
-            crystals_gained = random.randint(1, 5) * self.dungeon_level
-            user.crystals += crystals_gained
-            await self.send_message(f"Victory! You gained {crystals_gained} crystals!", "green")
-
-            # Chance for item drop
-            if random.random() < 0.3:
-                item_name = random.choice(["Health Potion", "Mana Crystal", "Ancient Relic"])
-                new_item = InventoryItem(
-                    user_id=user.id,
-                    item_type="loot",
-                    name=item_name,
-                    description=f"Found in level {self.dungeon_level} dungeon",
-                    quantity=1
-                )
-                session.add(new_item)
-                await self.send_message(f"You found a {item_name}!", "cyan")
-        else:
-            await self.send_message("You were defeated! Consider fleeing or trying again.", "red")
-
-        session.commit()
-        session.close()
-
-    async def cmd_flee(self):
-        if not self.in_dungeon:
-            await self.send_message("You're not in a dungeon!", "red")
-            return
-
-        await self.send_message("Attempting to flee...", "yellow")
-        await asyncio.sleep(1)
-
-        self.in_dungeon = False
-        self.dungeon_level = 0
-        self.current_location = "hub"
-        await self.send_message("You successfully escaped from the dungeon!", "green")
-
-    async def cmd_market(self):
-        if self.in_dungeon:
-            await self.send_message("You cannot access the market while in a dungeon!", "red")
-            return
-
-        # TODO: Implement marketplace functionality
-        await self.send_message("Market functionality coming soon!", "yellow")
-
-    async def cmd_balance(self):
-        session = Session()
-        user = session.query(User).get(self.user.id)
-        balance_text = f"""
-Currency Balance:
-  Crystals: {user.crystals}
-  Exons: {user.exons_balance:.2f}
-"""
-        session.close()
-        await self.send_message(balance_text, "green")
+            while True:
+                # Process combat round
+                result = game_handler.process_combat(session_id)
+                if not result['success']:
+                    await self.send_message(result['message'], "red")
+                    break
+                    
+                # Display combat messages
+                for msg in result['messages']:
+                    await self.send_message(msg)
+                    await asyncio.sleep(0.5)  # Add delay between messages
+                    
+                # Check if combat ended
+                if 'gate_cleared' in result and result['gate_cleared']:
+                    if 'drops' in result:
+                        await self.send_message("\nObtained items:", "green")
+                        for drop in result['drops']:
+                            if drop['type'] == 'item':
+                                await self.send_message(
+                                    f"- {drop['item'].name}",
+                                    "cyan"
+                                )
+                            elif drop['type'] == 'crystal':
+                                await self.send_message(
+                                    f"- {drop['amount']} Crystals",
+                                    "yellow"
+                                )
+                    break
+                elif self.user.hp <= 0:
+                    await self.send_message("\nYou have died!", "red")
+                    break
+                    
+                await asyncio.sleep(1)  # Combat round delay
+                
+        except Exception as e:
+            logger.error(f"Error in combat session: {str(e)}")
+            await self.send_message(
+                "An error occurred during combat.",
+                "red"
+            )
 
 async def authenticate_token(token):
+    """Authenticate JWT token"""
     try:
         payload = jwt.decode(
             token,
             os.getenv('JWT_SECRET_KEY'),
             algorithms=['HS256']
         )
-        session = Session()
-        user = session.query(User).get(payload['user_id'])
-        session.close()
+        user = User.query.get(payload['user_id'])
         return user
     except:
         return None
 
-async def terminal_server(websocket, path):
+async def terminal_handler(websocket, path):
+    """Handle terminal WebSocket connection"""
     try:
-        # Authenticate user
+        # Wait for authentication
         auth_message = await websocket.recv()
         auth_data = json.loads(auth_message)
         user = await authenticate_token(auth_data.get('token'))
@@ -283,8 +167,17 @@ async def terminal_server(websocket, path):
 
         # Create terminal session
         session = TerminalSession(websocket, user)
-        await session.send_message(f"Welcome to Terminusa Online, {user.username}!", "green")
-        await session.send_message("Type 'help' for available commands.\n", "cyan")
+        active_sessions[user.id] = session
+        
+        # Send welcome message
+        await session.send_message(
+            f"Welcome to Terminusa Online, {user.username}!",
+            "green"
+        )
+        await session.send_message(
+            "Type 'help' for available commands.\n",
+            "cyan"
+        )
 
         # Handle commands
         async for message in websocket:
@@ -293,12 +186,16 @@ async def terminal_server(websocket, path):
     except websockets.exceptions.ConnectionClosed:
         logger.info(f"Client disconnected")
     except Exception as e:
-        logger.error(f"Error in terminal server: {str(e)}")
+        logger.error(f"Error in terminal handler: {str(e)}")
+    finally:
+        # Cleanup session
+        if user and user.id in active_sessions:
+            del active_sessions[user.id]
 
 if __name__ == "__main__":
     port = int(os.getenv('TERMINAL_PORT', 6789))
     start_server = websockets.serve(
-        terminal_server,
+        terminal_handler,
         "0.0.0.0",
         port,
         ping_interval=None
