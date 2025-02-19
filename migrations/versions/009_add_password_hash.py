@@ -54,29 +54,56 @@ def has_column(table_name, column_name):
     except Exception:
         return False
 
+def get_current_version():
+    """Get current version from alembic_version table"""
+    try:
+        result = execute_with_retry("SELECT version_num FROM alembic_version")
+        return result.scalar()
+    except Exception:
+        return None
+
 def upgrade():
-    # First check if column exists
+    # First check current version
+    current_version = get_current_version()
+    print(f"Current version: {current_version}")
+
+    # If we're not at the expected version, update it
+    if current_version != down_revision:
+        execute_with_retry(f"""
+            UPDATE alembic_version 
+            SET version_num = '{down_revision}'
+        """)
+        print(f"Updated version to {down_revision}")
+
+    # Check if column exists
     if not has_column('users', 'password_hash'):
         # Add password_hash column if it doesn't exist
         execute_with_retry("""
             ALTER TABLE users 
             ADD COLUMN IF NOT EXISTS password_hash VARCHAR(128)
         """)
+        print("Added password_hash column")
     
-    # Update alembic_version regardless of whether we added the column
-    execute_with_retry("""
+    # Update to final version
+    execute_with_retry(f"""
         UPDATE alembic_version 
-        SET version_num = '009_add_password_hash' 
-        WHERE version_num = '008_add_game_models'
+        SET version_num = '{revision}'
+        WHERE version_num = '{down_revision}'
     """)
+    print(f"Updated version to {revision}")
 
 def downgrade():
-    # First update alembic_version
-    execute_with_retry("""
-        UPDATE alembic_version 
-        SET version_num = '008_add_game_models' 
-        WHERE version_num = '009_add_password_hash'
-    """)
+    # First check current version
+    current_version = get_current_version()
+    print(f"Current version: {current_version}")
+
+    # If we're not at the expected version, update it
+    if current_version != revision:
+        execute_with_retry(f"""
+            UPDATE alembic_version 
+            SET version_num = '{revision}'
+        """)
+        print(f"Updated version to {revision}")
 
     # Drop password_hash column if it exists
     if has_column('users', 'password_hash'):
@@ -84,3 +111,12 @@ def downgrade():
             ALTER TABLE users 
             DROP COLUMN IF EXISTS password_hash
         """)
+        print("Dropped password_hash column")
+    
+    # Update to previous version
+    execute_with_retry(f"""
+        UPDATE alembic_version 
+        SET version_num = '{down_revision}'
+        WHERE version_num = '{revision}'
+    """)
+    print(f"Updated version to {down_revision}")
