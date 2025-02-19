@@ -10,7 +10,7 @@
             <h1 class="glitch" data-text="Welcome to Terminusa Online">Welcome to Terminusa Online</h1>
             <p class="hero-subtitle neon-text">Where The Matrix meets Solo Leveling</p>
             <div class="hero-text">
-                <p class="typing-effect"></p>
+                <p class="typing-effect" data-text="A new generation of hunters rises in the digital realm"></p>
             </div>
             <div class="system-status">
                 <div class="status-line">
@@ -35,28 +35,72 @@
     <div class="container">
         <h2 class="section-title glitch" data-text="System Protocols">System Protocols</h2>
         <div class="feature-grid">
-            <div class="feature-card portal-frame">
+            <div class="feature-card portal-frame rank-s">
+                <div class="rank-badge">S</div>
                 <i class="fas fa-terminal neon-text"></i>
                 <h3 class="digital-distortion">Dual Interface</h3>
                 <p>Navigate through the Matrix via CLI or Web Interface</p>
+                <div class="feature-stats">
+                    <div class="stat">
+                        <span class="stat-label">Power</span>
+                        <div class="stat-bar"><div class="stat-fill" style="width: 95%"></div></div>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Speed</span>
+                        <div class="stat-bar"><div class="stat-fill" style="width: 90%"></div></div>
+                    </div>
+                </div>
                 <div class="feature-glow"></div>
             </div>
-            <div class="feature-card portal-frame">
+            <div class="feature-card portal-frame rank-ss">
+                <div class="rank-badge">SS</div>
                 <i class="fas fa-level-up-alt neon-text"></i>
                 <h3 class="digital-distortion">System Evolution</h3>
                 <p>Upgrade your abilities through digital dungeons</p>
+                <div class="feature-stats">
+                    <div class="stat">
+                        <span class="stat-label">Power</span>
+                        <div class="stat-bar"><div class="stat-fill" style="width: 98%"></div></div>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Growth</span>
+                        <div class="stat-bar"><div class="stat-fill" style="width: 100%"></div></div>
+                    </div>
+                </div>
                 <div class="feature-glow"></div>
             </div>
-            <div class="feature-card portal-frame">
+            <div class="feature-card portal-frame rank-s">
+                <div class="rank-badge">S</div>
                 <i class="fas fa-network-wired neon-text"></i>
                 <h3 class="digital-distortion">Neural Network</h3>
                 <p>Connect and trade with other system operators</p>
+                <div class="feature-stats">
+                    <div class="stat">
+                        <span class="stat-label">Range</span>
+                        <div class="stat-bar"><div class="stat-fill" style="width: 92%"></div></div>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Sync</span>
+                        <div class="stat-bar"><div class="stat-fill" style="width: 88%"></div></div>
+                    </div>
+                </div>
                 <div class="feature-glow"></div>
             </div>
-            <div class="feature-card portal-frame">
+            <div class="feature-card portal-frame rank-sss">
+                <div class="rank-badge">SSS</div>
                 <i class="fas fa-code-branch neon-text"></i>
                 <h3 class="digital-distortion">Protocol Rankings</h3>
                 <p>Climb the system hierarchy and prove your worth</p>
+                <div class="feature-stats">
+                    <div class="stat">
+                        <span class="stat-label">Power</span>
+                        <div class="stat-bar"><div class="stat-fill" style="width: 100%"></div></div>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Potential</span>
+                        <div class="stat-bar"><div class="stat-fill" style="width: 100%"></div></div>
+                    </div>
+                </div>
                 <div class="feature-glow"></div>
             </div>
         </div>
@@ -71,6 +115,11 @@
         <div class="cta-status">
             <div class="status-indicator energy-surge"></div>
             <span class="neon-text">System Access Available</span>
+        </div>
+        <div class="rank-display">
+            <div class="rank-title neon-text">Current Rank</div>
+            <div class="rank-value glitch" data-text="E">E</div>
+            <div class="rank-message digital-distortion">Begin your journey to SSS Rank</div>
         </div>
         <a href="{{ url_for('register') }}" class="btn btn-primary portal-frame">Initialize Connection</a>
     </div>
@@ -104,136 +153,94 @@
 
 {% block extra_css %}
 <style>
-.hero {
-    position: relative;
-    background: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), 
-                url('/static/images/hero-bg.jpg');
-    background-size: cover;
-    background-position: center;
-    color: var(--text-color);
-    padding: 8rem 2rem;
-    text-align: center;
-    overflow: hidden;
-}
-
-.hero-content {
-    position: relative;
-    max-width: 800px;
-    margin: 0 auto;
+.rank-badge {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: var(--matrix-black);
+    color: var(--matrix-green);
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-weight: bold;
+    border: 1px solid var(--matrix-green);
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
     z-index: 1;
 }
 
-.hero h1 {
-    font-size: 3.5rem;
-    margin-bottom: 1rem;
-    color: var(--matrix-green);
+.rank-s .rank-badge { color: #FFD700; border-color: #FFD700; }
+.rank-ss .rank-badge { color: #FF00FF; border-color: #FF00FF; }
+.rank-sss .rank-badge { 
+    background: linear-gradient(45deg, #FF0000, #00FF00, #0000FF);
+    -webkit-background-clip: text;
+    color: transparent;
+    border-image: linear-gradient(45deg, #FF0000, #00FF00, #0000FF) 1;
 }
 
-.hero-subtitle {
-    font-size: 1.8rem;
-    margin-bottom: 2rem;
+.feature-stats {
+    margin-top: 1rem;
+    width: 100%;
 }
 
-.system-status {
-    background: rgba(0, 255, 65, 0.1);
-    border: 1px solid var(--matrix-green);
-    border-radius: 8px;
-    padding: 1rem;
-    margin: 2rem auto;
-    max-width: 400px;
-}
-
-.status-line {
-    display: flex;
-    justify-content: space-between;
+.stat {
     margin-bottom: 0.5rem;
 }
 
-.status-indicator {
-    width: 12px;
-    height: 12px;
-    background-color: var(--matrix-green);
-    border-radius: 50%;
-    margin-right: 0.5rem;
-    display: inline-block;
+.stat-label {
+    display: block;
+    color: var(--matrix-green);
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
 }
 
-.cta-status {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 2rem;
+.stat-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(0, 255, 65, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
 }
 
-.feature-card {
-    background: rgba(0, 255, 65, 0.05);
-    border: 1px solid var(--matrix-green);
+.stat-fill {
+    height: 100%;
+    background: var(--matrix-green);
+    transition: width 1s ease;
 }
 
-.feature-card i {
-    font-size: 2.5rem;
-    margin-bottom: 1.5rem;
-}
-
-.announcement-card {
-    background: rgba(0, 255, 65, 0.05);
-    border: 1px solid var(--matrix-green);
-}
-
-.date-chip {
+.rank-display {
     background: rgba(0, 255, 65, 0.1);
     border: 1px solid var(--matrix-green);
+    border-radius: 8px;
+    padding: 2rem;
+    margin: 2rem auto;
+    max-width: 300px;
+    text-align: center;
+}
+
+.rank-title {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+}
+
+.rank-value {
+    font-size: 4rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.rank-message {
+    font-size: 0.9rem;
+    opacity: 0.8;
 }
 
 @media (max-width: 768px) {
-    .hero h1 {
-        font-size: 2.5rem;
+    .feature-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
     }
     
-    .hero-subtitle {
-        font-size: 1.3rem;
-    }
-    
-    .system-status {
+    .rank-display {
         margin: 2rem 1rem;
     }
 }
 </style>
-{% endblock %}
-
-{% block scripts %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Typing effect
-    const text = "A new generation of hunters rises in the digital realm";
-    const typingElement = document.querySelector('.typing-effect');
-    let index = 0;
-
-    function type() {
-        if (index < text.length) {
-            typingElement.textContent += text.charAt(index);
-            index++;
-            setTimeout(type, 50);
-        }
-    }
-
-    type();
-
-    // Random matrix code effect
-    function createMatrixCode() {
-        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        const codes = document.querySelectorAll('.matrix-code');
-        
-        codes.forEach(code => {
-            setInterval(() => {
-                code.textContent = Array.from({length: 10}, () => 
-                    chars.charAt(Math.floor(Math.random() * chars.length))
-                ).join('');
-            }, 100);
-        });
-    }
-
-    createMatrixCode();
-});
-</script>
 {% endblock %}
