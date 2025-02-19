@@ -1,9 +1,9 @@
-import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from dotenv import load_dotenv
 from werkzeug.security import generate_password_hash
+import os
 
 # Load environment variables
 load_dotenv()
@@ -32,7 +32,8 @@ def init_database():
     """Initialize database and create admin user"""
     print(f"Current app context: {app}")  # Debugging statement
     print(f"SQLAlchemy instance: {db}")  # Debugging statement
-    """Initialize database and create admin user"""
+    print("Initializing database...")  # Additional debugging statement
+
     with app.app_context():
         # Create database tables
         db.create_all()
