@@ -84,8 +84,11 @@ def run_migrations_online():
                 context.run_migrations()
         except Exception as e:
             logger.error(f"Error during migration: {str(e)}")
-            # Explicitly rollback the transaction
-            connection.rollback()
+            try:
+                # Try to rollback using the raw connection
+                connection.connection.rollback()
+            except Exception as rollback_error:
+                logger.error(f"Error during rollback: {str(rollback_error)}")
             raise
 
     # Run migrations with connection handling
