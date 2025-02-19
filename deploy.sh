@@ -43,6 +43,7 @@ check_status
 echo -e "\n${YELLOW}Creating application directory...${NC}"
 mkdir -p /opt/terminusa
 mkdir -p /var/log/terminusa
+mkdir -p /opt/terminusa/nginx
 check_status
 
 # Create terminusa user
@@ -102,15 +103,38 @@ check_status
 # Set up SSL certificates
 echo -e "\n${YELLOW}Setting up SSL certificates...${NC}"
 if [ ! -d "/etc/letsencrypt/live/terminusa.online" ]; then
-    certbot --nginx -d terminusa.online -d play.terminusa.online --non-interactive --agree-tos --email admin@terminusa.online
+    # Stop nginx temporarily for certbot
+    systemctl stop nginx
+    
+    # Get SSL certificate
+    certbot certonly --standalone \
+        -d terminusa.online \
+        -d play.terminusa.online \
+        --non-interactive \
+        --agree-tos \
+        --email admin@terminusa.online
+    
+    check_status
 fi
-check_status
 
 # Configure nginx
 echo -e "\n${YELLOW}Configuring nginx...${NC}"
+mkdir -p /etc/nginx/conf.d
 cp nginx/terminusa.conf /etc/nginx/conf.d/
 cp nginx/terminusa-terminal.conf /etc/nginx/conf.d/
+
+# Update SSL certificate paths in nginx configs
+sed -i "s|ssl_certificate .*|ssl_certificate /etc/letsencrypt/live/terminusa.online/fullchain.pem;|g" /etc/nginx/conf.d/terminusa.conf
+sed -i "s|ssl_certificate_key .*|ssl_certificate_key /etc/letsencrypt/live/terminusa.online/privkey.pem;|g" /etc/nginx/conf.d/terminusa.conf
+sed -i "s|ssl_certificate .*|ssl_certificate /etc/letsencrypt/live/terminusa.online/fullchain.pem;|g" /etc/nginx/conf.d/terminusa-terminal.conf
+sed -i "s|ssl_certificate_key .*|ssl_certificate_key /etc/letsencrypt/live/terminusa.online/privkey.pem;|g" /etc/nginx/conf.d/terminusa-terminal.conf
+
+# Test nginx configuration
 nginx -t
+check_status
+
+# Start nginx
+systemctl start nginx
 check_status
 
 # Set up systemd services
@@ -176,10 +200,13 @@ if systemctl is-active --quiet nginx && systemctl is-active --quiet terminusa-te
     echo -e "\nLog files:"
     echo -e "Main logs: /var/log/terminusa/app.log"
     echo -e "Terminal logs: /var/log/terminusa/terminal.log"
+    echo -e "Nginx access logs: /var/log/nginx/terminusa.access.log"
+    echo -e "Nginx error logs: /var/log/nginx/terminusa.error.log"
     
     echo -e "\nMonitor services with:"
     echo -e "journalctl -u terminusa-terminal.service -f"
     echo -e "tail -f /var/log/terminusa/*.log"
+    echo -e "tail -f /var/log/nginx/*.log"
     
     echo -e "\nDefault admin credentials:"
     echo -e "Username: adminbb"
