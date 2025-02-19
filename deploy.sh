@@ -72,38 +72,31 @@ fi
 
 # Set up database
 echo -e "\n${YELLOW}Setting up database...${NC}"
-if ! sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw terminusa; then
+if ! sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw terminusa_db; then
     sudo -u postgres createuser terminusa
-    sudo -u postgres createdb terminusa
+    sudo -u postgres createdb terminusa_db
     DB_PASSWORD=$(openssl rand -hex 16)
     sudo -u postgres psql -c "ALTER USER terminusa WITH PASSWORD '$DB_PASSWORD';"
-    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE terminusa TO terminusa;"
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE terminusa_db TO terminusa;"
     
     # Update DATABASE_URL in .env
-    sed -i "s|DATABASE_URL=.*|DATABASE_URL=postgresql://terminusa:$DB_PASSWORD@localhost:5432/terminusa|g" /opt/terminusa/.env
+    sed -i "s|DATABASE_URL=.*|DATABASE_URL=postgresql://terminusa:$DB_PASSWORD@localhost:5432/terminusa_db|g" /opt/terminusa/.env
 fi
 check_status
 
-# Initialize database
-echo -e "\n${YELLOW}Initializing database...${NC}"
+# Initialize database and run migrations
+echo -e "\n${YELLOW}Initializing database and running migrations...${NC}"
 cd /opt/terminusa
 source venv/bin/activate
+export FLASK_APP=app.py
+export FLASK_ENV=development
 
-# Initialize database
-python init_db.py
+# Run database migrations
+flask db upgrade head
 check_status
 
-# Initialize migrations if not exists
-if [ ! -d "migrations" ]; then
-    echo -e "\n${YELLOW}Initializing migrations...${NC}"
-    flask db init
-    check_status
-fi
-
-# Create and apply migrations
-echo -e "\n${YELLOW}Running database migrations...${NC}"
-flask db migrate -m "Initial database setup"
-flask db upgrade
+# Initialize database with admin user
+python init_database.py
 check_status
 
 # Set up SSL certificates
@@ -190,7 +183,7 @@ if systemctl is-active --quiet nginx && systemctl is-active --quiet terminusa-te
     
     echo -e "\nDefault admin credentials:"
     echo -e "Username: adminbb"
-    echo -e "Password: admin123"
+    echo -e "Email: admin@terminusa.online"
     echo -e "\n${YELLOW}Please change admin password after first login!${NC}"
 else
     echo -e "${RED}Deployment verification failed. Please check the logs.${NC}"
