@@ -4,6 +4,7 @@ import logging
 from flask import current_app
 from alembic import context
 from sqlalchemy import engine_from_config, pool, text
+import psycopg2
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -66,6 +67,11 @@ def run_migrations_online():
 
         while retry_count < max_retries:
             try:
+                # Get raw psycopg2 connection
+                raw_connection = connection.connection.connection
+                # Ensure we're starting with a clean slate
+                raw_connection.rollback()
+                
                 context.configure(**migration_config)
                 with context.begin_transaction():
                     context.run_migrations()
@@ -75,8 +81,9 @@ def run_migrations_online():
                 logger.error(f"Error during migration (attempt {retry_count}): {str(e)}")
                 
                 try:
-                    # Try to rollback using raw connection
-                    connection.connection.rollback()
+                    # Rollback using raw psycopg2 connection
+                    raw_connection = connection.connection.connection
+                    raw_connection.rollback()
                 except Exception as rollback_error:
                     logger.error(f"Error during rollback: {str(rollback_error)}")
                 
