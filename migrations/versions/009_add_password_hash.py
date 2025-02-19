@@ -15,35 +15,69 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
-    # Add password_hash column if it doesn't exist
-    op.execute("""
-        DO $$
-        BEGIN
-            IF NOT EXISTS (
-                SELECT 1 
-                FROM information_schema.columns 
-                WHERE table_name = 'users' 
-                AND column_name = 'password_hash'
-            ) THEN
-                ALTER TABLE users 
-                ADD COLUMN password_hash VARCHAR(128);
-            END IF;
-        END$$;
+    # First check current state
+    conn = op.get_bind()
+    
+    # Check alembic_version
+    result = conn.execute("SELECT version_num FROM alembic_version")
+    current_version = result.scalar()
+    print(f"Current version: {current_version}")
+    
+    # Check if password_hash column exists
+    result = conn.execute("""
+        SELECT EXISTS (
+            SELECT 1 
+            FROM information_schema.columns 
+            WHERE table_name = 'users' 
+            AND column_name = 'password_hash'
+        )
     """)
+    has_password_hash = result.scalar()
+    print(f"Has password_hash column: {has_password_hash}")
+    
+    # Add password_hash column if it doesn't exist
+    if not has_password_hash:
+        op.execute("""
+            ALTER TABLE users 
+            ADD COLUMN IF NOT EXISTS password_hash VARCHAR(128)
+        """)
+        print("Added password_hash column")
+    
+    # Clean up alembic_version table
+    op.execute("DELETE FROM alembic_version")
+    op.execute(f"INSERT INTO alembic_version (version_num) VALUES ('{revision}')")
+    print(f"Updated version to {revision}")
 
 def downgrade():
-    # Drop password_hash column if it exists
-    op.execute("""
-        DO $$
-        BEGIN
-            IF EXISTS (
-                SELECT 1 
-                FROM information_schema.columns 
-                WHERE table_name = 'users' 
-                AND column_name = 'password_hash'
-            ) THEN
-                ALTER TABLE users 
-                DROP COLUMN password_hash;
-            END IF;
-        END$$;
+    # First check current state
+    conn = op.get_bind()
+    
+    # Check alembic_version
+    result = conn.execute("SELECT version_num FROM alembic_version")
+    current_version = result.scalar()
+    print(f"Current version: {current_version}")
+    
+    # Check if password_hash column exists
+    result = conn.execute("""
+        SELECT EXISTS (
+            SELECT 1 
+            FROM information_schema.columns 
+            WHERE table_name = 'users' 
+            AND column_name = 'password_hash'
+        )
     """)
+    has_password_hash = result.scalar()
+    print(f"Has password_hash column: {has_password_hash}")
+    
+    # Drop password_hash column if it exists
+    if has_password_hash:
+        op.execute("""
+            ALTER TABLE users 
+            DROP COLUMN IF EXISTS password_hash
+        """)
+        print("Dropped password_hash column")
+    
+    # Clean up alembic_version table
+    op.execute("DELETE FROM alembic_version")
+    op.execute(f"INSERT INTO alembic_version (version_num) VALUES ('{down_revision}')")
+    print(f"Updated version to {down_revision}")
