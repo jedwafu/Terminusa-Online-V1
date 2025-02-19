@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Terminusa Online{% endblock %}
+
+{% block content %}
+<section class="register-section">
+    <div class="container">
+        <div class="register-container">
+            <div class="register-content">
+                <h1>Create Your Account</h1>
+                <p class="subtitle">Join the adventure in Terminusa Online</p>
+                
+                <form class="register-form" method="POST" action="{{ url_for('register') }}">
+                    <div class="form-group">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" id="username" name="username" class="form-input" required 
+                               minlength="3" maxlength="20" pattern="[a-zA-Z0-9_-]+" 
+                               title="Username can only contain letters, numbers, underscores and hyphens">
+                        <small class="form-help">3-20 characters, letters, numbers, _ and - only</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" id="email" name="email" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" id="password" name="password" class="form-input" required 
+                               minlength="8"
+                               pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+                               title="Must contain at least one number, one uppercase and lowercase letter, and be at least 8 characters long">
+                        <small class="form-help">Minimum 8 characters, at least one uppercase letter, one lowercase letter, and one number</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirm_password" class="form-label">Confirm Password</label>
+                        <input type="password" id="confirm_password" name="confirm_password" class="form-input" required>
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <input type="checkbox" id="terms" name="terms" required>
+                        <label for="terms">I agree to the <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a></label>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+                </form>
+
+                <div class="form-footer">
+                    <p>Already have an account? <a href="/login">Log In</a></p>
+                </div>
+            </div>
+            
+            <div class="register-sidebar">
+                <div class="benefits-card">
+                    <h3>Why Join Terminusa Online?</h3>
+                    <ul class="benefits-list">
+                        <li>
+                            <i class="fas fa-check"></i>
+                            <span>Access to both Web and CLI interfaces</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-check"></i>
+                            <span>Join a thriving community of players</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-check"></i>
+                            <span>Participate in the player-driven economy</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-check"></i>
+                            <span>Compete in global leaderboards</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-check"></i>
+                            <span>Regular game updates and events</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.register-section {
+    padding: 4rem 0;
+    background-color: var(--light-bg);
+    min-height: calc(100vh - 60px - 300px);
+}
+
+.register-container {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 2rem;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.register-content {
+    padding: 2rem;
+}
+
+.register-content h1 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    color: #666;
+    margin-bottom: 2rem;
+}
+
+.register-form {
+    max-width: 500px;
+}
+
+.form-help {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    color: #666;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: auto;
+}
+
+.checkbox-group label {
+    font-size: 0.875rem;
+}
+
+.checkbox-group a {
+    color: var(--secondary-color);
+    text-decoration: none;
+}
+
+.checkbox-group a:hover {
+    text-decoration: underline;
+}
+
+.btn-block {
+    width: 100%;
+    margin-top: 1.5rem;
+}
+
+.form-footer {
+    margin-top: 2rem;
+    text-align: center;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.form-footer a {
+    color: var(--secondary-color);
+    text-decoration: none;
+}
+
+.form-footer a:hover {
+    text-decoration: underline;
+}
+
+.register-sidebar {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 2rem;
+}
+
+.benefits-card h3 {
+    margin-bottom: 1.5rem;
+    font-size: 1.25rem;
+}
+
+.benefits-list {
+    list-style: none;
+}
+
+.benefits-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.benefits-list i {
+    color: var(--success-color);
+}
+
+@media (max-width: 768px) {
+    .register-container {
+        grid-template-columns: 1fr;
+    }
+
+    .register-content {
+        padding: 1.5rem;
+    }
+
+    .register-form {
+        max-width: 100%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('confirm_password').addEventListener('input', function() {
+    const password = document.getElementById('password');
+    if (this.value !== password.value) {
+        this.setCustomValidity('Passwords must match');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+</script>
+{% endblock %}

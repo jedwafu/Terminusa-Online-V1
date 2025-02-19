@@ -1,0 +1,404 @@
+{% extends "base.html" %}
+
+{% block title %}Play - Terminusa Online{% endblock %}
+
+{% block content %}
+<section class="play-header">
+    <div class="container">
+        <div class="player-status">
+            <div class="player-info">
+                <div class="player-avatar">
+                    <img src="{{ url_for('static', filename='images/avatars/default.png') }}" alt="Player Avatar">
+                    <div class="level">Level 25</div>
+                </div>
+                <div class="player-details">
+                    <h2>{{ player_name|default('Adventurer') }}</h2>
+                    <div class="player-stats">
+                        <span><i class="fas fa-heart"></i> HP: 2500/2500</span>
+                        <span><i class="fas fa-bolt"></i> MP: 1200/1200</span>
+                        <span><i class="fas fa-star"></i> EXP: 75%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="quick-stats">
+                <div class="stat-item">
+                    <i class="fas fa-coins"></i>
+                    <span>15,000</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-trophy"></i>
+                    <span>Rank #156</span>
+                </div>
+                <div class="stat-item">
+                    <i class="fas fa-users"></i>
+                    <span>Guild: Dragon's Claw</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="play-content">
+    <div class="container">
+        <div class="game-modes">
+            <div class="mode-card primary">
+                <div class="mode-content">
+                    <i class="fas fa-dungeon"></i>
+                    <h3>Solo Dungeon</h3>
+                    <p>Challenge yourself in procedurally generated dungeons</p>
+                    <div class="mode-stats">
+                        <span><i class="fas fa-clock"></i> ~15-30 mins</span>
+                        <span><i class="fas fa-star"></i> Recommended Lvl: 20+</span>
+                    </div>
+                    <button class="btn btn-primary">Enter Dungeon</button>
+                </div>
+            </div>
+
+            <div class="mode-grid">
+                <div class="mode-card">
+                    <div class="mode-content">
+                        <i class="fas fa-users"></i>
+                        <h3>Guild Raid</h3>
+                        <p>Team up with guild members</p>
+                        <button class="btn btn-secondary">Join Raid</button>
+                    </div>
+                </div>
+
+                <div class="mode-card">
+                    <div class="mode-content">
+                        <i class="fas fa-swords"></i>
+                        <h3>PvP Arena</h3>
+                        <p>Battle other players</p>
+                        <button class="btn btn-secondary">Enter Arena</button>
+                    </div>
+                </div>
+
+                <div class="mode-card">
+                    <div class="mode-content">
+                        <i class="fas fa-map"></i>
+                        <h3>World Map</h3>
+                        <p>Explore the open world</p>
+                        <button class="btn btn-secondary">Explore</button>
+                    </div>
+                </div>
+
+                <div class="mode-card">
+                    <div class="mode-content">
+                        <i class="fas fa-tasks"></i>
+                        <h3>Daily Quests</h3>
+                        <p>Complete daily challenges</p>
+                        <button class="btn btn-secondary">View Quests</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="player-dashboard">
+            <div class="dashboard-section inventory">
+                <h3><i class="fas fa-backpack"></i> Quick Inventory</h3>
+                <div class="inventory-grid">
+                    {% for i in range(8) %}
+                    <div class="inventory-slot">
+                        {% if i < 3 %}
+                        <img src="{{ url_for('static', filename='images/items/potion.png') }}" alt="Health Potion">
+                        <span class="item-count">x5</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="dashboard-section achievements">
+                <h3><i class="fas fa-medal"></i> Recent Achievements</h3>
+                <div class="achievement-list">
+                    <div class="achievement">
+                        <i class="fas fa-crown achievement-icon"></i>
+                        <div class="achievement-info">
+                            <h4>Dungeon Master</h4>
+                            <p>Complete 10 dungeons</p>
+                            <div class="progress-bar">
+                                <div class="progress" style="width: 80%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="achievement">
+                        <i class="fas fa-skull achievement-icon"></i>
+                        <div class="achievement-info">
+                            <h4>Monster Hunter</h4>
+                            <p>Defeat 100 monsters</p>
+                            <div class="progress-bar">
+                                <div class="progress" style="width: 65%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.play-header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 2rem 0;
+}
+
+.player-status {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 2rem;
+}
+
+.player-info {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.player-avatar {
+    position: relative;
+    width: 80px;
+    height: 80px;
+}
+
+.player-avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.level {
+    position: absolute;
+    bottom: -0.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--secondary-color);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+}
+
+.player-details h2 {
+    margin-bottom: 0.5rem;
+}
+
+.player-stats {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.quick-stats {
+    display: flex;
+    gap: 2rem;
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.play-content {
+    padding: 2rem 0;
+    background-color: var(--light-bg);
+    min-height: calc(100vh - 60px - 300px);
+}
+
+.game-modes {
+    margin-bottom: 3rem;
+}
+
+.mode-card.primary {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
+}
+
+.mode-card.primary i {
+    font-size: 3rem;
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+}
+
+.mode-card.primary h3 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.mode-stats {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin: 1.5rem 0;
+    color: #666;
+}
+
+.mode-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.mode-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.mode-card:hover {
+    transform: translateY(-5px);
+}
+
+.mode-card i {
+    font-size: 2rem;
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+}
+
+.mode-card h3 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.mode-card p {
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+.player-dashboard {
+    display: grid;
+    grid-template-columns: 2fr 3fr;
+    gap: 2rem;
+}
+
+.dashboard-section {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.dashboard-section h3 {
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+}
+
+.inventory-slot {
+    aspect-ratio: 1;
+    background-color: var(--light-bg);
+    border-radius: 4px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.inventory-slot img {
+    width: 70%;
+    height: 70%;
+    object-fit: contain;
+}
+
+.item-count {
+    position: absolute;
+    bottom: 0.25rem;
+    right: 0.25rem;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 0.1rem 0.25rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+}
+
+.achievement-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.achievement {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background-color: var(--light-bg);
+    border-radius: 4px;
+}
+
+.achievement-icon {
+    font-size: 2rem;
+    color: var(--secondary-color);
+}
+
+.achievement-info {
+    flex: 1;
+}
+
+.achievement-info h4 {
+    margin-bottom: 0.25rem;
+    color: var(--primary-color);
+}
+
+.achievement-info p {
+    color: #666;
+    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+}
+
+.progress-bar {
+    height: 4px;
+    background-color: #eee;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress {
+    height: 100%;
+    background-color: var(--secondary-color);
+    transition: width 0.3s ease;
+}
+
+@media (max-width: 768px) {
+    .player-status {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .quick-stats {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .mode-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .player-dashboard {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}

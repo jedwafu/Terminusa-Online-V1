@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+
+{% block title %}Marketplace - Terminusa Online{% endblock %}
+
+{% block content %}
+<section class="marketplace-header">
+    <div class="container">
+        <div class="marketplace-controls">
+            <h1>Marketplace</h1>
+            <div class="marketplace-actions">
+                <div class="search-bar">
+                    <input type="text" placeholder="Search items..." id="searchInput">
+                    <i class="fas fa-search"></i>
+                </div>
+                <div class="filter-controls">
+                    <select id="categoryFilter" class="filter-select">
+                        <option value="">All Categories</option>
+                        <option value="weapon">Weapons</option>
+                        <option value="armor">Armor</option>
+                        <option value="potion">Potions</option>
+                        <option value="material">Materials</option>
+                        <option value="misc">Miscellaneous</option>
+                    </select>
+                    <select id="sortFilter" class="filter-select">
+                        <option value="recent">Most Recent</option>
+                        <option value="price-low">Price: Low to High</option>
+                        <option value="price-high">Price: High to Low</option>
+                        <option value="level">Level Requirement</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" id="sellItemBtn">
+                    <i class="fas fa-plus"></i> Sell Item
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="marketplace-content">
+    <div class="container">
+        <div class="marketplace-grid">
+            <!-- Example items - In production, these would be dynamically generated -->
+            <div class="item-card">
+                <div class="item-image">
+                    <img src="{{ url_for('static', filename='images/items/sword.png') }}" alt="Legendary Sword">
+                    <span class="item-level">Level 50</span>
+                </div>
+                <div class="item-details">
+                    <h3>Legendary Sword</h3>
+                    <div class="item-stats">
+                        <span class="stat"><i class="fas fa-fist-raised"></i> Attack: 120</span>
+                        <span class="stat"><i class="fas fa-bolt"></i> Speed: 1.2</span>
+                    </div>
+                    <p class="item-description">A powerful sword imbued with ancient magic.</p>
+                    <div class="item-footer">
+                        <div class="price">
+                            <i class="fas fa-coins"></i>
+                            <span>5,000</span>
+                        </div>
+                        <button class="btn btn-secondary">Buy Now</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="item-card">
+                <div class="item-image">
+                    <img src="{{ url_for('static', filename='images/items/armor.png') }}" alt="Dragon Scale Armor">
+                    <span class="item-level">Level 45</span>
+                </div>
+                <div class="item-details">
+                    <h3>Dragon Scale Armor</h3>
+                    <div class="item-stats">
+                        <span class="stat"><i class="fas fa-shield-alt"></i> Defense: 85</span>
+                        <span class="stat"><i class="fas fa-fire"></i> Fire Res: 30%</span>
+                    </div>
+                    <p class="item-description">Armor forged from ancient dragon scales.</p>
+                    <div class="item-footer">
+                        <div class="price">
+                            <i class="fas fa-coins"></i>
+                            <span>7,500</span>
+                        </div>
+                        <button class="btn btn-secondary">Buy Now</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add more item cards as needed -->
+        </div>
+
+        <div class="pagination">
+            <button class="pagination-btn" disabled><i class="fas fa-chevron-left"></i></button>
+            <span class="pagination-current">Page 1 of 10</span>
+            <button class="pagination-btn"><i class="fas fa-chevron-right"></i></button>
+        </div>
+    </div>
+</section>
+
+<!-- Sell Item Modal -->
+<div class="modal" id="sellItemModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Sell Item</h2>
+            <button class="close-modal"><i class="fas fa-times"></i></button>
+        </div>
+        <form class="sell-item-form">
+            <div class="form-group">
+                <label for="itemName">Item Name</label>
+                <input type="text" id="itemName" required>
+            </div>
+            <div class="form-group">
+                <label for="itemCategory">Category</label>
+                <select id="itemCategory" required>
+                    <option value="weapon">Weapon</option>
+                    <option value="armor">Armor</option>
+                    <option value="potion">Potion</option>
+                    <option value="material">Material</option>
+                    <option value="misc">Miscellaneous</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="itemPrice">Price</label>
+                <input type="number" id="itemPrice" min="1" required>
+            </div>
+            <div class="form-group">
+                <label for="itemDescription">Description</label>
+                <textarea id="itemDescription" rows="3" required></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelSell">Cancel</button>
+                <button type="submit" class="btn btn-primary">List Item</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.marketplace-header {
+    background-color: var(--primary-color);
+    color: white;
+    padding: 2rem 0;
+}
+
+.marketplace-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.marketplace-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.search-bar {
+    position: relative;
+    flex: 1;
+    min-width: 200px;
+}
+
+.search-bar input {
+    width: 100%;
+    padding: 0.5rem 2.5rem 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.search-bar i {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+}
+
+.filter-controls {
+    display: flex;
+    gap: 1rem;
+}
+
+.filter-select {
+    padding: 0.5rem;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    min-width: 150px;
+}
+
+.marketplace-content {
+    padding: 2rem 0;
+    background-color: var(--light-bg);
+    min-height: calc(100vh - 60px - 300px);
+}
+
+.marketplace-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.item-card {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.item-card:hover {
+    transform: translateY(-5px);
+}
+
+.item-image {
+    position: relative;
+    padding-top: 75%;
+    background-color: #f8f9fa;
+}
+
+.item-image img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 1rem;
+}
+
+.item-level {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background-color: var(--primary-color);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.875rem;
+}
+
+.item-details {
+    padding: 1.5rem;
+}
+
+.item-details h3 {
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+}
+
+.item-stats {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #666;
+}
+
+.item-description {
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+    color: #666;
+}
+
+.item-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.price {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.pagination-btn {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    padding: 0.5rem;
+}
+
+.pagination-btn:disabled {
+    color: #ccc;
+    cursor: not-allowed;
+}
+
+.pagination-current {
+    color: #666;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 1000;
+}
+
+.modal-content {
+    position: relative;
+    background-color: white;
+    max-width: 500px;
+    margin: 2rem auto;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.modal-header {
+    padding: 1.5rem;
+    background-color: var(--primary-color);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.close-modal {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 1.25rem;
+}
+
+.sell-item-form {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .marketplace-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filter-controls {
+        flex-direction: column;
+    }
+
+    .marketplace-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('sellItemBtn').addEventListener('click', function() {
+    document.getElementById('sellItemModal').style.display = 'block';
+});
+
+document.querySelector('.close-modal').addEventListener('click', function() {
+    document.getElementById('sellItemModal').style.display = 'none';
+});
+
+document.getElementById('cancelSell').addEventListener('click', function() {
+    document.getElementById('sellItemModal').style.display = 'none';
+});
+
+// Close modal when clicking outside
+window.addEventListener('click', function(event) {
+    if (event.target == document.getElementById('sellItemModal')) {
+        document.getElementById('sellItemModal').style.display = 'none';
+    }
+});
+</script>
+{% endblock %}
