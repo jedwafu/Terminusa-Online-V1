@@ -130,7 +130,15 @@ class Guild(db.Model):
     crystals = db.Column(db.Integer, default=0)
     exons_balance = db.Column(db.Float, default=0.0)
     
-    members = db.relationship('User', backref='guild', lazy=True)
+    # Specify foreign_keys for the relationship to resolve ambiguity
+    members = db.relationship('User', 
+                            foreign_keys=[User.guild_id],
+                            backref='guild', 
+                            lazy=True)
+    leader = db.relationship('User',
+                           foreign_keys=[leader_id],
+                           backref='led_guild',
+                           lazy=True)
     quests = db.relationship('GuildQuest', backref='guild', lazy=True)
 
 class Party(db.Model):
@@ -286,6 +294,7 @@ class Transaction(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 def init_db(app):
+    """Initialize database with Flask app context"""
     db.init_app(app)
     with app.app_context():
         db.create_all()

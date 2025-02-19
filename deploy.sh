@@ -89,10 +89,19 @@ echo -e "\n${YELLOW}Initializing database...${NC}"
 cd /opt/terminusa
 source venv/bin/activate
 
-# Set environment variables
+# Set environment variables (excluding comments)
 export FLASK_APP=init_db.py
 export PYTHONPATH=/opt/terminusa
-export $(cat .env | xargs)
+while IFS= read -r line; do
+    # Skip comments and empty lines
+    [[ $line =~ ^[[:space:]]*# ]] && continue
+    [[ -z "$line" ]] && continue
+    
+    # Export valid environment variables
+    if [[ $line =~ ^[A-Za-z_][A-Za-z0-9_]*= ]]; then
+        export "$line"
+    fi
+done < .env
 
 # Initialize database
 python init_db.py
