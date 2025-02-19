@@ -1,9 +1,7 @@
 from datetime import datetime
-from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from enum import Enum
-
-db = SQLAlchemy()
+from database import db
 
 class HunterClass(Enum):
     F = "F"
@@ -301,8 +299,3 @@ class Transaction(db.Model):
     transaction_hash = db.Column(db.String(100))  # for blockchain transactions
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-def init_db(app):
-    """Initialize database with Flask app context"""
-    db.init_app(app)
-    with app.app_context():
-        db.create_all()
