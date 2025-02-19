@@ -1,7 +1,7 @@
 """update gate model
 
-Revision ID: 002
-Revises: 001
+Revision ID: 002_update_gate_model
+Revises: 001_rename_metadata_columns
 Create Date: 2025-02-17 04:18:43.000000
 
 """
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '002'
-down_revision = '001'
+revision = '002_update_gate_model'
+down_revision = '001_rename_metadata_columns'
 branch_labels = None
 depends_on = None
 
