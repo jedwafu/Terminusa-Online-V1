@@ -63,6 +63,13 @@ def create_enum_if_not_exists(name, values):
     """)
 
 def upgrade():
+    # First update alembic_version to prevent transaction issues
+    execute_with_retry("""
+        UPDATE alembic_version 
+        SET version_num = '008_add_game_models' 
+        WHERE version_num = '007_add_web3_and_announcements'
+    """)
+
     # Create enums if they don't exist
     create_enum_if_not_exists('hunterclass', ['F', 'E', 'D', 'C', 'B', 'A', 'S'])
     create_enum_if_not_exists('jobclass', ['Fighter', 'Mage', 'Assassin', 'Archer', 'Healer'])
@@ -131,6 +138,13 @@ def upgrade():
         pass
 
 def downgrade():
+    # First update alembic_version
+    execute_with_retry("""
+        UPDATE alembic_version 
+        SET version_num = '007_add_web3_and_announcements' 
+        WHERE version_num = '008_add_game_models'
+    """)
+
     # Drop foreign key constraints if they exist
     try:
         execute_with_retry("ALTER TABLE users DROP CONSTRAINT IF EXISTS fk_users_guild")
