@@ -29,6 +29,13 @@ def has_column(table_name, column_name):
     columns = [c['name'] for c in insp.get_columns(table_name)]
     return column_name in columns
 
+def has_index(table_name, index_name):
+    """Check if an index exists"""
+    conn = op.get_bind()
+    insp = inspect(conn)
+    indexes = [i['name'] for i in insp.get_indexes(table_name)]
+    return index_name in indexes
+
 def upgrade():
     # Add columns to users table if they don't exist
     if not has_column('users', 'web3_wallet'):
@@ -97,35 +104,57 @@ def upgrade():
             sa.PrimaryKeyConstraint('id')
         )
 
-    # Create indexes if they don't exist
-    conn = op.get_bind()
-    insp = inspect(conn)
-    
-    def create_index_if_not_exists(index_name, table_name, columns):
-        if index_name not in [i['name'] for i in insp.get_indexes(table_name)]:
-            op.create_index(index_name, table_name, columns)
+    # Create indexes if they don't exist and their columns exist
+    if has_column('users', 'web3_wallet') and not has_index('users', 'idx_users_web3_wallet'):
+        op.create_index('idx_users_web3_wallet', 'users', ['web3_wallet'])
 
-    create_index_if_not_exists('idx_users_web3_wallet', 'users', ['web3_wallet'])
     if has_table('announcements'):
-        create_index_if_not_exists('idx_announcements_created_at', 'announcements', ['created_at'])
-        create_index_if_not_exists('idx_announcements_priority', 'announcements', ['priority'])
-    create_index_if_not_exists('idx_inventory_user_id', 'inventory_items', ['user_id'])
-    create_index_if_not_exists('idx_market_seller_id', 'market_listings', ['seller_id'])
-    create_index_if_not_exists('idx_market_created_at', 'market_listings', ['created_at'])
-    create_index_if_not_exists('idx_transactions_created_at', 'transactions', ['created_at'])
+        if has_column('announcements', 'created_at') and not has_index('announcements', 'idx_announcements_created_at'):
+            op.create_index('idx_announcements_created_at', 'announcements', ['created_at'])
+        if has_column('announcements', 'priority') and not has_index('announcements', 'idx_announcements_priority'):
+            op.create_index('idx_announcements_priority', 'announcements', ['priority'])
+
+    if has_table('inventory_items'):
+        if has_column('inventory_items', 'user_id') and not has_index('inventory_items', 'idx_inventory_user_id'):
+            op.create_index('idx_inventory_user_id', 'inventory_items', ['user_id'])
+
+    if has_table('market_listings'):
+        if has_column('market_listings', 'seller_id') and not has_index('market_listings', 'idx_market_seller_id'):
+            op.create_index('idx_market_seller_id', 'market_listings', ['seller_id'])
+        if has_column('market_listings', 'created_at') and not has_index('market_listings', 'idx_market_created_at'):
+            op.create_index('idx_market_created_at', 'market_listings', ['created_at'])
+
+    if has_table('transactions'):
+        if has_column('transactions', 'created_at') and not has_index('transactions', 'idx_transactions_created_at'):
+            op.create_index('idx_transactions_created_at', 'transactions', ['created_at'])
 
 def downgrade():
-    # Drop indexes
-    op.drop_index('idx_transactions_created_at')
-    op.drop_index('idx_market_created_at')
-    op.drop_index('idx_market_seller_id')
-    op.drop_index('idx_inventory_user_id')
-    if has_table('announcements'):
-        op.drop_index('idx_announcements_priority')
-        op.drop_index('idx_announcements_created_at')
-    op.drop_index('idx_users_web3_wallet')
+    # Drop indexes if they exist
+    if has_table('transactions'):
+        if has_index('transactions', 'idx_transactions_created_at'):
+            op.drop_index('idx_transactions_created_at')
 
-    # Drop tables
+    if has_table('market_listings'):
+        if has_index('market_listings', 'idx_market_created_at'):
+            op.drop_index('idx_market_created_at')
+        if has_index('market_listings', 'idx_market_seller_id'):
+            op.drop_index('idx_market_seller_id')
+
+    if has_table('inventory_items'):
+        if has_index('inventory_items', 'idx_inventory_user_id'):
+            op.drop_index('idx_inventory_user_id')
+
+    if has_table('announcements'):
+        if has_index('announcements', 'idx_announcements_priority'):
+            op.drop_index('idx_announcements_priority')
+        if has_index('announcements', 'idx_announcements_created_at'):
+            op.drop_index('idx_announcements_created_at')
+
+    if has_table('users'):
+        if has_index('users', 'idx_users_web3_wallet'):
+            op.drop_index('idx_users_web3_wallet')
+
+    # Drop tables if they exist
     if has_table('transactions'):
         op.drop_table('transactions')
     if has_table('market_listings'):
@@ -133,7 +162,7 @@ def downgrade():
     if has_table('inventory_items'):
         op.drop_table('inventory_items')
 
-    # Drop columns from users table
+    # Drop columns from users table if they exist
     for column in ['hunter_level', 'hunter_class', 'exons_balance', 'crystals', 'web3_wallet']:
         if has_column('users', column):
             op.drop_column('users', column)
