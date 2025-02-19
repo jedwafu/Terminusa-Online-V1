@@ -55,6 +55,10 @@ def has_column(table_name, column_name):
         return False
 
 def upgrade():
+    # First clean up alembic_version table
+    execute_with_retry("DELETE FROM alembic_version")
+    execute_with_retry(f"INSERT INTO alembic_version (version_num) VALUES ('{down_revision}')")
+
     # Check if column exists
     if not has_column('users', 'password_hash'):
         # Add password_hash column if it doesn't exist
@@ -64,16 +68,19 @@ def upgrade():
         """)
         print("Added password_hash column")
 
-    # Update version in a way that works with Alembic's transaction management
-    execute_with_retry("""
-        INSERT INTO alembic_version (version_num) 
-        VALUES ('009_add_password_hash')
-        ON CONFLICT (version_num) 
-        DO UPDATE SET version_num = EXCLUDED.version_num
+    # Update version
+    execute_with_retry(f"""
+        UPDATE alembic_version 
+        SET version_num = '{revision}'
+        WHERE version_num = '{down_revision}'
     """)
     print("Updated version to 009_add_password_hash")
 
 def downgrade():
+    # First clean up alembic_version table
+    execute_with_retry("DELETE FROM alembic_version")
+    execute_with_retry(f"INSERT INTO alembic_version (version_num) VALUES ('{revision}')")
+
     # Drop password_hash column if it exists
     if has_column('users', 'password_hash'):
         execute_with_retry("""
@@ -82,11 +89,10 @@ def downgrade():
         """)
         print("Dropped password_hash column")
 
-    # Update version in a way that works with Alembic's transaction management
-    execute_with_retry("""
-        INSERT INTO alembic_version (version_num) 
-        VALUES ('008_add_game_models')
-        ON CONFLICT (version_num) 
-        DO UPDATE SET version_num = EXCLUDED.version_num
+    # Update version
+    execute_with_retry(f"""
+        UPDATE alembic_version 
+        SET version_num = '{down_revision}'
+        WHERE version_num = '{revision}'
     """)
     print("Updated version to 008_add_game_models")
