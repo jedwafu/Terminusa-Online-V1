@@ -6,6 +6,7 @@
     <title>{% block title %}Terminusa Online{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/matrix-effects.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/rank-effects.css') }}">
     {% if extra_css %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/' + extra_css) }}">
     {% endif %}
@@ -78,6 +79,28 @@
 
     <script src="{{ url_for('static', filename='js/matrix-effects.js') }}"></script>
     <script src="{{ url_for('static', filename='js/particle-effects.js') }}"></script>
+    <script>
+    // Add rank-up animation when elements with rank badges appear in view
+    document.addEventListener('DOMContentLoaded', function() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const rankBadge = entry.target.querySelector('.rank-badge');
+                    if (rankBadge) {
+                        rankBadge.classList.add('rank-up');
+                        setTimeout(() => {
+                            rankBadge.classList.remove('rank-up');
+                        }, 1000);
+                    }
+                }
+            });
+        });
+
+        document.querySelectorAll('.feature-card').forEach(card => {
+            observer.observe(card);
+        });
+    });
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
