@@ -5,33 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Terminusa Online{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/matrix-effects.css') }}">
     {% if extra_css %}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/' + extra_css) }}">
     {% endif %}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
     {% block extra_head %}{% endblock %}
 </head>
-<body>
-    <header class="main-header">
+<body class="scan-line">
+    <div class="matrix-rain"></div>
+    
+    <header class="main-header system-access">
         <nav class="main-nav">
             <div class="nav-brand">
-                <a href="/">
-                    <span class="logo">T</span>
-                    <span>Terminusa Online</span>
+                <a href="/" class="portal-frame">
+                    <span class="logo energy-surge">T</span>
+                    <span class="neon-text">Terminusa Online</span>
                 </a>
             </div>
             <div class="nav-links">
-                <a href="/" class="nav-link">Home</a>
-                <a href="/features" class="nav-link">Features</a>
+                <a href="/" class="nav-link digital-distortion">Home</a>
+                <a href="/features" class="nav-link digital-distortion">Features</a>
                 {% if is_authenticated %}
-                <a href="/marketplace" class="nav-link">Marketplace</a>
-                <a href="/leaderboard" class="nav-link">Leaderboard</a>
-                <a href="/play" class="nav-button">Play Now</a>
-                <a href="/logout" class="nav-link">Logout</a>
+                <a href="/marketplace" class="nav-link digital-distortion">Marketplace</a>
+                <a href="/leaderboard" class="nav-link digital-distortion">Leaderboard</a>
+                <a href="/play" class="nav-button energy-surge">Enter System</a>
+                <a href="/logout" class="nav-link digital-distortion">Logout</a>
                 {% else %}
-                <a href="/login" class="nav-link">Login</a>
-                <a href="/register" class="nav-button">Sign Up</a>
+                <a href="/login" class="nav-link digital-distortion">Login</a>
+                <a href="/register" class="nav-button energy-surge">Initialize</a>
                 {% endif %}
             </div>
         </nav>
@@ -44,32 +48,51 @@
     <footer class="main-footer">
         <div class="footer-content">
             <div class="footer-section">
-                <h3>About Terminusa</h3>
-                <p>A Solo-leveling inspired MMORPG with CLI and web interfaces. Join the adventure today!</p>
+                <h3 class="neon-text">About Terminusa</h3>
+                <p>A Solo-leveling inspired MMORPG with CLI and web interfaces. Join the digital hunt today!</p>
             </div>
             <div class="footer-section">
-                <h3>Quick Links</h3>
+                <h3 class="neon-text">System Links</h3>
                 <ul>
-                    <li><a href="/about">About</a></li>
-                    <li><a href="/support">Support</a></li>
-                    <li><a href="/terms">Terms of Service</a></li>
-                    <li><a href="/privacy">Privacy Policy</a></li>
+                    <li><a href="/about" class="digital-distortion">About</a></li>
+                    <li><a href="/support" class="digital-distortion">Support</a></li>
+                    <li><a href="/terms" class="digital-distortion">Terms of Service</a></li>
+                    <li><a href="/privacy" class="digital-distortion">Privacy Policy</a></li>
                 </ul>
             </div>
             <div class="footer-section">
-                <h3>Connect</h3>
+                <h3 class="neon-text">Connect</h3>
                 <div class="social-links">
-                    <a href="#" class="social-link"><i class="fab fa-discord"></i></a>
-                    <a href="#" class="social-link"><i class="fab fa-github"></i></a>
-                    <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="social-link energy-surge"><i class="fab fa-discord"></i></a>
+                    <a href="#" class="social-link energy-surge"><i class="fab fa-github"></i></a>
+                    <a href="#" class="social-link energy-surge"><i class="fab fa-twitter"></i></a>
                 </div>
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; 2024 Terminusa Online. All rights reserved.</p>
+            <div class="loading-bar"></div>
+            <p class="digital-distortion">&copy; 2024 Terminusa Online. All rights reserved.</p>
         </div>
     </footer>
 
     {% block scripts %}{% endblock %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add glitch effect to elements with data-text attribute
+        document.querySelectorAll('[data-text]').forEach(element => {
+            element.classList.add('glitch');
+        });
+
+        // Add power-up effect to buttons on hover
+        document.querySelectorAll('.btn, .nav-button').forEach(button => {
+            button.addEventListener('mouseenter', () => {
+                button.classList.add('power-up');
+            });
+            button.addEventListener('animationend', () => {
+                button.classList.remove('power-up');
+            });
+        });
+    });
+    </script>
 </body>
 </html>
