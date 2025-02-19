@@ -1,34 +1,36 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from models import init_db
+from flask_migrate import Migrate
+from database import db, init_db
+from models import User
 from dotenv import load_dotenv
+import os
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key')
+app.config.update(
+    SECRET_KEY=os.getenv('SECRET_KEY', 'your-secret-key'),
+    SQLALCHEMY_DATABASE_URI=os.getenv('DATABASE_URL', 'sqlite:///terminusa.db'),
+    SQLALCHEMY_TRACK_MODIFICATIONS=False
+)
+
+# Initialize database
+init_db(app)
 
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# Mock user class - In production, this would be a database model
-class User(UserMixin):
-    def __init__(self, id, username, email, password_hash):
-        self.id = id
-        self.username = username
-        self.email = email
-        self.password_hash = password_hash
-
-# Mock user database - In production, this would be a real database
-users = {}
+# Initialize Flask-Migrate
+migrate = Migrate(app, db)
 
 @login_manager.user_loader
 def load_user(user_id):
-    return users.get(int(user_id))
+    return User.query.get(int(user_id))
 
 @app.route('/')
 def index():
@@ -45,12 +47,14 @@ def register():
         email = request.form.get('email')
         password = request.form.get('password')
         
-        if username in [user.username for user in users.values()]:
+        if User.query.filter_by(username=username).first():
             flash('Username already exists')
             return redirect(url_for('register'))
         
-        user_id = len(users) + 1
-        users[user_id] = User(user_id, username, email, generate_password_hash(password))
+        user = User(username=username, email=email)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
         
         flash('Registration successful! Please log in.')
         return redirect(url_for('login'))
@@ -63,9 +67,9 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         
-        user = next((u for u in users.values() if u.username == username), None)
+        user = User.query.filter_by(username=username).first()
         
-        if user and check_password_hash(user.password_hash, password):
+        if user and user.check_password(password):
             login_user(user)
             return redirect(url_for('play'))
         
@@ -101,7 +105,6 @@ def page_not_found(e):
 def internal_server_error(e):
     return render_template('error.html', error_code=500, error_message="Internal server error"), 500
 
-# Create error template
 @app.route('/error')
 def error():
     return render_template('error.html', 
@@ -109,13 +112,4 @@ def error():
                          error_message=request.args.get('message', 'Page not found'))
 
 if __name__ == '__main__':
-    # Create a test admin user
-    admin_id = len(users) + 1
-    users[admin_id] = User(
-        admin_id,
-        'admin',
-        'admin@terminusa.online',
-        generate_password_hash('admin123')
-    )
-    
     app.run(debug=True)
