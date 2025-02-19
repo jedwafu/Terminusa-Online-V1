@@ -1,108 +1,48 @@
-#!/usr/bin/env python3
 import os
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from dotenv import load_dotenv
-import psycopg2
-from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
-import subprocess
-from rich.console import Console
-from rich.panel import Panel
-from app import app
-from database import db, init_db
-import models  # Import models to ensure they're registered
 
-console = Console()
+# Load environment variables
+load_dotenv()
 
-def init_database():
-    """Initialize the database"""
-    load_dotenv()
+# Initialize Flask app
+app = Flask(__name__)
 
-    # Parse DATABASE_URL
-    db_url = os.getenv('DATABASE_URL')
-    if not db_url:
-        console.print("[red]DATABASE_URL not found in environment variables[/red]")
-        return False
+# Configure app
+app.config.update(
+    SECRET_KEY=os.getenv('FLASK_SECRET_KEY'),
+    SQLALCHEMY_DATABASE_URI=os.getenv('DATABASE_URL'),
+    SQLALCHEMY_TRACK_MODIFICATIONS=False
+)
 
-    try:
-        # Parse the DATABASE_URL using urlparse
-        if db_url.startswith('postgresql://'):
-            db_url = db_url[len('postgresql://'):]
+# Initialize SQLAlchemy
+db = SQLAlchemy(app)
 
-        user_pass, host_port_db = db_url.split('@')
-        if ':' in user_pass:
-            user, password = user_pass.split(':')
-        else:
-            user = user_pass
-            password = ''
+# Import models after db initialization
+from models import *
 
-        if '/' in host_port_db:
-            host_port, db_name = host_port_db.split('/')
-        else:
-            host_port = host_port_db
-            db_name = 'terminusa'
+# Initialize Flask-Migrate
+migrate = Migrate(app, db)
 
-        if ':' in host_port:
-            host, port = host_port.split(':')
-            port = int(port)
-        else:
-            host = host_port
-            port = 5432
-
-        # Connect to PostgreSQL server
-        console.print("[yellow]Connecting to PostgreSQL server...[/yellow]")
-        conn = psycopg2.connect(
-            host=host,
-            port=port,
-            user=user,
-            password=password,
-            dbname='postgres'
-        )
-        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-        cur = conn.cursor()
-
-        # Check if database exists
-        cur.execute("SELECT 1 FROM pg_database WHERE datname = %s", (db_name,))
-        exists = cur.fetchone()
-
-        if not exists:
-            # Create fresh database
-            console.print(f"[yellow]Creating database {db_name}...[/yellow]")
-            cur.execute(f"CREATE DATABASE {db_name}")
-            console.print(f"[green]Database {db_name} created successfully[/green]")
-
-        cur.close()
-        conn.close()
-
-        # Initialize Flask app and database
-        with app.app_context():
-            # Initialize database
-            init_db(app)
-            
-            # Create all tables
-            console.print("[yellow]Creating database tables...[/yellow]")
-            db.create_all()
-            
-            # Verify tables were created
-            tables = db.engine.table_names()
-            console.print(f"[green]Available tables: {', '.join(tables)}[/green]")
-
-            # Create extensions
-            db.session.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
-            db.session.execute('CREATE EXTENSION IF NOT EXISTS "pgcrypto"')
+if __name__ == '__main__':
+    with app.app_context():
+        # Create database tables
+        db.create_all()
+        
+        # Create admin user if it doesn't exist
+        admin = User.query.filter_by(username=os.getenv('ADMIN_USERNAME', 'adminbb')).first()
+        if not admin:
+            admin = User(
+                username=os.getenv('ADMIN_USERNAME', 'adminbb'),
+                email=os.getenv('ADMIN_EMAIL', 'admin@terminusa.online'),
+                role='admin',
+                web3_wallet=os.getenv('ADMIN_WALLET', 'FNEdD3PWMLwbNKxtaHy3W2NVfRJ7wqDNx4M9je8Xc6Mw')
+            )
+            admin.set_password(os.getenv('ADMIN_PASSWORD', 'admin123'))
+            db.session.add(admin)
             db.session.commit()
-
-        return True
-
-    except Exception as e:
-        console.print(f"[red]Error initializing database: {str(e)}[/red]")
-        return False
-
-def main():
-    console.print(Panel.fit("Terminusa Online Database Initialization"))
-    
-    if init_database():
-        console.print(Panel.fit("[green]Database initialization completed successfully![/green]"))
-    else:
-        console.print(Panel.fit("[red]Database initialization failed![/red]"))
-
-if __name__ == "__main__":
-    main()
+            print("Admin user created")
+        
+        print("Database initialized")

@@ -16,15 +16,6 @@ check_status() {
     fi
 }
 
-# Function to run Flask command with proper environment
-run_flask_command() {
-    cd /opt/terminusa
-    source venv/bin/activate
-    export FLASK_APP=app_final.py
-    export PYTHONPATH=/opt/terminusa
-    "$@"
-}
-
 echo -e "${YELLOW}Starting Terminusa Online deployment...${NC}"
 
 # Check if running as root
@@ -89,27 +80,27 @@ if ! sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw terminusa; then
 fi
 check_status
 
-# Initialize Flask-Migrate
-echo -e "\n${YELLOW}Initializing Flask-Migrate...${NC}"
+# Initialize database and run migrations
+echo -e "\n${YELLOW}Initializing database...${NC}"
 cd /opt/terminusa
 source venv/bin/activate
-export FLASK_APP=app_final.py
+export FLASK_APP=init_db.py
 export PYTHONPATH=/opt/terminusa
 
-# Remove existing migrations if any
-rm -rf migrations
-
-# Initialize migrations
-flask db init
+# Initialize database
+python init_db.py
 check_status
 
-# Create initial migration
-echo -e "\n${YELLOW}Creating initial migration...${NC}"
-flask db migrate -m "Initial migration"
-check_status
+# Initialize migrations if not exists
+if [ ! -d "migrations" ]; then
+    echo -e "\n${YELLOW}Initializing migrations...${NC}"
+    flask db init
+    check_status
+fi
 
-# Apply migration
-echo -e "\n${YELLOW}Applying database migration...${NC}"
+# Create and apply migrations
+echo -e "\n${YELLOW}Running database migrations...${NC}"
+flask db migrate -m "Initial database setup"
 flask db upgrade
 check_status
 
@@ -161,7 +152,17 @@ check_status
 # Start services
 echo -e "\n${YELLOW}Starting services...${NC}"
 systemctl restart nginx
+
+# Start terminal server
+echo -e "\n${YELLOW}Starting terminal server...${NC}"
 systemctl start terminusa-terminal.service
+check_status
+
+# Start web application
+echo -e "\n${YELLOW}Starting web application...${NC}"
+cd /opt/terminusa
+source venv/bin/activate
+python app_final.py &
 check_status
 
 # Verify deployment
@@ -171,15 +172,24 @@ if systemctl is-active --quiet nginx && systemctl is-active --quiet terminusa-te
     echo -e "\nServices status:"
     echo -e "Nginx: $(systemctl is-active nginx)"
     echo -e "Terminal Server: $(systemctl is-active terminusa-terminal.service)"
-    echo -e "\nWebsites:"
-    echo -e "Main site: https://terminusa.online"
+    echo -e "Web Application: Running"
+    
+    echo -e "\nAccess points:"
+    echo -e "Main website: https://terminusa.online"
     echo -e "Game terminal: https://play.terminusa.online"
-    echo -e "\nLogs:"
+    
+    echo -e "\nLog files:"
     echo -e "Main logs: /var/log/terminusa/app.log"
     echo -e "Terminal logs: /var/log/terminusa/terminal.log"
+    
     echo -e "\nMonitor services with:"
     echo -e "journalctl -u terminusa-terminal.service -f"
     echo -e "tail -f /var/log/terminusa/*.log"
+    
+    echo -e "\nDefault admin credentials:"
+    echo -e "Username: adminbb"
+    echo -e "Password: admin123"
+    echo -e "\n${YELLOW}Please change admin password after first login!${NC}"
 else
     echo -e "${RED}Deployment verification failed. Please check the logs.${NC}"
     exit 1
