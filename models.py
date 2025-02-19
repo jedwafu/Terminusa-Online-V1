@@ -70,6 +70,21 @@ class User(db.Model):
     level = db.Column(db.Integer, default=1)
     exp = db.Column(db.BigInteger, default=0)
     hunter_class = db.Column(db.Enum(HunterClass), default=HunterClass.F)
+    job_class = db.Column(db.Enum(JobClass))  # Added job_class
+    job_level = db.Column(db.Integer, default=1)  # Added job_level
+    solana_balance = db.Column(db.Float, default=0.0)  # Added solana_balance
+    strength = db.Column(db.Integer, default=10)  # Added strength
+    agility = db.Column(db.Integer, default=10)  # Added agility
+    intelligence = db.Column(db.Integer, default=10)  # Added intelligence
+    vitality = db.Column(db.Integer, default=10)  # Added vitality
+    luck = db.Column(db.Integer, default=10)  # Added luck
+    hp = db.Column(db.Integer, default=100)  # Added hp
+    max_hp = db.Column(db.Integer, default=100)  # Added max_hp
+    mp = db.Column(db.Integer, default=100)  # Added mp
+    max_mp = db.Column(db.Integer, default=100)  # Added max_mp
+    level = db.Column(db.Integer, default=1)
+    exp = db.Column(db.BigInteger, default=0)
+    hunter_class = db.Column(db.Enum(HunterClass), default=HunterClass.F)
     job_class = db.Column(db.Enum(JobClass))
     job_level = db.Column(db.Integer, default=1)
     
