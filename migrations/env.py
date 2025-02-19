@@ -69,16 +69,17 @@ def run_migrations_online():
 
     # Configure the migration context with retry logic
     def run_migrations(connection):
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata,
-            process_revision_directives=process_revision_directives,
-            compare_type=True,
-            transaction_per_migration=True,
+        migration_config = {
+            'connection': connection,
+            'target_metadata': target_metadata,
+            'process_revision_directives': process_revision_directives,
+            'transaction_per_migration': True,
+            'compare_type': True,
             **current_app.extensions['migrate'].configure_args
-        )
+        }
 
         try:
+            context.configure(**migration_config)
             with context.begin_transaction():
                 context.run_migrations()
         except Exception as e:
