@@ -1,7 +1,7 @@
 """create announcements table
 
-Revision ID: 005
-Revises: 004
+Revision ID: 005_create_announcements
+Revises: 004_add_missing_tables
 Create Date: 2025-02-17 14:45:00.000000
 
 """
@@ -9,8 +9,8 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision = '005'
-down_revision = '003'
+revision = '005_create_announcements'
+down_revision = '004_add_missing_tables'
 branch_labels = None
 depends_on = None
 
