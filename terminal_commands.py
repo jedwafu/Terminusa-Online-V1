@@ -3,9 +3,9 @@ from datetime import datetime
 import json
 
 from models import (
-    db, User, Gate, Guild, Party, InventoryItem, Item,
-    Mount, Pet, Skill, Quest, GuildQuest, Achievement,
-    HunterClass, JobClass, HealthStatus
+    db, User, Gate, Guild, Party, Item,
+    Skill, Quest, Achievement,
+    HunterClass, HealthStatus
 )
 from game_handler import GameHandler
 from ai_agent import AIAgent
@@ -674,7 +674,7 @@ Guild: {user.guild.name if user.guild else 'None'}
                 db.session.add(shop_license)
                 db.session.flush()
                 
-                inv_item = InventoryItem(
+                inv_item = Item(
                     user_id=user.id,
                     item_id=shop_license.id,
                     quantity=quantity
@@ -710,7 +710,7 @@ Guild: {user.guild.name if user.guild else 'None'}
                 db.session.flush()
                 
             # Add to inventory
-            inv_item = InventoryItem.query.filter_by(
+            inv_item = Item.query.filter_by(
                 user_id=user.id,
                 item_id=potion_item.id
             ).first()
@@ -718,7 +718,7 @@ Guild: {user.guild.name if user.guild else 'None'}
             if inv_item:
                 inv_item.quantity += quantity
             else:
-                inv_item = InventoryItem(
+                inv_item = Item(
                     user_id=user.id,
                     item_id=potion_item.id,
                     quantity=quantity
@@ -755,7 +755,7 @@ Guild: {user.guild.name if user.guild else 'None'}
                 db.session.flush()
                 
             # Add to inventory
-            inv_item = InventoryItem.query.filter_by(
+            inv_item = Item.query.filter_by(
                 user_id=user.id,
                 item_id=antidote_item.id
             ).first()
@@ -763,7 +763,7 @@ Guild: {user.guild.name if user.guild else 'None'}
             if inv_item:
                 inv_item.quantity += quantity
             else:
-                inv_item = InventoryItem(
+                inv_item = Item(
                     user_id=user.id,
                     item_id=antidote_item.id,
                     quantity=quantity
