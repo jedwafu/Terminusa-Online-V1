@@ -9,6 +9,7 @@
     --accent-red: #FF0000;
     --text-color: #E0E0E0;
     --text-shadow: 0 0 10px var(--matrix-green);
+    --neon-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue), 0 0 30px var(--neon-blue);
     --background-gradient: linear-gradient(135deg, var(--matrix-black) 0%, var(--matrix-dark) 100%);
 }
 
@@ -16,6 +17,28 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+}
+
+@keyframes scrambleText {
+    0% { opacity: 0.3; }
+    20% { opacity: 0.5; }
+    35% { opacity: 0.7; }
+    50% { opacity: 0.9; }
+    65% { opacity: 0.7; }
+    80% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+@keyframes neonPulse {
+    0% { box-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-blue); }
+    50% { box-shadow: 0 0 15px var(--neon-blue), 0 0 25px var(--neon-blue), 0 0 35px var(--neon-blue); }
+    100% { box-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-blue); }
+}
+
+@keyframes borderGlow {
+    0% { border-color: var(--neon-blue); box-shadow: 0 0 5px var(--neon-blue); }
+    50% { border-color: var(--matrix-green); box-shadow: 0 0 15px var(--matrix-green); }
+    100% { border-color: var(--neon-blue); box-shadow: 0 0 5px var(--neon-blue); }
 }
 
 body {
@@ -51,10 +74,11 @@ body {
 .main-header {
     background-color: rgba(0, 24, 0, 0.95);
     padding: 1rem 0;
-    border-bottom: 1px solid var(--matrix-green);
-    box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+    border-bottom: 1px solid var(--neon-blue);
+    box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
     position: relative;
     z-index: 10;
+    animation: borderGlow 3s infinite;
 }
 
 .main-nav {
@@ -77,7 +101,7 @@ body {
     align-items: center;
     gap: 1rem;
     text-decoration: none;
-    color: var(--matrix-green);
+    color: var(--neon-blue);
     font-size: 1.5rem;
     font-weight: bold;
     text-transform: uppercase;
@@ -92,16 +116,17 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid var(--matrix-green);
+    border: 2px solid var(--neon-blue);
     border-radius: 4px;
     overflow: hidden;
+    animation: neonPulse 2s infinite;
 }
 
 .logo-text {
     position: relative;
     z-index: 2;
-    color: var(--matrix-green);
-    text-shadow: var(--text-shadow);
+    color: var(--neon-blue);
+    text-shadow: var(--neon-shadow);
 }
 
 .logo-glow {
@@ -111,7 +136,7 @@ body {
     transform: translate(-50%, -50%);
     width: 100%;
     height: 100%;
-    background: var(--matrix-green);
+    background: var(--neon-blue);
     filter: blur(10px);
     opacity: 0.3;
     z-index: 1;
@@ -121,7 +146,12 @@ body {
     font-size: 1.8rem;
     font-weight: 700;
     letter-spacing: 3px;
-    text-shadow: var(--text-shadow);
+    text-shadow: var(--neon-shadow);
+    transition: all 0.3s ease;
+}
+
+.brand-text:hover {
+    animation: scrambleText 0.5s ease-in-out;
 }
 
 .nav-links {
@@ -148,13 +178,15 @@ body {
     height: 2px;
     bottom: 0;
     left: 50%;
-    background-color: var(--matrix-green);
+    background-color: var(--neon-blue);
     transition: all 0.3s ease;
     transform: translateX(-50%);
+    box-shadow: var(--neon-shadow);
 }
 
 .nav-link:hover {
-    color: var(--matrix-green);
+    color: var(--neon-blue);
+    text-shadow: var(--neon-shadow);
 }
 
 .nav-link:hover::after {
@@ -163,9 +195,9 @@ body {
 
 .nav-button {
     background-color: transparent;
-    color: var(--matrix-green);
+    color: var(--neon-blue);
     padding: 0.75rem 1.5rem;
-    border: 1px solid var(--matrix-green);
+    border: 1px solid var(--neon-blue);
     border-radius: 4px;
     text-decoration: none;
     transition: all 0.3s ease;
@@ -174,16 +206,19 @@ body {
     letter-spacing: 1px;
     position: relative;
     overflow: hidden;
+    text-shadow: var(--neon-shadow);
+    animation: neonPulse 2s infinite;
 }
 
 .nav-button.glow {
-    box-shadow: 0 0 10px var(--matrix-green);
+    box-shadow: var(--neon-shadow);
 }
 
 .nav-button:hover {
-    background-color: var(--matrix-green);
+    background-color: var(--neon-blue);
     color: var(--matrix-black);
-    box-shadow: 0 0 20px var(--matrix-green);
+    box-shadow: var(--neon-shadow);
+    transform: scale(1.05);
 }
 
 /* Main Content */
@@ -194,15 +229,27 @@ main {
     z-index: 1;
 }
 
+/* Welcome Text Animation */
+.welcome-text {
+    transition: all 0.3s ease;
+}
+
+.welcome-text:hover {
+    animation: scrambleText 0.5s ease-in-out;
+    color: var(--neon-blue);
+    text-shadow: var(--neon-shadow);
+}
+
 /* Footer Styles */
 .main-footer {
     background-color: rgba(0, 24, 0, 0.95);
     color: var(--text-color);
     padding: 3rem 0 0;
     margin-top: auto;
-    border-top: 1px solid var(--matrix-green);
+    border-top: 1px solid var(--neon-blue);
     position: relative;
     z-index: 10;
+    animation: borderGlow 3s infinite;
 }
 
 .footer-content {
@@ -215,12 +262,12 @@ main {
 }
 
 .footer-section h3 {
-    color: var(--matrix-green);
+    color: var(--neon-blue);
     margin-bottom: 1rem;
     font-size: 1.2rem;
     text-transform: uppercase;
     letter-spacing: 1px;
-    text-shadow: var(--text-shadow);
+    text-shadow: var(--neon-shadow);
 }
 
 .footer-section ul {
@@ -246,12 +293,14 @@ main {
     height: 1px;
     bottom: 0;
     left: 0;
-    background-color: var(--matrix-green);
+    background-color: var(--neon-blue);
     transition: width 0.3s ease;
+    box-shadow: var(--neon-shadow);
 }
 
 .footer-section a:hover {
-    color: var(--matrix-green);
+    color: var(--neon-blue);
+    text-shadow: var(--neon-shadow);
 }
 
 .footer-section a:hover::after {
@@ -262,7 +311,7 @@ main {
     text-align: center;
     padding: 1.5rem 0;
     margin-top: 2rem;
-    border-top: 1px solid rgba(0, 255, 65, 0.1);
+    border-top: 1px solid rgba(0, 243, 255, 0.1);
     position: relative;
 }
 
@@ -279,7 +328,7 @@ main {
         flex-direction: column;
         align-items: stretch;
         gap: 1rem;
-        border-bottom: 1px solid var(--matrix-green);
+        border-bottom: 1px solid var(--neon-blue);
     }
 
     .nav-links.active {
@@ -315,18 +364,20 @@ main {
     top: 50%;
     left: 50%;
     margin: -8px 0 0 -8px;
-    border: 2px solid var(--matrix-green);
+    border: 2px solid var(--neon-blue);
     border-right-color: transparent;
     border-radius: 50%;
     animation: loading 0.75s linear infinite;
+    box-shadow: var(--neon-shadow);
 }
 
 /* Matrix Alert Style */
 .alert-matrix {
     background-color: rgba(0, 24, 0, 0.9);
-    border-color: var(--matrix-green);
-    color: var(--matrix-green);
-    text-shadow: var(--text-shadow);
+    border-color: var(--neon-blue);
+    color: var(--neon-blue);
+    text-shadow: var(--neon-shadow);
+    animation: neonPulse 2s infinite;
 }
 
 /* Utility Classes */
