@@ -69,19 +69,44 @@ info_log() {
     echo "[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> logs/deploy.log
 }
 
-# Get service resource usage
-get_service_resources() {
-    local service=$1
-    local pid=${SERVICE_PIDS[$service]}
-    
-    if [ ! -z "$pid" ] && ps -p $pid >/dev/null 2>&1; then
-        local cpu=$(ps -p $pid -o %cpu | tail -n 1)
-        local mem=$(ps -p $pid -o %mem | tail -n 1)
-        local vsz=$(ps -p $pid -o vsz | tail -n 1)
-        echo "$cpu $mem $vsz"
-    else
-        echo "0 0 0"
+# Check Python version
+check_python() {
+    info_log "Checking Python version..."
+    if ! command -v python3 &> /dev/null; then
+        error_log "Python 3 is not installed!"
+        return 1
     fi
+    
+    python3_version=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
+    if (( $(echo "$python3_version < 3.10" | bc -l) )); then
+        error_log "Python 3.10 or later is required!"
+        return 1
+    fi
+    
+    success_log "Python $python3_version found"
+    return 0
+}
+
+# Check PostgreSQL installation
+check_postgresql() {
+    info_log "Checking PostgreSQL installation..."
+    if ! command -v psql &> /dev/null; then
+        error_log "PostgreSQL is not installed!"
+        echo -e "${YELLOW}Please install PostgreSQL:${NC}"
+        echo "1. sudo apt update"
+        echo "2. sudo apt install postgresql postgresql-contrib"
+        echo "3. sudo systemctl enable postgresql"
+        echo "4. sudo systemctl start postgresql"
+        return 1
+    fi
+    
+    if ! systemctl is-active --quiet postgresql; then
+        error_log "PostgreSQL is not running!"
+        return 1
+    fi
+    
+    success_log "PostgreSQL is installed and running"
+    return 0
 }
 
 # Check if screen is installed
@@ -111,9 +136,51 @@ kill_screen() {
     screen -X -S $name quit >/dev/null 2>&1
 }
 
-# Initialize deployment
+# Save service status to JSON
+save_status() {
+    local status_file="logs/service_status.json"
+    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    local cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}')
+    local mem_usage=$(free -m | awk 'NR==2{printf "%.2f", $3*100/$2}')
+    local disk_usage=$(df -h / | awk 'NR==2{print $5}')
+    
+    cat > "$status_file" << EOF
+{
+    "timestamp": "$timestamp",
+    "system": {
+        "cpu_usage": "$cpu_usage%",
+        "memory_usage": "$mem_usage%",
+        "disk_usage": "$disk_usage"
+    },
+    "services": {
+EOF
+    
+    # Add service status
+    local first=true
+    for service in "${!SERVICE_STATUS[@]}"; do
+        if [ "$first" = true ]; then
+            first=false
+        else
+            echo "," >> "$status_file"
+        fi
+        echo "        \"$service\": \"${SERVICE_STATUS[$service]}\"" >> "$status_file"
+    done
+    
+    cat >> "$status_file" << EOF
+    }
+}
+EOF
+}
+
+# Initialize deployment with enhanced checks
 initialize_deployment() {
     info_log "Initializing deployment..."
+    
+    # Check Python version
+    check_python || return 1
+    
+    # Check PostgreSQL
+    check_postgresql || return 1
     
     # Create required directories
     mkdir -p logs
@@ -123,6 +190,14 @@ initialize_deployment() {
     # Set proper permissions
     chmod -R 755 static
     chmod +x *.py
+    
+    # Check .env file
+    if [ ! -f ".env" ]; then
+        info_log "Creating .env file from example..."
+        cp .env.example .env
+        echo -e "${YELLOW}Please update .env file with your configuration${NC}"
+        read -p "Press Enter after updating .env file..."
+    fi
     
     # Install screen if not present
     check_screen
@@ -184,13 +259,11 @@ stop_services() {
     success_log "All services stopped"
 }
 
-# Monitor services
-monitor_services() {
-    clear
-    echo -e "${CYAN}=== Terminusa Online Service Monitor ===${NC}"
-    echo -e "Press Ctrl+C to exit monitoring\n"
+# Enhanced monitoring with automatic restart
+enhanced_monitor_services() {
+    info_log "Starting enhanced service monitoring..."
     
-    while true; do
+    while [ "$MONITOR_RUNNING" = true ]; do
         clear
         echo -e "${CYAN}=== Terminusa Online Service Monitor ===${NC}"
         echo -e "Time: $(date '+%Y-%m-%d %H:%M:%S')\n"
@@ -207,47 +280,48 @@ monitor_services() {
         screen -list | grep -v "There are screens" || echo "No active screens"
         echo
         
-        # Service Status
+        # Service Status with Auto-Restart
         echo -e "${YELLOW}Service Status:${NC}"
-        printf "%-15s %-10s %-20s\n" "Service" "Status" "Port"
-        echo "----------------------------------------"
+        printf "%-15s %-10s %-20s %-20s\n" "Service" "Status" "Port" "Auto-Restart"
+        echo "--------------------------------------------------------"
         
-        # Check PostgreSQL
-        if systemctl is-active --quiet postgresql; then
-            printf "%-15s ${GREEN}%-10s${NC} %-20s\n" "PostgreSQL" "Running" "${SERVICE_PORTS["postgresql"]}"
-        else
-            printf "%-15s ${RED}%-10s${NC} %-20s\n" "PostgreSQL" "Stopped" "-"
-        fi
+        for service in "${!SERVICE_PORTS[@]}"; do
+            local status="stopped"
+            local auto_restart="enabled"
+            
+            case $service in
+                "postgresql"|"nginx"|"redis")
+                    if systemctl is-active --quiet $service; then
+                        status="running"
+                    else
+                        systemctl start $service
+                    fi
+                    ;;
+                "flask"|"terminal")
+                    if check_screen_session ${SERVICE_SCREENS[$service]}; then
+                        status="running"
+                    else
+                        start_screen ${SERVICE_SCREENS[$service]} \
+                            "source venv/bin/activate && python ${service}_server.py"
+                    fi
+                    ;;
+            esac
+            
+            SERVICE_STATUS[$service]=$status
+            
+            if [ "$status" = "running" ]; then
+                printf "%-15s ${GREEN}%-10s${NC} %-20s %-20s\n" \
+                    "$service" "$status" "${SERVICE_PORTS[$service]}" "$auto_restart"
+            else
+                printf "%-15s ${RED}%-10s${NC} %-20s %-20s\n" \
+                    "$service" "$status" "${SERVICE_PORTS[$service]}" "$auto_restart"
+            fi
+        done
         
-        # Check Redis
-        if systemctl is-active --quiet redis-server; then
-            printf "%-15s ${GREEN}%-10s${NC} %-20s\n" "Redis" "Running" "${SERVICE_PORTS["redis"]}"
-        else
-            printf "%-15s ${RED}%-10s${NC} %-20s\n" "Redis" "Stopped" "-"
-        fi
+        # Save status to JSON
+        save_status
         
-        # Check Nginx
-        if systemctl is-active --quiet nginx; then
-            printf "%-15s ${GREEN}%-10s${NC} %-20s\n" "Nginx" "Running" "${SERVICE_PORTS["nginx"]}"
-        else
-            printf "%-15s ${RED}%-10s${NC} %-20s\n" "Nginx" "Stopped" "-"
-        fi
-        
-        # Check Flask app
-        if check_screen_session ${SERVICE_SCREENS["flask"]}; then
-            printf "%-15s ${GREEN}%-10s${NC} %-20s\n" "Flask App" "Running" "${SERVICE_PORTS["flask"]}"
-        else
-            printf "%-15s ${RED}%-10s${NC} %-20s\n" "Flask App" "Stopped" "-"
-        fi
-        
-        # Check Terminal server
-        if check_screen_session ${SERVICE_SCREENS["terminal"]}; then
-            printf "%-15s ${GREEN}%-10s${NC} %-20s\n" "Terminal" "Running" "${SERVICE_PORTS["terminal"]}"
-        else
-            printf "%-15s ${RED}%-10s${NC} %-20s\n" "Terminal" "Stopped" "-"
-        fi
-        
-        sleep 5
+        sleep $MONITOR_INTERVAL
     done
 }
 
@@ -261,11 +335,12 @@ show_menu() {
         echo "2) Start All Services"
         echo "3) Stop All Services"
         echo "4) Restart All Services"
-        echo "5) Monitor Services"
+        echo "5) Enhanced Monitoring (with auto-restart)"
         echo "6) View Logs"
         echo "7) Database Operations"
         echo "8) Nginx Operations"
-        echo "9) Debug Mode"
+        echo "9) System Status"
+        echo "10) Debug Mode"
         echo "0) Exit"
         echo
         read -p "Select an option: " choice
@@ -286,7 +361,7 @@ show_menu() {
                 start_services
                 ;;
             5)
-                monitor_services
+                enhanced_monitor_services
                 ;;
             6)
                 echo -e "\n${YELLOW}Available Logs:${NC}"
@@ -296,6 +371,7 @@ show_menu() {
                 echo "4) Nginx Access Log"
                 echo "5) PostgreSQL Log"
                 echo "6) Redis Log"
+                echo "7) Service Status Log"
                 echo "0) Back to main menu"
                 read -p "Select log to view: " log_choice
                 case $log_choice in
@@ -305,6 +381,7 @@ show_menu() {
                     4) tail -f /var/log/nginx/access.log ;;
                     5) tail -f /var/log/postgresql/postgresql-main.log ;;
                     6) tail -f /var/log/redis/redis-server.log ;;
+                    7) cat logs/service_status.json | python3 -m json.tool ;;
                     0) continue ;;
                     *) error_log "Invalid option" ;;
                 esac
@@ -314,6 +391,7 @@ show_menu() {
                 echo "1) Backup Database"
                 echo "2) Restore Database"
                 echo "3) Run Migrations"
+                echo "4) Initialize Database"
                 echo "0) Back to main menu"
                 read -p "Select operation: " db_choice
                 case $db_choice in
@@ -335,6 +413,10 @@ show_menu() {
                         flask db upgrade
                         success_log "Database migrations completed"
                         ;;
+                    4)
+                        python init_database.py
+                        success_log "Database initialized"
+                        ;;
                     0) continue ;;
                     *) error_log "Invalid option" ;;
                 esac
@@ -355,6 +437,9 @@ show_menu() {
                 esac
                 ;;
             9)
+                cat logs/service_status.json | python3 -m json.tool
+                ;;
+            10)
                 if [ "$DEBUG" = true ]; then
                     DEBUG=false
                     info_log "Debug mode disabled"
@@ -376,6 +461,9 @@ show_menu() {
         read -p "Press Enter to continue..."
     done
 }
+
+# Trap signals for graceful shutdown
+trap 'MONITOR_RUNNING=false; stop_services; exit 0' SIGINT SIGTERM
 
 # Main execution
 mkdir -p logs
