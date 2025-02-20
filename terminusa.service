@@ -1,0 +1,33 @@
+[Unit]
+Description=Terminusa Online Game Service
+After=network.target postgresql.service redis-server.service nginx.service
+Requires=postgresql.service redis-server.service nginx.service
+
+[Service]
+Type=simple
+User=terminusa
+Group=terminusa
+WorkingDirectory=/opt/terminusa
+Environment=FLASK_APP=app.py
+Environment=FLASK_ENV=production
+EnvironmentFile=/opt/terminusa/.env
+
+# Start the terminal server
+ExecStartPre=/bin/bash -c 'systemctl start terminusa-terminal.service'
+
+# Start the main application
+ExecStart=/opt/terminusa/venv/bin/python app_final.py
+
+# Stop all services
+ExecStop=/bin/bash -c 'systemctl stop terminusa-terminal.service'
+
+# Restart on failure
+Restart=always
+RestartSec=5
+
+# Basic security measures
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
