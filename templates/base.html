@@ -4,138 +4,131 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Terminusa Online{% endblock %}</title>
+    <!-- Core CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/matrix-effects.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/rank-effects.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/system-patterns.css') }}">
-    {% if extra_css %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/' + extra_css) }}">
-    {% endif %}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
-    {% block extra_head %}{% endblock %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/buttons.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/alerts.css') }}">
+    {% block extra_css %}{% endblock %}
 </head>
-<body class="scan-line">
-    <!-- System Boot Animation -->
-    <div class="system-boot">
-        <div class="loading-bar"></div>
-    </div>
+<body>
+    <!-- Alert container -->
+    <div class="alert-group" id="alertContainer"></div>
 
-    <!-- Background Patterns -->
-    <div class="system-pattern"></div>
-    <div class="hex-grid"></div>
-    <div class="matrix-rain"></div>
-    <div class="particle-container"></div>
-    <div class="edge-glow"></div>
-
-    <!-- Corner Decorations -->
-    <div class="corner-decoration corner-top-left"></div>
-    <div class="corner-decoration corner-top-right"></div>
-    <div class="corner-decoration corner-bottom-left"></div>
-    <div class="corner-decoration corner-bottom-right"></div>
-
-    <!-- System Lines -->
-    <div class="system-lines">
-        <div class="system-line"></div>
-        <div class="system-line"></div>
-        <div class="system-line"></div>
-        <div class="system-line"></div>
-    </div>
-
-    <!-- System Status Indicators -->
-    <div class="system-status-corner status-top-left">System: Online</div>
-    <div class="system-status-corner status-top-right">Security: Active</div>
-    <div class="system-status-corner status-bottom-left">Network: Connected</div>
-    <div class="system-status-corner status-bottom-right">Version: 1.0.0</div>
-    
-    <header class="main-header system-access">
+    <!-- Header -->
+    <header class="main-header">
         <nav class="main-nav">
             <div class="nav-brand">
-                <a href="/" class="portal-frame">
-                    <span class="logo energy-surge">T</span>
-                    <span class="neon-text glitch" data-text="Terminusa Online">Terminusa Online</span>
+                <a href="/">
+                    <div class="logo">T</div>
+                    <span>Terminusa</span>
                 </a>
             </div>
             <div class="nav-links">
-                <a href="/" class="nav-link digital-distortion">Home</a>
-                <a href="/features" class="nav-link digital-distortion">Features</a>
-                {% if is_authenticated %}
-                <a href="/marketplace" class="nav-link digital-distortion">Marketplace</a>
-                <a href="/leaderboard" class="nav-link digital-distortion">Leaderboard</a>
-                <a href="/play" class="nav-button energy-surge portal-frame">Enter System</a>
-                <a href="/logout" class="nav-link digital-distortion">Logout</a>
+                {% if current_user %}
+                    <a href="/play" class="nav-link">Play</a>
+                    <a href="/marketplace" class="nav-link">Marketplace</a>
+                    <a href="/profile" class="nav-link">Profile</a>
+                    <a href="/logout" class="nav-button">Logout</a>
                 {% else %}
-                <a href="/login" class="nav-link digital-distortion">Login</a>
-                <a href="/register" class="nav-button energy-surge portal-frame">Initialize</a>
+                    <a href="/login" class="nav-button">Login</a>
+                    <a href="/register" class="nav-button">Register</a>
                 {% endif %}
             </div>
         </nav>
     </header>
 
+    <!-- Main Content -->
     <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                        <span class="close" onclick="this.parentElement.remove()">&times;</span>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
         {% block content %}{% endblock %}
     </main>
 
+    <!-- Footer -->
     <footer class="main-footer">
         <div class="footer-content">
             <div class="footer-section">
-                <h3 class="neon-text">About Terminusa</h3>
-                <p class="digital-distortion">A Solo-leveling inspired MMORPG with CLI and web interfaces. Join the digital hunt today!</p>
-            </div>
-            <div class="footer-section">
-                <h3 class="neon-text">System Links</h3>
+                <h3>About</h3>
                 <ul>
-                    <li><a href="/about" class="digital-distortion">About</a></li>
-                    <li><a href="/support" class="digital-distortion">Support</a></li>
-                    <li><a href="/terms" class="digital-distortion">Terms of Service</a></li>
-                    <li><a href="/privacy" class="digital-distortion">Privacy Policy</a></li>
+                    <li><a href="/about">About Us</a></li>
+                    <li><a href="/features">Features</a></li>
+                    <li><a href="/roadmap">Roadmap</a></li>
                 </ul>
             </div>
             <div class="footer-section">
-                <h3 class="neon-text">Connect</h3>
-                <div class="social-links">
-                    <a href="#" class="social-link energy-surge portal-frame"><i class="fab fa-discord"></i></a>
-                    <a href="#" class="social-link energy-surge portal-frame"><i class="fab fa-github"></i></a>
-                    <a href="#" class="social-link energy-surge portal-frame"><i class="fab fa-twitter"></i></a>
-                </div>
+                <h3>Community</h3>
+                <ul>
+                    <li><a href="/discord">Discord</a></li>
+                    <li><a href="/twitter">Twitter</a></li>
+                    <li><a href="/blog">Blog</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Support</h3>
+                <ul>
+                    <li><a href="/faq">FAQ</a></li>
+                    <li><a href="/contact">Contact</a></li>
+                    <li><a href="/docs">Documentation</a></li>
+                </ul>
             </div>
         </div>
         <div class="footer-bottom">
-            <div class="loading-bar"></div>
-            <p class="digital-distortion">&copy; 2024 Terminusa Online. All rights reserved.</p>
+            <p>&copy; 2024 Terminusa Online. All rights reserved.</p>
         </div>
     </footer>
 
-    <script src="{{ url_for('static', filename='js/matrix-effects.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/particle-effects.js') }}"></script>
+    <!-- Core JavaScript -->
     <script>
-    // Add rank-up animation when elements with rank badges appear in view
+    // Alert management
+    function showAlert(message, type = 'info', duration = 5000) {
+        const alertContainer = document.getElementById('alertContainer');
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type} alert-fixed`;
+        alert.innerHTML = `
+            ${message}
+            <span class="close" onclick="this.parentElement.remove()">&times;</span>
+        `;
+        alertContainer.appendChild(alert);
+
+        if (duration > 0) {
+            setTimeout(() => {
+                alert.style.animation = 'slideOut 0.3s ease forwards';
+                setTimeout(() => alert.remove(), 300);
+            }, duration);
+        }
+    }
+
+    // Button loading state management
     document.addEventListener('DOMContentLoaded', function() {
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const rankBadge = entry.target.querySelector('.rank-badge');
-                    if (rankBadge) {
-                        rankBadge.classList.add('rank-up');
-                        setTimeout(() => {
-                            rankBadge.classList.remove('rank-up');
-                        }, 1000);
-                    }
-                }
+        const buttons = document.querySelectorAll('.btn, .nav-button');
+        buttons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                if (this.target === '_blank' || this.closest('form')) return;
+                this.classList.add('loading');
             });
         });
 
-        document.querySelectorAll('.feature-card').forEach(card => {
-            observer.observe(card);
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const submitButton = this.querySelector('button[type="submit"]');
+                if (submitButton) {
+                    submitButton.classList.add('loading');
+                }
+            });
         });
-
-        // Remove system boot animation after delay
-        setTimeout(() => {
-            document.querySelector('.system-boot').style.display = 'none';
-        }, 2000);
     });
     </script>
-    {% block scripts %}{% endblock %}
+
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

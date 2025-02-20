@@ -1,0 +1,163 @@
+/* Button Base Styles */
+.btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: 1px solid;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    position: relative;
+    z-index: 1;
+}
+
+/* Primary Button */
+.btn-primary {
+    background-color: transparent;
+    color: var(--matrix-green);
+    border-color: var(--matrix-green);
+}
+
+.btn-primary:hover {
+    color: var(--matrix-black);
+    background-color: var(--matrix-green);
+}
+
+/* Secondary Button */
+.btn-secondary {
+    background-color: transparent;
+    color: var(--neon-blue);
+    border-color: var(--neon-blue);
+}
+
+.btn-secondary:hover {
+    color: var(--matrix-black);
+    background-color: var(--neon-blue);
+}
+
+/* Navigation Button */
+.nav-button {
+    background-color: transparent;
+    color: var(--matrix-green);
+    padding: 0.75rem 1.5rem;
+    border: 1px solid var(--matrix-green);
+    border-radius: 4px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 1px;
+    position: relative;
+    z-index: 1;
+}
+
+.nav-button:hover {
+    color: var(--matrix-black);
+    background-color: var(--matrix-green);
+}
+
+/* Block Button */
+.btn-block {
+    display: block;
+    width: 100%;
+    text-align: center;
+}
+
+/* Disabled Button */
+.btn:disabled,
+.btn.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Loading Button */
+.btn.loading {
+    position: relative;
+    color: transparent;
+}
+
+.btn.loading::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 16px;
+    height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: button-loading 0.75s linear infinite;
+}
+
+@keyframes button-loading {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Small Button */
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+/* Large Button */
+.btn-lg {
+    padding: 1rem 2rem;
+    font-size: 1.125rem;
+}
+
+/* Success Button */
+.btn-success {
+    background-color: transparent;
+    color: #00e676;
+    border-color: #00e676;
+}
+
+.btn-success:hover {
+    color: var(--matrix-black);
+    background-color: #00e676;
+}
+
+/* Danger Button */
+.btn-danger {
+    background-color: transparent;
+    color: #ff1744;
+    border-color: #ff1744;
+}
+
+.btn-danger:hover {
+    color: var(--matrix-black);
+    background-color: #ff1744;
+}
+
+/* Warning Button */
+.btn-warning {
+    background-color: transparent;
+    color: #ffd600;
+    border-color: #ffd600;
+}
+
+.btn-warning:hover {
+    color: var(--matrix-black);
+    background-color: #ffd600;
+}
+
+/* Info Button */
+.btn-info {
+    background-color: transparent;
+    color: #00b0ff;
+    border-color: #00b0ff;
+}
+
+.btn-info:hover {
+    color: var(--matrix-black);
+    background-color: #00b0ff;
+}
