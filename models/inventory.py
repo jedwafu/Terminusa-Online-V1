@@ -1,195 +1,249 @@
-from app import db
+from database import db
 from datetime import datetime
-from enum import Enum
+from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Enum, JSON
+import enum
 
-class ItemType(Enum):
-    WEAPON = "weapon"
-    ARMOR = "armor"
-    ACCESSORY = "accessory"
-    CONSUMABLE = "consumable"
-    MATERIAL = "material"
-    QUEST = "quest"
-    LICENSE = "license"
-    MOUNT = "mount"
-    PET = "pet"
+class ItemType(enum.Enum):
+    WEAPON = "Weapon"
+    ARMOR = "Armor"
+    ACCESSORY = "Accessory"
+    CONSUMABLE = "Consumable"
+    MATERIAL = "Material"
+    LICENSE = "License"
+    SPECIAL = "Special"
 
-class ItemGrade(Enum):
-    BASIC = "basic"
-    INTERMEDIATE = "intermediate"
-    EXCELLENT = "excellent"
-    LEGENDARY = "legendary"
-    IMMORTAL = "immortal"
+class ItemRarity(enum.Enum):
+    BASIC = "Basic"
+    INTERMEDIATE = "Intermediate"
+    EXCELLENT = "Excellent"
+    LEGENDARY = "Legendary"
+    IMMORTAL = "Immortal"
 
-class ItemSlot(Enum):
-    WEAPON = "weapon"
-    HEAD = "head"
-    CHEST = "chest"
-    LEGS = "legs"
-    FEET = "feet"
-    HANDS = "hands"
-    NECK = "neck"
-    RING = "ring"
-    MOUNT = "mount"
-    PET = "pet"
+class EquipmentType(enum.Enum):
+    # Weapons
+    SWORD = "Sword"
+    STAFF = "Staff"
+    DAGGER = "Dagger"
+    BOW = "Bow"
+    WAND = "Wand"
+    
+    # Armor
+    HELMET = "Helmet"
+    CHEST = "Chest"
+    GLOVES = "Gloves"
+    BOOTS = "Boots"
+    SHIELD = "Shield"
+    
+    # Accessories
+    RING = "Ring"
+    NECKLACE = "Necklace"
+    EARRING = "Earring"
+    BELT = "Belt"
+
+class EquipmentSlot(enum.Enum):
+    MAIN_HAND = "Main Hand"
+    OFF_HAND = "Off Hand"
+    HEAD = "Head"
+    CHEST = "Chest"
+    HANDS = "Hands"
+    FEET = "Feet"
+    RING_1 = "Ring 1"
+    RING_2 = "Ring 2"
+    NECKLACE = "Necklace"
+    EARRING_1 = "Earring 1"
+    EARRING_2 = "Earring 2"
+    BELT = "Belt"
 
 class Item(db.Model):
-    """Item definition model"""
     __tablename__ = 'items'
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    item_type = db.Column(db.Enum(ItemType), nullable=False)
-    grade = db.Column(db.Enum(ItemGrade), nullable=False)
-    slot = db.Column(db.Enum(ItemSlot), nullable=True)
-    level_requirement = db.Column(db.Integer, default=1)
-    job_requirement = db.Column(db.String(50), nullable=True)
-    
-    # Item Properties
-    durability_max = db.Column(db.Integer, nullable=True)
-    is_tradeable = db.Column(db.Boolean, default=True)
-    is_stackable = db.Column(db.Boolean, default=False)
-    max_stack = db.Column(db.Integer, default=1)
-    
-    # Shop Properties
-    crystal_price = db.Column(db.Integer, nullable=True)
-    exon_price = db.Column(db.Integer, nullable=True)
-    can_sell = db.Column(db.Boolean, default=True)
-    sell_price = db.Column(db.Integer, nullable=True)
-    
-    # Stats (for equipment)
-    stats = db.Column(db.JSON, nullable=True)  # {"strength": 10, "agility": 5, etc.}
-    
-    # Effects (for consumables)
-    effects = db.Column(db.JSON, nullable=True)  # {"heal": 100, "duration": 30, etc.}
-    
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    description = Column(String(500))
+    type = Column(Enum(ItemType), nullable=False)
+    rarity = Column(Enum(ItemRarity), nullable=False)
+    level_requirement = Column(Integer, default=1)
+    is_tradeable = Column(Boolean, default=True)
+    is_stackable = Column(Boolean, default=False)
+    max_stack = Column(Integer, default=1)
+    buy_price_exons = Column(Float)
+    buy_price_crystals = Column(Float)
+    sell_price_exons = Column(Float)
+    sell_price_crystals = Column(Float)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Equipment specific fields
+    equipment_type = Column(Enum(EquipmentType))
+    equipment_slot = Column(Enum(EquipmentSlot))
+    durability = Column(Float)  # Current durability
+    max_durability = Column(Float, default=100.0)  # Maximum durability
+    stats = Column(JSON)  # Equipment stats as JSON
+
+    # Relationships
+    inventories = relationship('Inventory', back_populates='item')
+    equipment = relationship('Equipment', back_populates='item')
 
     def __repr__(self):
-        return f"<Item {self.name}>"
+        return f'<Item {self.name} ({self.type.value})>'
+
+    def calculate_durability_loss(self, damage_taken, mana_used, time_spent):
+        """Calculate durability loss based on combat factors"""
+        durability_loss = (
+            (damage_taken * 0.01) +  # 1% per damage taken
+            (mana_used * 0.005) +    # 0.5% per mana used
+            (time_spent * 0.1)       # 0.1% per second
+        )
+        return min(durability_loss, self.durability)
+
+    def repair_cost_crystals(self):
+        """Calculate repair cost in crystals"""
+        if self.durability >= self.max_durability:
+            return 0
+        
+        missing_durability = self.max_durability - self.durability
+        base_cost = missing_durability * (
+            10 if self.rarity == ItemRarity.BASIC else
+            20 if self.rarity == ItemRarity.INTERMEDIATE else
+            40 if self.rarity == ItemRarity.EXCELLENT else
+            80 if self.rarity == ItemRarity.LEGENDARY else
+            160  # IMMORTAL
+        )
+        return base_cost
 
 class Inventory(db.Model):
-    """Player inventory model"""
     __tablename__ = 'inventories'
 
-    id = db.Column(db.Integer, primary_key=True)
-    character_id = db.Column(db.Integer, db.ForeignKey('player_characters.id'), nullable=False)
-    max_slots = db.Column(db.Integer, default=20)
-    crystal_balance = db.Column(db.Integer, default=0)  # For dropped currency
-    exon_balance = db.Column(db.Integer, default=0)  # For dropped currency
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    item_id = Column(Integer, ForeignKey('items.id'), nullable=False)
+    quantity = Column(Integer, default=1)
+    slot = Column(Integer)  # Inventory slot number
+    is_locked = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    items = db.relationship('InventoryItem', backref='inventory', lazy='dynamic')
-    equipped_items = db.relationship('EquippedItem', backref='inventory', lazy='dynamic')
+    user = relationship('User', back_populates='inventory')
+    item = relationship('Item', back_populates='inventories')
 
     def __repr__(self):
-        return f"<Inventory {self.id}>"
+        return f'<Inventory {self.user.username} - {self.item.name} x{self.quantity}>'
 
-class InventoryItem(db.Model):
-    """Item instance in inventory"""
-    __tablename__ = 'inventory_items'
+class Equipment(db.Model):
+    __tablename__ = 'equipment'
 
-    id = db.Column(db.Integer, primary_key=True)
-    inventory_id = db.Column(db.Integer, db.ForeignKey('inventories.id'), nullable=False)
-    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
-    quantity = db.Column(db.Integer, default=1)
-    slot_number = db.Column(db.Integer, nullable=False)
-    durability = db.Column(db.Integer, nullable=True)
-    is_bound = db.Column(db.Boolean, default=False)
-    bound_at = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    item_id = Column(Integer, ForeignKey('items.id'), nullable=False)
+    slot = Column(Enum(EquipmentSlot), nullable=False)
+    is_broken = Column(Boolean, default=False)
+    equipped_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    item = db.relationship('Item')
+    user = relationship('User', back_populates='equipment')
+    item = relationship('Item', back_populates='equipment')
 
     def __repr__(self):
-        return f"<InventoryItem {self.item_id}>"
+        return f'<Equipment {self.user.username} - {self.item.name} ({self.slot.value})>'
 
-class EquippedItem(db.Model):
-    """Currently equipped items"""
-    __tablename__ = 'equipped_items'
+    def update_durability(self, damage_taken, mana_used, time_spent):
+        """Update equipment durability based on combat factors"""
+        if not self.is_broken:
+            durability_loss = self.item.calculate_durability_loss(
+                damage_taken, mana_used, time_spent
+            )
+            self.item.durability -= durability_loss
+            
+            if self.item.durability <= 0:
+                self.item.durability = 0
+                self.is_broken = True
+            
+            db.session.commit()
 
-    id = db.Column(db.Integer, primary_key=True)
-    inventory_id = db.Column(db.Integer, db.ForeignKey('inventories.id'), nullable=False)
-    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
-    slot = db.Column(db.Enum(ItemSlot), nullable=False)
-    durability = db.Column(db.Integer, nullable=True)
-    equipped_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Relationships
-    item = db.relationship('Item')
-
-    def __repr__(self):
-        return f"<EquippedItem {self.item_id}>"
-
-class ItemDrop(db.Model):
-    """Item drop history"""
-    __tablename__ = 'item_drops'
-
-    id = db.Column(db.Integer, primary_key=True)
-    gate_session_id = db.Column(db.Integer, db.ForeignKey('gate_sessions.id'), nullable=False)
-    character_id = db.Column(db.Integer, db.ForeignKey('player_characters.id'), nullable=False)
-    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
-    quantity = db.Column(db.Integer, default=1)
-    crystal_amount = db.Column(db.Integer, default=0)
-    exon_amount = db.Column(db.Integer, default=0)
-    dropped_at = db.Column(db.DateTime, default=datetime.utcnow)
-    collected = db.Column(db.Boolean, default=False)
-    collected_at = db.Column(db.DateTime, nullable=True)
-    collected_by_id = db.Column(db.Integer, db.ForeignKey('player_characters.id'), nullable=True)
-
-    def __repr__(self):
-        return f"<ItemDrop {self.item_id}>"
-
-class Trade(db.Model):
-    """Player trade model"""
-    __tablename__ = 'trades'
-
-    id = db.Column(db.Integer, primary_key=True)
-    initiator_id = db.Column(db.Integer, db.ForeignKey('player_characters.id'), nullable=False)
-    target_id = db.Column(db.Integer, db.ForeignKey('player_characters.id'), nullable=False)
-    status = db.Column(db.String(20), default='pending')  # pending, accepted, rejected, completed
-    crystal_amount = db.Column(db.Integer, default=0)
-    exon_amount = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    completed_at = db.Column(db.DateTime, nullable=True)
-
-    # Relationships
-    items = db.relationship('TradeItem', backref='trade', lazy='dynamic')
-
-    def __repr__(self):
-        return f"<Trade {self.id}>"
-
-class TradeItem(db.Model):
-    """Items included in a trade"""
-    __tablename__ = 'trade_items'
-
-    id = db.Column(db.Integer, primary_key=True)
-    trade_id = db.Column(db.Integer, db.ForeignKey('trades.id'), nullable=False)
-    inventory_item_id = db.Column(db.Integer, db.ForeignKey('inventory_items.id'), nullable=False)
-    quantity = db.Column(db.Integer, default=1)
-    offered_by_id = db.Column(db.Integer, db.ForeignKey('player_characters.id'), nullable=False)
-
-    def __repr__(self):
-        return f"<TradeItem {self.inventory_item_id}>"
-
-class ShopTransaction(db.Model):
-    """Shop transaction history"""
-    __tablename__ = 'shop_transactions'
-
-    id = db.Column(db.Integer, primary_key=True)
-    character_id = db.Column(db.Integer, db.ForeignKey('player_characters.id'), nullable=False)
-    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=False)
-    quantity = db.Column(db.Integer, default=1)
-    transaction_type = db.Column(db.String(20), nullable=False)  # buy, sell
-    crystal_amount = db.Column(db.Integer, default=0)
-    exon_amount = db.Column(db.Integer, default=0)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    def __repr__(self):
-        return f"<ShopTransaction {self.id}>"
+# Initialize default items
+def init_items():
+    """Initialize default items"""
+    default_items = [
+        # Licenses
+        {
+            'name': 'Job Reset License',
+            'description': 'Allows resetting current job',
+            'type': ItemType.LICENSE,
+            'rarity': ItemRarity.BASIC,
+            'buy_price_exons': 1000,
+            'is_tradeable': False
+        },
+        {
+            'name': 'Job License',
+            'description': 'Required for job advancement',
+            'type': ItemType.LICENSE,
+            'rarity': ItemRarity.BASIC,
+            'buy_price_exons': 2000,
+            'is_tradeable': False
+        },
+        {
+            'name': 'Hunter Class Upgrade License',
+            'description': 'Required for hunter class advancement',
+            'type': ItemType.LICENSE,
+            'rarity': ItemRarity.BASIC,
+            'buy_price_exons': 5000,
+            'is_tradeable': False
+        },
+        {
+            'name': 'Remote Shop License',
+            'description': 'Enables remote shop access',
+            'type': ItemType.LICENSE,
+            'rarity': ItemRarity.BASIC,
+            'buy_price_exons': 3000,
+            'is_tradeable': False
+        },
+        
+        # Consumables
+        {
+            'name': 'Basic Life Potion',
+            'description': 'Restores 30% HP',
+            'type': ItemType.CONSUMABLE,
+            'rarity': ItemRarity.BASIC,
+            'buy_price_crystals': 100,
+            'is_stackable': True,
+            'max_stack': 100
+        },
+        {
+            'name': 'High Grade Life Potion',
+            'description': 'Restores 70% HP',
+            'type': ItemType.CONSUMABLE,
+            'rarity': ItemRarity.INTERMEDIATE,
+            'buy_price_crystals': 300,
+            'is_stackable': True,
+            'max_stack': 100
+        },
+        {
+            'name': 'Basic Resurrection Potion',
+            'description': 'Revives with 50% HP',
+            'type': ItemType.CONSUMABLE,
+            'rarity': ItemRarity.EXCELLENT,
+            'buy_price_exons': 1000,
+            'is_stackable': True,
+            'max_stack': 10
+        },
+        {
+            'name': 'Advanced Resurrection Potion',
+            'description': 'Revives with 100% HP, works on decapitated/shadow status',
+            'type': ItemType.CONSUMABLE,
+            'rarity': ItemRarity.LEGENDARY,
+            'buy_price_exons': 3000,
+            'is_stackable': True,
+            'max_stack': 5
+        }
+    ]
+    
+    for item_data in default_items:
+        item = Item.query.filter_by(name=item_data['name']).first()
+        if not item:
+            item = Item(**item_data)
+            db.session.add(item)
+    
+    db.session.commit()
