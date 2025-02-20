@@ -15,7 +15,8 @@ log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # Define directories
-STATIC_DIR="static"
+PROJECT_ROOT=$(pwd)
+STATIC_DIR="$PROJECT_ROOT/static"
 NGINX_ROOT="/var/www/terminusa"
 NGINX_STATIC_DIR="$NGINX_ROOT/static"
 BACKUP_DIR="$NGINX_ROOT/static_backup"
@@ -28,14 +29,14 @@ check_command() {
     fi
 }
 
-# Function to verify directory exists and is writable
-verify_dir() {
-    if [ ! -d "$1" ]; then
-        log_error "Directory not found: $1"
+# Function to verify file exists and is readable
+verify_file() {
+    if [ ! -f "$1" ]; then
+        log_error "File not found: $1"
         return 1
     fi
-    if [ ! -w "$1" ]; then
-        log_error "Directory not writable: $1"
+    if [ ! -r "$1" ]; then
+        log_error "File not readable: $1"
         return 1
     fi
     return 0
@@ -45,9 +46,19 @@ log_info "Starting static files setup..."
 
 # Verify source static directory exists
 if [ ! -d "$STATIC_DIR" ]; then
-    log_error "Source static directory not found!"
+    log_error "Source static directory not found: $STATIC_DIR"
     exit 1
 fi
+
+# Verify CSS files exist in source
+log_info "Verifying source CSS files..."
+REQUIRED_CSS=("style.css" "buttons.css" "alerts.css")
+for css_file in "${REQUIRED_CSS[@]}"; do
+    if [ ! -f "$STATIC_DIR/css/$css_file" ]; then
+        log_error "Required CSS file missing in source: $css_file"
+        exit 1
+    fi
+done
 
 # Create nginx root directory if it doesn't exist
 log_info "Creating nginx root directory..."
@@ -62,15 +73,26 @@ if [ -d "$NGINX_STATIC_DIR" ]; then
     check_command "Failed to backup existing files"
 fi
 
-# Create nginx static directory
-log_info "Creating nginx static directory..."
-sudo mkdir -p $NGINX_STATIC_DIR
-check_command "Failed to create nginx static directory"
+# Create nginx static directory structure
+log_info "Creating nginx static directory structure..."
+sudo mkdir -p $NGINX_STATIC_DIR/css
+sudo mkdir -p $NGINX_STATIC_DIR/js
+sudo mkdir -p $NGINX_STATIC_DIR/images
+check_command "Failed to create nginx static directories"
 
-# Copy static files
+# Copy static files with specific handling for CSS
 log_info "Copying static files..."
-sudo cp -r $STATIC_DIR/* $NGINX_STATIC_DIR/
-check_command "Failed to copy static files"
+log_info "Copying CSS files..."
+for css_file in "${REQUIRED_CSS[@]}"; do
+    sudo cp "$STATIC_DIR/css/$css_file" "$NGINX_STATIC_DIR/css/"
+    check_command "Failed to copy $css_file"
+    log_info "Copied $css_file"
+done
+
+# Copy remaining static files
+log_info "Copying remaining static files..."
+sudo cp -r $STATIC_DIR/js/* $NGINX_STATIC_DIR/js/ 2>/dev/null || true
+sudo cp -r $STATIC_DIR/images/* $NGINX_STATIC_DIR/images/ 2>/dev/null || true
 
 # Set permissions
 log_info "Setting permissions..."
@@ -78,12 +100,11 @@ sudo chown -R www-data:www-data $NGINX_ROOT
 sudo chmod -R 755 $NGINX_ROOT
 check_command "Failed to set permissions"
 
-# Verify CSS files exist
-log_info "Verifying CSS files..."
-REQUIRED_CSS=("style.css" "buttons.css" "alerts.css")
+# Verify CSS files in nginx directory
+log_info "Verifying nginx CSS files..."
 for css_file in "${REQUIRED_CSS[@]}"; do
-    if [ ! -f "$NGINX_STATIC_DIR/css/$css_file" ]; then
-        log_error "Required CSS file missing: $css_file"
+    if ! verify_file "$NGINX_STATIC_DIR/css/$css_file"; then
+        log_error "Failed to verify $css_file in nginx directory"
         if [ -d "$BACKUP_DIR" ]; then
             log_info "Restoring from backup..."
             sudo rm -rf $NGINX_STATIC_DIR
@@ -91,6 +112,7 @@ for css_file in "${REQUIRED_CSS[@]}"; do
         fi
         exit 1
     fi
+    log_success "Verified $css_file"
 done
 
 # Print directory structure for verification
@@ -112,8 +134,18 @@ log_info "Restarting nginx..."
 sudo systemctl restart nginx
 check_command "Failed to restart nginx"
 
-log_success "Static files setup completed successfully"
-
-# Verify file permissions
-log_info "Final permission verification:"
+# Verify file permissions and ownership
+log_info "Final verification:"
 ls -la $NGINX_STATIC_DIR/css/
+
+# Test file access
+log_info "Testing file access..."
+for css_file in "${REQUIRED_CSS[@]}"; do
+    if ! sudo -u www-data test -r "$NGINX_STATIC_DIR/css/$css_file"; then
+        log_error "www-data cannot read $css_file"
+        exit 1
+    fi
+    log_success "www-data can read $css_file"
+done
+
+log_success "Static files setup completed successfully"

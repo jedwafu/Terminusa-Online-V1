@@ -41,7 +41,7 @@ if missing_vars:
 
 # Initialize Flask app
 print("[DEBUG] Creating Flask app")
-app = Flask(__name__, static_url_path='/static', static_folder='/var/www/terminusa/static')
+app = Flask(__name__)
 
 # Configure app
 print("[DEBUG] Configuring Flask app")
@@ -56,6 +56,8 @@ app.config.update(
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
     CORS_HEADERS='Content-Type',
     SEND_FILE_MAX_AGE_DEFAULT=31536000,  # 1 year in seconds
+    STATIC_FOLDER='/var/www/terminusa/static',  # Use nginx's static directory
+    STATIC_URL_PATH='/static'  # URL path for static files
 )
 
 # Initialize extensions
@@ -90,6 +92,18 @@ app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
 app.logger.info('Terminusa Online startup')
 
+# Debug logging for static files
+@app.before_request
+def log_request_info():
+    app.logger.debug('Headers: %s', request.headers)
+    app.logger.debug('Body: %s', request.get_data())
+    if request.path.startswith('/static/'):
+        app.logger.info('Static file request: %s', request.path)
+        app.logger.info('Static folder: %s', app.static_folder)
+        full_path = os.path.join(app.static_folder, request.path[8:])  # Remove '/static/' prefix
+        app.logger.info('Full path: %s', full_path)
+        app.logger.info('File exists: %s', os.path.exists(full_path))
+
 # User loader for Flask-Login
 @login_manager.user_loader
 def load_user(user_id):
@@ -109,6 +123,9 @@ def admin_required(f):
 @app.route('/static/<path:filename>')
 def custom_static(filename):
     app.logger.info(f"Serving static file: {filename}")
+    if not os.path.exists(os.path.join(app.static_folder, filename)):
+        app.logger.error(f"Static file not found: {filename}")
+        return f"File not found: {filename}", 404
     return send_from_directory(app.static_folder, filename)
 
 # Initialize routes
