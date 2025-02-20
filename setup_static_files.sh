@@ -16,8 +16,9 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # Define directories
 STATIC_DIR="static"
-NGINX_STATIC_DIR="/var/www/terminusa/static"
-BACKUP_DIR="/var/www/terminusa/static_backup"
+NGINX_ROOT="/var/www/terminusa"
+NGINX_STATIC_DIR="$NGINX_ROOT/static"
+BACKUP_DIR="$NGINX_ROOT/static_backup"
 
 # Function to check if command succeeded
 check_command() {
@@ -27,14 +28,14 @@ check_command() {
     fi
 }
 
-# Function to verify file exists and is readable
-verify_file() {
-    if [ ! -f "$1" ]; then
-        log_error "File not found: $1"
+# Function to verify directory exists and is writable
+verify_dir() {
+    if [ ! -d "$1" ]; then
+        log_error "Directory not found: $1"
         return 1
     fi
-    if [ ! -r "$1" ]; then
-        log_error "File not readable: $1"
+    if [ ! -w "$1" ]; then
+        log_error "Directory not writable: $1"
         return 1
     fi
     return 0
@@ -48,11 +49,10 @@ if [ ! -d "$STATIC_DIR" ]; then
     exit 1
 fi
 
-# Create necessary directories
-log_info "Creating directories..."
-mkdir -p $STATIC_DIR/{css,js,images,img}
-sudo mkdir -p $NGINX_STATIC_DIR
-check_command "Failed to create directories"
+# Create nginx root directory if it doesn't exist
+log_info "Creating nginx root directory..."
+sudo mkdir -p $NGINX_ROOT
+check_command "Failed to create nginx root directory"
 
 # Backup existing files
 if [ -d "$NGINX_STATIC_DIR" ]; then
@@ -62,6 +62,11 @@ if [ -d "$NGINX_STATIC_DIR" ]; then
     check_command "Failed to backup existing files"
 fi
 
+# Create nginx static directory
+log_info "Creating nginx static directory..."
+sudo mkdir -p $NGINX_STATIC_DIR
+check_command "Failed to create nginx static directory"
+
 # Copy static files
 log_info "Copying static files..."
 sudo cp -r $STATIC_DIR/* $NGINX_STATIC_DIR/
@@ -69,15 +74,16 @@ check_command "Failed to copy static files"
 
 # Set permissions
 log_info "Setting permissions..."
-sudo chown -R www-data:www-data $NGINX_STATIC_DIR
-sudo chmod -R 755 $NGINX_STATIC_DIR
+sudo chown -R www-data:www-data $NGINX_ROOT
+sudo chmod -R 755 $NGINX_ROOT
 check_command "Failed to set permissions"
 
-# Verify critical CSS files
+# Verify CSS files exist
 log_info "Verifying CSS files..."
-REQUIRED_CSS=("base.css" "style.css" "buttons.css" "alerts.css")
+REQUIRED_CSS=("style.css" "buttons.css" "alerts.css")
 for css_file in "${REQUIRED_CSS[@]}"; do
-    if ! verify_file "$NGINX_STATIC_DIR/css/$css_file"; then
+    if [ ! -f "$NGINX_STATIC_DIR/css/$css_file" ]; then
+        log_error "Required CSS file missing: $css_file"
         if [ -d "$BACKUP_DIR" ]; then
             log_info "Restoring from backup..."
             sudo rm -rf $NGINX_STATIC_DIR
@@ -87,7 +93,11 @@ for css_file in "${REQUIRED_CSS[@]}"; do
     fi
 done
 
-# Verify nginx configuration
+# Print directory structure for verification
+log_info "Static files structure:"
+ls -R $NGINX_STATIC_DIR
+
+# Test nginx configuration
 log_info "Testing nginx configuration..."
 sudo nginx -t
 check_command "Nginx configuration test failed"
@@ -97,15 +107,13 @@ log_info "Clearing nginx cache..."
 sudo rm -rf /var/cache/nginx/*
 check_command "Failed to clear nginx cache"
 
-# Verify nginx is running
-if ! systemctl is-active --quiet nginx; then
-    log_info "Starting nginx..."
-    sudo systemctl start nginx
-    check_command "Failed to start nginx"
-fi
+# Restart nginx
+log_info "Restarting nginx..."
+sudo systemctl restart nginx
+check_command "Failed to restart nginx"
 
 log_success "Static files setup completed successfully"
 
-# Print verification information
-echo -e "\nStatic files structure:"
+# Verify file permissions
+log_info "Final permission verification:"
 ls -la $NGINX_STATIC_DIR/css/
