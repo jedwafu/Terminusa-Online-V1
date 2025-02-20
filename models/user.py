@@ -27,6 +27,7 @@ class User(BaseModel, StatusMixin, TimestampMixin, UserMixin):
     currencies = relationship('Currency', back_populates='user', lazy='dynamic')
     transactions = relationship('Transaction', back_populates='user', lazy='dynamic')
     token_swaps = relationship('TokenSwap', back_populates='user', lazy='dynamic')
+    characters = relationship('PlayerCharacter', back_populates='user', lazy='dynamic')  # Added relationship
 
     def __repr__(self):
         """String representation of User."""
