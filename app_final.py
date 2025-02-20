@@ -2,6 +2,7 @@ from gevent import monkey
 monkey.patch_all()
 
 import os
+import sys
 from flask import Flask, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import LoginManager, current_user, login_required
 from flask_jwt_extended import JWTManager
@@ -13,9 +14,12 @@ from logging.handlers import RotatingFileHandler
 from datetime import datetime
 from functools import wraps
 
+# Add the current directory to Python path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 from database import db
 from models import User, Announcement
-from routes.auth_routes import auth
+from routes.auth_routes import auth  # Import directly from auth_routes.py
 
 # Load environment variables
 print("[DEBUG] Loading environment variables")
