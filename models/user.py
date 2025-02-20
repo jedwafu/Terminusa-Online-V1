@@ -4,6 +4,7 @@ from flask_login import UserMixin
 from .base import BaseModel, StatusMixin, TimestampMixin
 from database import db
 from sqlalchemy import Column, String, Boolean, DateTime
+from sqlalchemy.orm import relationship
 
 class User(BaseModel, StatusMixin, TimestampMixin, UserMixin):
     """User model for authentication and profile management."""
@@ -11,7 +12,7 @@ class User(BaseModel, StatusMixin, TimestampMixin, UserMixin):
     # User authentication fields
     username = Column(String(80), unique=True, nullable=False)
     email = Column(String(120), unique=True, nullable=False)
-    password = Column(String(128), nullable=False)  # Changed from password_hash
+    password = Column(String(128), nullable=False)
     salt = Column(String(128), nullable=True)
     
     # User role and status
@@ -21,6 +22,11 @@ class User(BaseModel, StatusMixin, TimestampMixin, UserMixin):
     
     # Timestamps
     last_login = Column(DateTime, nullable=True)
+
+    # Relationships
+    currencies = relationship('Currency', back_populates='user', lazy='dynamic')
+    transactions = relationship('Transaction', back_populates='user', lazy='dynamic')
+    token_swaps = relationship('TokenSwap', back_populates='user', lazy='dynamic')
 
     def __repr__(self):
         """String representation of User."""
