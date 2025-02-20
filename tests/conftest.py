@@ -1,396 +1,282 @@
-import pytest
-import sys
+"""
+Test configuration and fixtures.
+"""
+
 import os
-from typing import Dict, List, Optional, Any
+import pytest
+from flask import Flask
+from flask.testing import FlaskClient
+from typing import Generator, Dict, Any
 from datetime import datetime, timedelta
-import asyncio
-import json
-import jwt
-from unittest.mock import Mock
 
-# Add parent directory to path to import modules
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from database import db
+from models import init_db
+from app_final import create_app
 
-# Mock data for testing
-TEST_USERS = {
-    1: {
-        'id': 1,
-        'username': 'test_user',
-        'email': 'test@example.com',
-        'level': 10,
-        'experience': 1000,
-        'created_at': datetime.utcnow()
-    }
-}
+# Test database URL
+TEST_DATABASE_URL = os.getenv(
+    'TEST_DATABASE_URL',
+    'postgresql://postgres:postgres@localhost:5432/terminusa_test'
+)
 
-TEST_ITEMS = {
-    1: {
-        'id': 1,
-        'name': 'Test Sword',
-        'type': 'weapon',
-        'rarity': 'common',
-        'stats': {'damage': 10, 'speed': 5}
-    }
-}
-
-TEST_GUILDS = {
-    1: {
-        'id': 1,
-        'name': 'Test Guild',
-        'leader_id': 1,
-        'members': [1],
-        'level': 5
-    }
-}
-
-@pytest.fixture
-def mock_db():
-    """Mock database for testing"""
-    class MockDB:
-        def __init__(self):
-            self.users = TEST_USERS.copy()
-            self.items = TEST_ITEMS.copy()
-            self.guilds = TEST_GUILDS.copy()
-        
-        async def get_user(self, user_id: int):
-            return self.users.get(user_id)
-        
-        async def create_user(self, data: Dict):
-            user_id = max(self.users.keys()) + 1
-            user = {
-                'id': user_id,
-                'created_at': datetime.utcnow(),
-                **data
-            }
-            self.users[user_id] = user
-            return user
-        
-        async def update_user(self, user_id: int, data: Dict):
-            if user_id in self.users:
-                self.users[user_id].update(data)
-                return self.users[user_id]
-            return None
-        
-        async def get_item(self, item_id: int):
-            return self.items.get(item_id)
-        
-        async def get_guild(self, guild_id: int):
-            return self.guilds.get(guild_id)
+@pytest.fixture(scope='session')
+def app() -> Flask:
+    """Create Flask application for testing."""
+    app = create_app()
+    app.config.update({
+        'TESTING': True,
+        'SQLALCHEMY_DATABASE_URI': TEST_DATABASE_URL,
+        'SQLALCHEMY_TRACK_MODIFICATIONS': False,
+        'WTF_CSRF_ENABLED': False,
+        'SERVER_NAME': 'localhost.localdomain',
+        'PREFERRED_URL_SCHEME': 'http',
+    })
     
-    return MockDB()
-
-@pytest.fixture
-def mock_auth():
-    """Mock authentication for testing"""
-    class MockAuth:
-        def __init__(self):
-            self.secret = "test-secret-key"
-            self.tokens = {}
-        
-        def create_token(self, user_id: int) -> str:
-            token = jwt.encode(
-                {
-                    'user_id': user_id,
-                    'exp': datetime.utcnow() + timedelta(days=1)
-                },
-                self.secret,
-                algorithm='HS256'
-            )
-            self.tokens[token] = user_id
-            return token
-        
-        def verify_token(self, token: str) -> Optional[int]:
-            try:
-                payload = jwt.decode(
-                    token,
-                    self.secret,
-                    algorithms=['HS256']
-                )
-                return payload['user_id']
-            except:
-                return None
-    
-    return MockAuth()
-
-@pytest.fixture
-def mock_game_state():
-    """Mock game state for testing"""
-    class MockGameState:
-        def __init__(self):
-            self.online_players = set()
-            self.player_positions = {}
-            self.player_stats = {}
-        
-        def add_player(self, user_id: int):
-            self.online_players.add(user_id)
-            self.player_positions[user_id] = {'x': 0, 'y': 0}
-            self.player_stats[user_id] = {
-                'health': 100,
-                'mana': 100,
-                'level': 1
-            }
-        
-        def remove_player(self, user_id: int):
-            self.online_players.discard(user_id)
-            self.player_positions.pop(user_id, None)
-            self.player_stats.pop(user_id, None)
-        
-        def update_position(self, user_id: int, x: float, y: float):
-            if user_id in self.online_players:
-                self.player_positions[user_id] = {'x': x, 'y': y}
-        
-        def update_stats(self, user_id: int, stats: Dict):
-            if user_id in self.online_players:
-                self.player_stats[user_id].update(stats)
-    
-    return MockGameState()
-
-@pytest.fixture
-def mock_inventory():
-    """Mock inventory system for testing"""
-    class MockInventory:
-        def __init__(self):
-            self.inventories = {}
-        
-        def get_inventory(self, user_id: int) -> Dict:
-            if user_id not in self.inventories:
-                self.inventories[user_id] = {
-                    'items': [],
-                    'capacity': 20,
-                    'gold': 0
-                }
-            return self.inventories[user_id]
-        
-        def add_item(self, user_id: int, item_id: int, quantity: int = 1) -> bool:
-            inventory = self.get_inventory(user_id)
-            if len(inventory['items']) >= inventory['capacity']:
-                return False
-            
-            inventory['items'].append({
-                'item_id': item_id,
-                'quantity': quantity
-            })
-            return True
-        
-        def remove_item(self, user_id: int, item_id: int, quantity: int = 1) -> bool:
-            inventory = self.get_inventory(user_id)
-            for item in inventory['items']:
-                if item['item_id'] == item_id:
-                    if item['quantity'] >= quantity:
-                        item['quantity'] -= quantity
-                        if item['quantity'] == 0:
-                            inventory['items'].remove(item)
-                        return True
-            return False
-    
-    return MockInventory()
-
-@pytest.fixture
-def mock_combat():
-    """Mock combat system for testing"""
-    class MockCombat:
-        def __init__(self):
-            self.active_battles = {}
-        
-        def start_battle(self, attacker_id: int, defender_id: int) -> str:
-            battle_id = f"battle_{len(self.active_battles)}"
-            self.active_battles[battle_id] = {
-                'attacker': attacker_id,
-                'defender': defender_id,
-                'turns': [],
-                'status': 'active'
-            }
-            return battle_id
-        
-        def process_turn(self, battle_id: str, action: Dict) -> Dict:
-            if battle_id not in self.active_battles:
-                return None
-            
-            battle = self.active_battles[battle_id]
-            battle['turns'].append(action)
-            
-            # Simulate battle result
-            result = {
-                'damage_dealt': 10,
-                'status_effects': [],
-                'is_critical': False
-            }
-            
-            if len(battle['turns']) >= 5:
-                battle['status'] = 'completed'
-            
-            return result
-    
-    return MockCombat()
-
-@pytest.fixture
-def mock_chat():
-    """Mock chat system for testing"""
-    class MockChat:
-        def __init__(self):
-            self.channels = {
-                'global': [],
-                'trade': [],
-                'guild': {}
-            }
-        
-        def send_message(
-            self,
-            channel: str,
-            user_id: int,
-            content: str,
-            guild_id: Optional[int] = None
-        ) -> Dict:
-            message = {
-                'id': len(self.channels[channel]),
-                'channel': channel,
-                'user_id': user_id,
-                'content': content,
-                'timestamp': datetime.utcnow()
-            }
-            
-            if channel == 'guild':
-                if guild_id not in self.channels['guild']:
-                    self.channels['guild'][guild_id] = []
-                self.channels['guild'][guild_id].append(message)
-            else:
-                self.channels[channel].append(message)
-            
-            return message
-        
-        def get_messages(
-            self,
-            channel: str,
-            limit: int = 50,
-            guild_id: Optional[int] = None
-        ) -> List[Dict]:
-            if channel == 'guild':
-                messages = self.channels['guild'].get(guild_id, [])
-            else:
-                messages = self.channels[channel]
-            
-            return sorted(
-                messages,
-                key=lambda m: m['timestamp'],
-                reverse=True
-            )[:limit]
-    
-    return MockChat()
-
-@pytest.fixture
-def event_loop():
-    """Create event loop for async tests"""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-@pytest.fixture
-def test_client(event_loop):
-    """Create test client for API tests"""
-    from aiohttp import web
-    
-    async def create_app():
-        app = web.Application()
-        return app
-    
-    app = event_loop.run_until_complete(create_app())
     return app
 
-@pytest.fixture
-def mock_redis():
-    """Mock Redis for testing"""
-    class MockRedis:
-        def __init__(self):
-            self.data = {}
-            self.expires = {}
-        
-        async def get(self, key: str) -> Optional[str]:
-            if key in self.expires and self.expires[key] < datetime.utcnow():
-                del self.data[key]
-                del self.expires[key]
-                return None
-            return self.data.get(key)
-        
-        async def set(
-            self,
-            key: str,
-            value: str,
-            expire: Optional[int] = None
-        ):
-            self.data[key] = value
-            if expire:
-                self.expires[key] = datetime.utcnow() + timedelta(seconds=expire)
-        
-        async def delete(self, key: str):
-            self.data.pop(key, None)
-            self.expires.pop(key, None)
-        
-        async def exists(self, key: str) -> bool:
-            return key in self.data
-    
-    return MockRedis()
+@pytest.fixture(scope='session')
+def _db(app: Flask) -> Generator:
+    """Create database for testing."""
+    with app.app_context():
+        db.create_all()
+        init_db()  # Initialize with test data
+        yield db
+        db.session.remove()
+        db.drop_all()
 
-@pytest.fixture
-def mock_websocket():
-    """Mock WebSocket for testing"""
-    class MockWebSocket:
-        def __init__(self):
-            self.connected = set()
-            self.messages = []
-        
-        async def connect(self, user_id: int):
-            self.connected.add(user_id)
-        
-        async def disconnect(self, user_id: int):
-            self.connected.discard(user_id)
-        
-        async def send_message(self, user_id: int, message: Dict):
-            if user_id in self.connected:
-                self.messages.append({
-                    'user_id': user_id,
-                    'message': message,
-                    'timestamp': datetime.utcnow()
-                })
-        
-        def get_messages(self, user_id: int) -> List[Dict]:
-            return [
-                m for m in self.messages
-                if m['user_id'] == user_id
-            ]
+@pytest.fixture(scope='function')
+def db_session(_db: db) -> Generator:
+    """Create a new database session for a test."""
+    connection = _db.engine.connect()
+    transaction = connection.begin()
     
-    return MockWebSocket()
+    session = _db.create_scoped_session(
+        options={'bind': connection, 'binds': {}}
+    )
+    _db.session = session
+    
+    yield session
+    
+    transaction.rollback()
+    connection.close()
+    session.remove()
 
-@pytest.fixture
-def mock_logger():
-    """Mock logger for testing"""
-    class MockLogger:
-        def __init__(self):
-            self.logs = []
-        
-        def log(self, level: str, message: str, **kwargs):
-            self.logs.append({
-                'level': level,
-                'message': message,
-                'timestamp': datetime.utcnow(),
-                'metadata': kwargs
-            })
-        
-        def get_logs(
-            self,
-            level: Optional[str] = None,
-            start_time: Optional[datetime] = None
-        ) -> List[Dict]:
-            logs = self.logs
-            
-            if level:
-                logs = [log for log in logs if log['level'] == level]
-            
-            if start_time:
-                logs = [
-                    log for log in logs
-                    if log['timestamp'] >= start_time
-                ]
-            
-            return sorted(logs, key=lambda l: l['timestamp'])
+@pytest.fixture(scope='function')
+def client(app: Flask) -> FlaskClient:
+    """Create Flask test client."""
+    return app.test_client()
+
+@pytest.fixture(scope='function')
+def auth_headers(app: Flask, test_user: Dict[str, Any]) -> Dict[str, str]:
+    """Create authentication headers for test user."""
+    with app.app_context():
+        access_token = create_access_token(
+            identity=test_user['username'],
+            additional_claims={
+                'role': test_user['role'],
+                'email': test_user['email']
+            },
+            expires_delta=timedelta(days=1)
+        )
+        return {'Authorization': f'Bearer {access_token}'}
+
+@pytest.fixture(scope='function')
+def test_user(db_session) -> Dict[str, Any]:
+    """Create test user."""
+    from models import User
     
-    return MockLogger()
+    user = User(
+        username='testuser',
+        email='test@example.com',
+        role='player',
+        is_email_verified=True,
+        created_at=datetime.utcnow(),
+        last_login=datetime.utcnow()
+    )
+    user.set_password('testpass123')
+    
+    db_session.add(user)
+    db_session.commit()
+    
+    return {
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'role': user.role
+    }
+
+@pytest.fixture(scope='function')
+def test_admin(db_session) -> Dict[str, Any]:
+    """Create test admin user."""
+    from models import User
+    
+    admin = User(
+        username='adminbb',
+        email='admin@terminusa.online',
+        role='admin',
+        is_email_verified=True,
+        created_at=datetime.utcnow(),
+        last_login=datetime.utcnow()
+    )
+    admin.set_password('adminpass123')
+    
+    db_session.add(admin)
+    db_session.commit()
+    
+    return {
+        'id': admin.id,
+        'username': admin.username,
+        'email': admin.email,
+        'role': admin.role
+    }
+
+@pytest.fixture(scope='function')
+def test_guild(db_session, test_user) -> Dict[str, Any]:
+    """Create test guild."""
+    from models import Guild, GuildMember, GuildRank
+    
+    guild = Guild(
+        name='Test Guild',
+        description='A test guild',
+        level=1,
+        experience=0,
+        creation_cost_exons=100000,
+        creation_cost_crystals=50000,
+        max_members=100,
+        created_at=datetime.utcnow()
+    )
+    
+    db_session.add(guild)
+    db_session.commit()
+    
+    member = GuildMember(
+        guild_id=guild.id,
+        user_id=test_user['id'],
+        rank=GuildRank.MASTER,
+        contribution=0,
+        joined_at=datetime.utcnow()
+    )
+    
+    db_session.add(member)
+    db_session.commit()
+    
+    return {
+        'id': guild.id,
+        'name': guild.name,
+        'level': guild.level
+    }
+
+@pytest.fixture(scope='function')
+def test_party(db_session, test_user) -> Dict[str, Any]:
+    """Create test party."""
+    from models import Party, PartyMember, PartyRole
+    
+    party = Party(
+        name='Test Party',
+        leader_id=test_user['id'],
+        is_active=True,
+        created_at=datetime.utcnow()
+    )
+    
+    db_session.add(party)
+    db_session.commit()
+    
+    member = PartyMember(
+        party_id=party.id,
+        user_id=test_user['id'],
+        role=PartyRole.LEADER,
+        joined_at=datetime.utcnow()
+    )
+    
+    db_session.add(member)
+    db_session.commit()
+    
+    return {
+        'id': party.id,
+        'name': party.name,
+        'leader_id': party.leader_id
+    }
+
+@pytest.fixture(scope='function')
+def test_gate(db_session) -> Dict[str, Any]:
+    """Create test gate."""
+    from models import Gate, GateGrade
+    
+    gate = Gate(
+        name='Test Gate',
+        description='A test gate',
+        grade=GateGrade.F,
+        level=1,
+        difficulty=1.0,
+        is_active=True,
+        max_players=1,
+        created_at=datetime.utcnow()
+    )
+    
+    db_session.add(gate)
+    db_session.commit()
+    
+    return {
+        'id': gate.id,
+        'name': gate.name,
+        'grade': gate.grade.value
+    }
+
+@pytest.fixture(scope='function')
+def test_character(db_session, test_user) -> Dict[str, Any]:
+    """Create test character."""
+    from models import PlayerCharacter, HunterClass, BaseJob, HealthStatus
+    
+    character = PlayerCharacter(
+        user_id=test_user['id'],
+        name='Test Character',
+        level=1,
+        experience=0,
+        hunter_class=HunterClass.NOVICE,
+        base_job=BaseJob.NONE,
+        health=100,
+        max_health=100,
+        mana=100,
+        max_mana=100,
+        strength=10,
+        agility=10,
+        intelligence=10,
+        vitality=10,
+        status=HealthStatus.HEALTHY,
+        created_at=datetime.utcnow()
+    )
+    
+    db_session.add(character)
+    db_session.commit()
+    
+    return {
+        'id': character.id,
+        'name': character.name,
+        'level': character.level
+    }
+
+@pytest.fixture(scope='function')
+def test_currencies(db_session, test_user) -> Dict[str, Any]:
+    """Create test currencies."""
+    from models import Currency, CurrencyType
+    
+    currencies = {}
+    for currency_type in CurrencyType:
+        currency = Currency(
+            user_id=test_user['id'],
+            type=currency_type,
+            amount=1000.0,
+            created_at=datetime.utcnow()
+        )
+        db_session.add(currency)
+        currencies[currency_type.value] = currency
+    
+    db_session.commit()
+    
+    return {
+        name: {
+            'id': currency.id,
+            'amount': currency.amount
+        }
+        for name, currency in currencies.items()
+    }
