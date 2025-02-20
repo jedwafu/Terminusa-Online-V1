@@ -10,15 +10,15 @@
                 <h1>Welcome Back</h1>
                 <p class="subtitle">Log in to continue your adventure</p>
 
-                <form class="login-form" method="POST" action="{{ url_for('login') }}">
+                <form class="login-form" method="POST">
                     <div class="form-group">
                         <label for="username" class="form-label">Username or Email</label>
-                        <input type="text" id="username" name="username" class="form-input" required>
+                        <input type="text" id="username" name="username" class="form-input" required autocomplete="username">
                     </div>
 
                     <div class="form-group">
                         <label for="password" class="form-label">Password</label>
-                        <input type="password" id="password" name="password" class="form-input" required>
+                        <input type="password" id="password" name="password" class="form-input" required autocomplete="current-password">
                         <div class="password-options">
                             <label class="remember-me">
                                 <input type="checkbox" name="remember" id="remember">
@@ -28,7 +28,10 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-block">Log In</button>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <span class="btn-text">Log In</span>
+                        <span class="btn-loading"></span>
+                    </button>
                 </form>
 
                 <div class="form-footer">
@@ -71,22 +74,32 @@
 </section>
 {% endblock %}
 
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+{% endblock %}
+
 {% block extra_css %}
 <style>
 .login-section {
     padding: 4rem 0;
-    background-color: var(--light-bg);
     min-height: calc(100vh - 60px - 300px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .login-container {
     display: grid;
     grid-template-columns: 1fr 300px;
     gap: 2rem;
-    background: white;
+    background: rgba(0, 24, 0, 0.95);
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+    border: 1px solid var(--matrix-green);
     overflow: hidden;
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
 }
 
 .login-content {
@@ -94,13 +107,15 @@
 }
 
 .login-content h1 {
-    color: var(--primary-color);
+    color: var(--matrix-green);
     margin-bottom: 0.5rem;
+    text-shadow: var(--text-shadow);
 }
 
 .subtitle {
-    color: #666;
+    color: var(--text-color);
     margin-bottom: 2rem;
+    opacity: 0.8;
 }
 
 .login-form {
@@ -119,15 +134,18 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    color: var(--text-color);
 }
 
 .forgot-password {
-    color: var(--secondary-color);
+    color: var(--neon-blue);
     text-decoration: none;
+    transition: all 0.3s ease;
 }
 
 .forgot-password:hover {
-    text-decoration: underline;
+    color: var(--matrix-green);
+    text-shadow: var(--text-shadow);
 }
 
 .btn-block {
@@ -139,48 +157,55 @@
     margin-top: 2rem;
     text-align: center;
     padding-top: 1rem;
-    border-top: 1px solid #eee;
+    border-top: 1px solid rgba(0, 255, 65, 0.1);
 }
 
 .form-footer a {
-    color: var(--secondary-color);
+    color: var(--neon-blue);
     text-decoration: none;
+    transition: all 0.3s ease;
 }
 
 .form-footer a:hover {
-    text-decoration: underline;
+    color: var(--matrix-green);
+    text-shadow: var(--text-shadow);
 }
 
 .cli-login-info {
     margin-top: 2rem;
     padding-top: 2rem;
-    border-top: 1px solid #eee;
+    border-top: 1px solid rgba(0, 255, 65, 0.1);
 }
 
 .cli-login-info h3 {
-    color: var(--primary-color);
+    color: var(--matrix-green);
     margin-bottom: 1rem;
     font-size: 1.1rem;
+    text-shadow: var(--text-shadow);
 }
 
 .code-block {
-    background-color: var(--dark-bg);
-    color: white;
+    background-color: var(--matrix-black);
+    color: var(--text-color);
     padding: 1rem;
     border-radius: 4px;
     margin-top: 0.5rem;
     font-family: monospace;
+    border: 1px solid var(--matrix-green);
 }
 
 .login-sidebar {
-    background-color: var(--primary-color);
-    color: white;
+    background-color: var(--matrix-dark);
+    color: var(--text-color);
     padding: 2rem;
+    border-left: 1px solid var(--matrix-green);
 }
 
 .news-card h3 {
     margin-bottom: 1.5rem;
     font-size: 1.25rem;
+    color: var(--matrix-green);
+    text-shadow: var(--text-shadow);
 }
 
 .news-items {
@@ -191,7 +216,7 @@
 
 .news-item {
     padding-bottom: 1.5rem;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    border-bottom: 1px solid rgba(0, 255, 65, 0.1);
 }
 
 .news-item:last-child {
@@ -201,8 +226,8 @@
 
 .news-date {
     display: inline-block;
-    background-color: var(--secondary-color);
-    color: white;
+    background-color: var(--matrix-green);
+    color: var(--matrix-black);
     padding: 0.25rem 0.75rem;
     border-radius: 12px;
     font-size: 0.75rem;
@@ -212,6 +237,7 @@
 .news-item h4 {
     margin-bottom: 0.5rem;
     font-size: 1rem;
+    color: var(--neon-blue);
 }
 
 .news-item p {
@@ -236,6 +262,11 @@
         flex-direction: column;
         align-items: flex-start;
         gap: 0.5rem;
+    }
+
+    .login-sidebar {
+        border-left: none;
+        border-top: 1px solid var(--matrix-green);
     }
 }
 </style>
