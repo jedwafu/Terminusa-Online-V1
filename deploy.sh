@@ -210,7 +210,7 @@ start_services() {
     # Start Flask application
     info_log "Starting Flask application..."
     if ! check_screen_session ${SERVICE_SCREENS["flask"]}; then
-        start_screen ${SERVICE_SCREENS["flask"]} "cd $(pwd) && source venv/bin/activate && FLASK_APP=app_final.py FLASK_ENV=production python app_final.py > logs/flask.log 2>&1"
+        start_screen ${SERVICE_SCREENS["flask"]} "cd $(pwd) && source venv/bin/activate && FLASK_APP=app.py FLASK_ENV=production python app.py > logs/flask.log 2>&1"
     fi
     
     # Start Terminal server
