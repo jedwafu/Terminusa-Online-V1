@@ -6,7 +6,8 @@ Exposes all models through a clean interface while avoiding circular imports.
 from database import db
 
 # Import base model and mixins
-from .user import User  # Add User model import
+from .user import User
+from .announcement import Announcement  # Add Announcement model import
 from .base import (
     BaseModel, SoftDeleteMixin, TimestampMixin,
     VersionMixin, StatusMixin, AuditMixin
@@ -60,8 +61,8 @@ from .progression import (
 
 # Define which models are exposed
 __all__ = [
-    # User model
-    'User',
+    # User and Announcement models
+    'User', 'Announcement',
     
     # Base models and mixins
     'BaseModel', 'SoftDeleteMixin', 'TimestampMixin',
