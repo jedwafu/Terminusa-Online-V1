@@ -4,215 +4,379 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# Function to check command status
-check_status() {
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✓ Success${NC}"
-    else
-        echo -e "${RED}✗ Failed${NC}"
-        exit 1
+# Debug mode flag
+DEBUG=false
+
+# Service status tracking
+declare -A SERVICE_STATUS
+declare -A SERVICE_PIDS
+declare -A SERVICE_PORTS
+declare -A SERVICE_LOGS
+declare -A SERVICE_SCREENS
+
+# Initialize service configurations
+SERVICE_PORTS=(
+    ["postgresql"]="5432"
+    ["nginx"]="80,443"
+    ["flask"]="5000"
+    ["terminal"]="6789"
+    ["redis"]="6379"
+)
+
+SERVICE_LOGS=(
+    ["postgresql"]="/var/log/postgresql/postgresql-main.log"
+    ["nginx"]="/var/log/nginx/error.log"
+    ["flask"]="logs/flask.log"
+    ["terminal"]="logs/terminal.log"
+    ["redis"]="/var/log/redis/redis-server.log"
+)
+
+SERVICE_SCREENS=(
+    ["flask"]="terminusa-flask"
+    ["terminal"]="terminusa-terminal"
+)
+
+# Monitoring variables
+MONITOR_INTERVAL=5  # seconds
+MONITOR_RUNNING=true
+
+# Debug logging function
+debug_log() {
+    if [ "$DEBUG" = true ]; then
+        echo -e "${BLUE}[DEBUG] $(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
     fi
 }
 
-echo -e "${YELLOW}Starting Terminusa Online deployment...${NC}"
-
-# Check if running as root
-if [ "$EUID" -ne 0 ]; then 
-    echo -e "${RED}Please run as root${NC}"
-    exit 1
-fi
-
-# Install system dependencies
-echo -e "\n${YELLOW}Installing system dependencies...${NC}"
-apt-get update && apt-get install -y \
-    python3 \
-    python3-pip \
-    python3-venv \
-    postgresql \
-    postgresql-contrib \
-    nginx \
-    redis-server \
-    supervisor \
-    certbot \
-    python3-certbot-nginx
-check_status
-
-# Create application directory
-echo -e "\n${YELLOW}Creating application directory...${NC}"
-mkdir -p /opt/terminusa
-mkdir -p /var/log/terminusa
-mkdir -p /opt/terminusa/nginx
-check_status
-
-# Create terminusa user
-echo -e "\n${YELLOW}Creating terminusa user...${NC}"
-useradd -r -s /bin/false terminusa || true
-check_status
-
-# Set up Python virtual environment
-echo -e "\n${YELLOW}Setting up Python virtual environment...${NC}"
-python3 -m venv /opt/terminusa/venv
-source /opt/terminusa/venv/bin/activate
-pip install --upgrade pip
-pip install -r requirements.txt
-check_status
-
-# Copy application files
-echo -e "\n${YELLOW}Copying application files...${NC}"
-cp -r * /opt/terminusa/
-check_status
-
-# Set up environment variables
-echo -e "\n${YELLOW}Setting up environment variables...${NC}"
-if [ ! -f "/opt/terminusa/.env" ]; then
-    cp .env.example /opt/terminusa/.env
-    echo -e "${YELLOW}Please update /opt/terminusa/.env with your configuration${NC}"
-fi
-
-# Set up database
-echo -e "\n${YELLOW}Setting up database...${NC}"
-if ! sudo -u postgres psql -lqt | cut -d \| -f 1 | grep -qw terminusa_db; then
-    sudo -u postgres createuser terminusa
-    sudo -u postgres createdb terminusa_db
-    DB_PASSWORD=$(openssl rand -hex 16)
-    sudo -u postgres psql -c "ALTER USER terminusa WITH PASSWORD '$DB_PASSWORD';"
-    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE terminusa_db TO terminusa;"
-    
-    # Update DATABASE_URL in .env
-    sed -i "s|DATABASE_URL=.*|DATABASE_URL=postgresql://terminusa:$DB_PASSWORD@localhost:5432/terminusa_db|g" /opt/terminusa/.env
-fi
-check_status
-
-# Initialize database and run migrations
-echo -e "\n${YELLOW}Initializing database and running migrations...${NC}"
-cd /opt/terminusa
-source venv/bin/activate
-export FLASK_APP=app.py
-export FLASK_ENV=development
-
-# Run database migrations
-flask db upgrade head
-check_status
-
-# Initialize database with admin user
-python init_database.py
-check_status
-
-# Set up SSL certificates
-echo -e "\n${YELLOW}Setting up SSL certificates...${NC}"
-if [ ! -d "/etc/letsencrypt/live/terminusa.online" ]; then
-    # Stop nginx temporarily for certbot
-    systemctl stop nginx
-    
-    # Get SSL certificate
-    certbot certonly --standalone \
-        -d terminusa.online \
-        -d play.terminusa.online \
-        --non-interactive \
-        --agree-tos \
-        --email admin@terminusa.online
-    
-    check_status
-fi
-
-# Configure nginx
-echo -e "\n${YELLOW}Configuring nginx...${NC}"
-mkdir -p /etc/nginx/conf.d
-cp nginx/terminusa.conf /etc/nginx/conf.d/
-cp nginx/terminusa-terminal.conf /etc/nginx/conf.d/
-
-# Update SSL certificate paths in nginx configs
-sed -i "s|ssl_certificate .*|ssl_certificate /etc/letsencrypt/live/terminusa.online/fullchain.pem;|g" /etc/nginx/conf.d/terminusa.conf
-sed -i "s|ssl_certificate_key .*|ssl_certificate_key /etc/letsencrypt/live/terminusa.online/privkey.pem;|g" /etc/nginx/conf.d/terminusa.conf
-sed -i "s|ssl_certificate .*|ssl_certificate /etc/letsencrypt/live/terminusa.online/fullchain.pem;|g" /etc/nginx/conf.d/terminusa-terminal.conf
-sed -i "s|ssl_certificate_key .*|ssl_certificate_key /etc/letsencrypt/live/terminusa.online/privkey.pem;|g" /etc/nginx/conf.d/terminusa-terminal.conf
-
-# Test nginx configuration
-nginx -t
-check_status
-
-# Start nginx
-systemctl start nginx
-check_status
-
-# Set up systemd services
-echo -e "\n${YELLOW}Setting up systemd services...${NC}"
-cp terminusa-terminal.service /etc/systemd/system/
-systemctl daemon-reload
-systemctl enable terminusa-terminal.service
-systemctl enable nginx
-check_status
-
-# Configure log rotation
-echo -e "\n${YELLOW}Configuring log rotation...${NC}"
-cat > /etc/logrotate.d/terminusa << EOF
-/var/log/terminusa/*.log {
-    daily
-    rotate 7
-    compress
-    delaycompress
-    missingok
-    notifempty
-    create 640 terminusa terminusa
+# Error logging function
+error_log() {
+    echo -e "${RED}[ERROR] $(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
+    echo "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> logs/deploy.log
 }
-EOF
-check_status
 
-# Set permissions
-echo -e "\n${YELLOW}Setting permissions...${NC}"
-chown -R terminusa:terminusa /opt/terminusa
-chown -R terminusa:terminusa /var/log/terminusa
-chmod -R 755 /opt/terminusa
-chmod 600 /opt/terminusa/.env
-check_status
+# Success logging function
+success_log() {
+    echo -e "${GREEN}[SUCCESS] $(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
+    echo "[SUCCESS] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> logs/deploy.log
+}
+
+# Info logging function
+info_log() {
+    echo -e "${YELLOW}[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
+    echo "[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> logs/deploy.log
+}
+
+# Get service resource usage
+get_service_resources() {
+    local service=$1
+    local pid=${SERVICE_PIDS[$service]}
+    
+    if [ ! -z "$pid" ] && ps -p $pid >/dev/null 2>&1; then
+        local cpu=$(ps -p $pid -o %cpu | tail -n 1)
+        local mem=$(ps -p $pid -o %mem | tail -n 1)
+        local vsz=$(ps -p $pid -o vsz | tail -n 1)
+        echo "$cpu $mem $vsz"
+    else
+        echo "0 0 0"
+    fi
+}
+
+# Check if screen is installed
+check_screen() {
+    if ! command -v screen &> /dev/null; then
+        info_log "Installing screen..."
+        apt-get update && apt-get install -y screen
+    fi
+}
+
+# Start a screen session
+start_screen() {
+    local name=$1
+    local command=$2
+    screen -dmS $name bash -c "$command"
+}
+
+# Check if a screen session exists
+check_screen_session() {
+    local name=$1
+    screen -list | grep -q "$name"
+}
+
+# Kill a screen session
+kill_screen() {
+    local name=$1
+    screen -X -S $name quit >/dev/null 2>&1
+}
+
+# Initialize deployment
+initialize_deployment() {
+    info_log "Initializing deployment..."
+    
+    # Create required directories
+    mkdir -p logs
+    mkdir -p instance
+    mkdir -p static/downloads
+    
+    # Set proper permissions
+    chmod -R 755 static
+    chmod +x *.py
+    
+    # Install screen if not present
+    check_screen
+    
+    # Create virtual environment if not exists
+    if [ ! -d "venv" ]; then
+        info_log "Creating virtual environment..."
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
+    fi
+    
+    success_log "Initialization complete"
+}
 
 # Start services
-echo -e "\n${YELLOW}Starting services...${NC}"
-systemctl restart nginx
+start_services() {
+    info_log "Starting services..."
+    
+    # Start PostgreSQL
+    systemctl start postgresql
+    
+    # Start Redis
+    systemctl start redis-server
+    
+    # Start Nginx
+    systemctl start nginx
+    
+    # Start Flask application in screen
+    if ! check_screen_session ${SERVICE_SCREENS["flask"]}; then
+        start_screen ${SERVICE_SCREENS["flask"]} "source venv/bin/activate && python app_final.py"
+    fi
+    
+    # Start Terminal server in screen
+    if ! check_screen_session ${SERVICE_SCREENS["terminal"]}; then
+        start_screen ${SERVICE_SCREENS["terminal"]} "source venv/bin/activate && python terminal_server.py"
+    fi
+    
+    success_log "All services started"
+}
 
-# Start terminal server
-echo -e "\n${YELLOW}Starting terminal server...${NC}"
-systemctl start terminusa-terminal.service
-check_status
+# Stop services
+stop_services() {
+    info_log "Stopping services..."
+    
+    # Stop screen sessions
+    for screen_name in "${SERVICE_SCREENS[@]}"; do
+        if check_screen_session $screen_name; then
+            kill_screen $screen_name
+        fi
+    done
+    
+    # Stop system services
+    systemctl stop nginx
+    systemctl stop redis-server
+    systemctl stop postgresql
+    
+    success_log "All services stopped"
+}
 
-# Start web application
-echo -e "\n${YELLOW}Starting web application...${NC}"
-cd /opt/terminusa
-source venv/bin/activate
-python app_final.py &
-check_status
+# Monitor services
+monitor_services() {
+    clear
+    echo -e "${CYAN}=== Terminusa Online Service Monitor ===${NC}"
+    echo -e "Press Ctrl+C to exit monitoring\n"
+    
+    while true; do
+        clear
+        echo -e "${CYAN}=== Terminusa Online Service Monitor ===${NC}"
+        echo -e "Time: $(date '+%Y-%m-%d %H:%M:%S')\n"
+        
+        # System Resources
+        echo -e "${YELLOW}System Resources:${NC}"
+        echo "CPU Usage: $(top -bn1 | grep "Cpu(s)" | awk '{print $2}')%"
+        echo "Memory Usage: $(free -m | awk 'NR==2{printf "%.2f%%", $3*100/$2}')"
+        echo "Disk Usage: $(df -h / | awk 'NR==2{print $5}')"
+        echo
+        
+        # Screen Sessions
+        echo -e "${YELLOW}Screen Sessions:${NC}"
+        screen -list | grep -v "There are screens" || echo "No active screens"
+        echo
+        
+        # Service Status
+        echo -e "${YELLOW}Service Status:${NC}"
+        printf "%-15s %-10s %-20s\n" "Service" "Status" "Port"
+        echo "----------------------------------------"
+        
+        # Check PostgreSQL
+        if systemctl is-active --quiet postgresql; then
+            printf "%-15s ${GREEN}%-10s${NC} %-20s\n" "PostgreSQL" "Running" "${SERVICE_PORTS["postgresql"]}"
+        else
+            printf "%-15s ${RED}%-10s${NC} %-20s\n" "PostgreSQL" "Stopped" "-"
+        fi
+        
+        # Check Redis
+        if systemctl is-active --quiet redis-server; then
+            printf "%-15s ${GREEN}%-10s${NC} %-20s\n" "Redis" "Running" "${SERVICE_PORTS["redis"]}"
+        else
+            printf "%-15s ${RED}%-10s${NC} %-20s\n" "Redis" "Stopped" "-"
+        fi
+        
+        # Check Nginx
+        if systemctl is-active --quiet nginx; then
+            printf "%-15s ${GREEN}%-10s${NC} %-20s\n" "Nginx" "Running" "${SERVICE_PORTS["nginx"]}"
+        else
+            printf "%-15s ${RED}%-10s${NC} %-20s\n" "Nginx" "Stopped" "-"
+        fi
+        
+        # Check Flask app
+        if check_screen_session ${SERVICE_SCREENS["flask"]}; then
+            printf "%-15s ${GREEN}%-10s${NC} %-20s\n" "Flask App" "Running" "${SERVICE_PORTS["flask"]}"
+        else
+            printf "%-15s ${RED}%-10s${NC} %-20s\n" "Flask App" "Stopped" "-"
+        fi
+        
+        # Check Terminal server
+        if check_screen_session ${SERVICE_SCREENS["terminal"]}; then
+            printf "%-15s ${GREEN}%-10s${NC} %-20s\n" "Terminal" "Running" "${SERVICE_PORTS["terminal"]}"
+        else
+            printf "%-15s ${RED}%-10s${NC} %-20s\n" "Terminal" "Stopped" "-"
+        fi
+        
+        sleep 5
+    done
+}
 
-# Verify deployment
-echo -e "\n${YELLOW}Verifying deployment...${NC}"
-if systemctl is-active --quiet nginx && systemctl is-active --quiet terminusa-terminal.service; then
-    echo -e "${GREEN}Deployment completed successfully!${NC}"
-    echo -e "\nServices status:"
-    echo -e "Nginx: $(systemctl is-active nginx)"
-    echo -e "Terminal Server: $(systemctl is-active terminusa-terminal.service)"
-    echo -e "Web Application: Running"
-    
-    echo -e "\nAccess points:"
-    echo -e "Main website: https://terminusa.online"
-    echo -e "Game terminal: https://play.terminusa.online"
-    
-    echo -e "\nLog files:"
-    echo -e "Main logs: /var/log/terminusa/app.log"
-    echo -e "Terminal logs: /var/log/terminusa/terminal.log"
-    echo -e "Nginx access logs: /var/log/nginx/terminusa.access.log"
-    echo -e "Nginx error logs: /var/log/nginx/terminusa.error.log"
-    
-    echo -e "\nMonitor services with:"
-    echo -e "journalctl -u terminusa-terminal.service -f"
-    echo -e "tail -f /var/log/terminusa/*.log"
-    echo -e "tail -f /var/log/nginx/*.log"
-    
-    echo -e "\nDefault admin credentials:"
-    echo -e "Username: adminbb"
-    echo -e "Email: admin@terminusa.online"
-    echo -e "\n${YELLOW}Please change admin password after first login!${NC}"
-else
-    echo -e "${RED}Deployment verification failed. Please check the logs.${NC}"
-    exit 1
-fi
+# Show menu
+show_menu() {
+    while true; do
+        clear
+        echo -e "${CYAN}=== Terminusa Online Management ===${NC}"
+        echo
+        echo "1) Deploy/Update System"
+        echo "2) Start All Services"
+        echo "3) Stop All Services"
+        echo "4) Restart All Services"
+        echo "5) Monitor Services"
+        echo "6) View Logs"
+        echo "7) Database Operations"
+        echo "8) Nginx Operations"
+        echo "9) Debug Mode"
+        echo "0) Exit"
+        echo
+        read -p "Select an option: " choice
+        
+        case $choice in
+            1)
+                initialize_deployment
+                ;;
+            2)
+                start_services
+                ;;
+            3)
+                stop_services
+                ;;
+            4)
+                stop_services
+                sleep 2
+                start_services
+                ;;
+            5)
+                monitor_services
+                ;;
+            6)
+                echo -e "\n${YELLOW}Available Logs:${NC}"
+                echo "1) Flask App Log"
+                echo "2) Terminal Server Log"
+                echo "3) Nginx Error Log"
+                echo "4) Nginx Access Log"
+                echo "5) PostgreSQL Log"
+                echo "6) Redis Log"
+                echo "0) Back to main menu"
+                read -p "Select log to view: " log_choice
+                case $log_choice in
+                    1) tail -f logs/flask.log ;;
+                    2) tail -f logs/terminal.log ;;
+                    3) tail -f /var/log/nginx/error.log ;;
+                    4) tail -f /var/log/nginx/access.log ;;
+                    5) tail -f /var/log/postgresql/postgresql-main.log ;;
+                    6) tail -f /var/log/redis/redis-server.log ;;
+                    0) continue ;;
+                    *) error_log "Invalid option" ;;
+                esac
+                ;;
+            7)
+                echo -e "\n${YELLOW}Database Operations:${NC}"
+                echo "1) Backup Database"
+                echo "2) Restore Database"
+                echo "3) Run Migrations"
+                echo "0) Back to main menu"
+                read -p "Select operation: " db_choice
+                case $db_choice in
+                    1) 
+                        backup_file="backup_$(date +%Y%m%d_%H%M%S).sql"
+                        pg_dump -U terminusa terminusa_db > $backup_file
+                        success_log "Database backed up to $backup_file"
+                        ;;
+                    2)
+                        read -p "Enter backup file path: " restore_file
+                        if [ -f "$restore_file" ]; then
+                            psql -U terminusa terminusa_db < $restore_file
+                            success_log "Database restored from $restore_file"
+                        else
+                            error_log "Backup file not found"
+                        fi
+                        ;;
+                    3)
+                        flask db upgrade
+                        success_log "Database migrations completed"
+                        ;;
+                    0) continue ;;
+                    *) error_log "Invalid option" ;;
+                esac
+                ;;
+            8)
+                echo -e "\n${YELLOW}Nginx Operations:${NC}"
+                echo "1) Test Configuration"
+                echo "2) Reload Configuration"
+                echo "3) View Active Sites"
+                echo "0) Back to main menu"
+                read -p "Select operation: " nginx_choice
+                case $nginx_choice in
+                    1) nginx -t ;;
+                    2) systemctl reload nginx ;;
+                    3) ls -l /etc/nginx/sites-enabled/ ;;
+                    0) continue ;;
+                    *) error_log "Invalid option" ;;
+                esac
+                ;;
+            9)
+                if [ "$DEBUG" = true ]; then
+                    DEBUG=false
+                    info_log "Debug mode disabled"
+                else
+                    DEBUG=true
+                    info_log "Debug mode enabled"
+                fi
+                ;;
+            0)
+                info_log "Exiting..."
+                exit 0
+                ;;
+            *)
+                error_log "Invalid option"
+                ;;
+        esac
+        
+        echo
+        read -p "Press Enter to continue..."
+    done
+}
+
+# Main execution
+mkdir -p logs
+show_menu
