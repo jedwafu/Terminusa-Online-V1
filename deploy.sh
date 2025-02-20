@@ -25,6 +25,8 @@ SERVICE_PORTS=(
     ["flask"]="5000"
     ["terminal"]="6789"
     ["redis"]="6379"
+    ["postfix"]="25"
+    ["game"]="5001"
 )
 
 SERVICE_LOGS=(
@@ -33,16 +35,25 @@ SERVICE_LOGS=(
     ["flask"]="logs/flask.log"
     ["terminal"]="logs/terminal.log"
     ["redis"]="/var/log/redis/redis-server.log"
+    ["postfix"]="/var/log/mail.log"
+    ["game"]="logs/game.log"
+    ["email_monitor"]="logs/email_monitor.log"
+    ["ai_manager"]="logs/ai_manager.log"
+    ["combat_manager"]="logs/combat_manager.log"
+    ["economy_systems"]="logs/economy_systems.log"
+    ["game_mechanics"]="logs/game_mechanics.log"
 )
 
 SERVICE_SCREENS=(
     ["flask"]="terminusa-flask"
     ["terminal"]="terminusa-terminal"
+    ["game"]="terminusa-game"
+    ["email_monitor"]="terminusa-email"
+    ["ai_manager"]="terminusa-ai"
+    ["combat_manager"]="terminusa-combat"
+    ["economy_systems"]="terminusa-economy"
+    ["game_mechanics"]="terminusa-mechanics"
 )
-
-# Monitoring variables
-MONITOR_INTERVAL=5  # seconds
-MONITOR_RUNNING=true
 
 # Debug logging function
 debug_log() {
@@ -183,24 +194,72 @@ initialize_deployment() {
 start_services() {
     info_log "Starting services..."
     
-    # Start PostgreSQL
+    # Create logs directory
+    mkdir -p logs
+    
+    # Start system services
+    info_log "Starting system services..."
     systemctl start postgresql
-    
-    # Start Redis
     systemctl start redis-server
-    
-    # Start Nginx
     systemctl start nginx
+    systemctl start postfix
     
-    # Start Flask application in screen
+    # Activate virtual environment
+    source venv/bin/activate
+    
+    # Start Flask application
+    info_log "Starting Flask application..."
     if ! check_screen_session ${SERVICE_SCREENS["flask"]}; then
-        start_screen ${SERVICE_SCREENS["flask"]} "source venv/bin/activate && python app_final.py"
+        start_screen ${SERVICE_SCREENS["flask"]} "cd $(pwd) && source venv/bin/activate && FLASK_APP=app_final.py FLASK_ENV=production python app_final.py > logs/flask.log 2>&1"
     fi
     
-    # Start Terminal server in screen
+    # Start Terminal server
+    info_log "Starting Terminal server..."
     if ! check_screen_session ${SERVICE_SCREENS["terminal"]}; then
-        start_screen ${SERVICE_SCREENS["terminal"]} "source venv/bin/activate && python terminal_server.py"
+        start_screen ${SERVICE_SCREENS["terminal"]} "cd $(pwd) && source venv/bin/activate && python terminal_server.py > logs/terminal.log 2>&1"
     fi
+    
+    # Start Game server
+    info_log "Starting Game server..."
+    if ! check_screen_session ${SERVICE_SCREENS["game"]}; then
+        start_screen ${SERVICE_SCREENS["game"]} "cd $(pwd) && source venv/bin/activate && python game_server.py > logs/game.log 2>&1"
+    fi
+    
+    # Start Email monitor
+    info_log "Starting Email monitor..."
+    if ! check_screen_session ${SERVICE_SCREENS["email_monitor"]}; then
+        start_screen ${SERVICE_SCREENS["email_monitor"]} "cd $(pwd) && source venv/bin/activate && python email_monitor.py > logs/email_monitor.log 2>&1"
+    fi
+    
+    # Start AI manager
+    info_log "Starting AI manager..."
+    if ! check_screen_session ${SERVICE_SCREENS["ai_manager"]}; then
+        start_screen ${SERVICE_SCREENS["ai_manager"]} "cd $(pwd) && source venv/bin/activate && python ai_manager.py > logs/ai_manager.log 2>&1"
+    fi
+    
+    # Start Combat manager
+    info_log "Starting Combat manager..."
+    if ! check_screen_session ${SERVICE_SCREENS["combat_manager"]}; then
+        start_screen ${SERVICE_SCREENS["combat_manager"]} "cd $(pwd) && source venv/bin/activate && python combat_manager.py > logs/combat_manager.log 2>&1"
+    fi
+    
+    # Start Economy systems
+    info_log "Starting Economy systems..."
+    if ! check_screen_session ${SERVICE_SCREENS["economy_systems"]}; then
+        start_screen ${SERVICE_SCREENS["economy_systems"]} "cd $(pwd) && source venv/bin/activate && python economy_systems.py > logs/economy_systems.log 2>&1"
+    fi
+    
+    # Start Game mechanics
+    info_log "Starting Game mechanics..."
+    if ! check_screen_session ${SERVICE_SCREENS["game_mechanics"]}; then
+        start_screen ${SERVICE_SCREENS["game_mechanics"]} "cd $(pwd) && source venv/bin/activate && python game_mechanics.py > logs/game_mechanics.log 2>&1"
+    fi
+    
+    # Wait for services to start
+    sleep 5
+    
+    # Check service status
+    bash status_monitor.sh
     
     success_log "All services started"
 }
@@ -209,17 +268,20 @@ start_services() {
 stop_services() {
     info_log "Stopping services..."
     
-    # Stop screen sessions
+    # Stop all screen sessions
     for screen_name in "${SERVICE_SCREENS[@]}"; do
         if check_screen_session $screen_name; then
+            info_log "Stopping $screen_name..."
             kill_screen $screen_name
         fi
     done
     
     # Stop system services
+    info_log "Stopping system services..."
     systemctl stop nginx
     systemctl stop redis-server
     systemctl stop postgresql
+    systemctl stop postfix
     
     success_log "All services stopped"
 }
@@ -229,7 +291,7 @@ enhanced_monitor_services() {
     info_log "Starting enhanced service monitoring..."
     
     while [ "$MONITOR_RUNNING" = true ]; do
-        bash system_status.sh
+        bash status_monitor.sh
         sleep $MONITOR_INTERVAL
     done
 }
@@ -276,27 +338,33 @@ show_menu() {
                 echo -e "\n${YELLOW}Available Logs:${NC}"
                 echo "1) Flask App Log"
                 echo "2) Terminal Server Log"
-                echo "3) Nginx Error Log"
-                echo "4) Nginx Access Log"
-                echo "5) PostgreSQL Log"
-                echo "6) Redis Log"
-                echo "7) Service Status Log"
+                echo "3) Game Server Log"
+                echo "4) Email Monitor Log"
+                echo "5) AI Manager Log"
+                echo "6) Combat Manager Log"
+                echo "7) Economy Systems Log"
+                echo "8) Game Mechanics Log"
+                echo "9) Nginx Error Log"
+                echo "10) Nginx Access Log"
+                echo "11) PostgreSQL Log"
+                echo "12) Redis Log"
+                echo "13) Service Status Log"
                 echo "0) Back to main menu"
                 read -p "Select log to view: " log_choice
                 case $log_choice in
                     1) tail -f logs/flask.log ;;
                     2) tail -f logs/terminal.log ;;
-                    3) tail -f /var/log/nginx/error.log ;;
-                    4) tail -f /var/log/nginx/access.log ;;
-                    5) tail -f /var/log/postgresql/postgresql-main.log ;;
-                    6) tail -f /var/log/redis/redis-server.log ;;
-                    7) 
-                        if [ -f logs/service_status.json ]; then
-                            cat logs/service_status.json | python3 -m json.tool
-                        else
-                            bash system_status.sh
-                        fi
-                        ;;
+                    3) tail -f logs/game.log ;;
+                    4) tail -f logs/email_monitor.log ;;
+                    5) tail -f logs/ai_manager.log ;;
+                    6) tail -f logs/combat_manager.log ;;
+                    7) tail -f logs/economy_systems.log ;;
+                    8) tail -f logs/game_mechanics.log ;;
+                    9) tail -f /var/log/nginx/error.log ;;
+                    10) tail -f /var/log/nginx/access.log ;;
+                    11) tail -f /var/log/postgresql/postgresql-main.log ;;
+                    12) tail -f /var/log/redis/redis-server.log ;;
+                    13) cat logs/service_status.json | python3 -m json.tool ;;
                     0) continue ;;
                     *) error_log "Invalid option" ;;
                 esac
@@ -352,7 +420,7 @@ show_menu() {
                 esac
                 ;;
             9)
-                bash system_status.sh
+                bash status_monitor.sh
                 ;;
             10)
                 if [ "$DEBUG" = true ]; then
