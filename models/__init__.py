@@ -5,6 +5,12 @@ Exposes all models through a clean interface while avoiding circular imports.
 
 from database import db
 
+# Import base model and mixins
+from .base import (
+    BaseModel, SoftDeleteMixin, TimestampMixin,
+    VersionMixin, StatusMixin, AuditMixin
+)
+
 # Base models that don't have dependencies
 from .currency import (
     Currency, Transaction, TokenSwap,
@@ -53,6 +59,10 @@ from .progression import (
 
 # Define which models are exposed
 __all__ = [
+    # Base models and mixins
+    'BaseModel', 'SoftDeleteMixin', 'TimestampMixin',
+    'VersionMixin', 'StatusMixin', 'AuditMixin',
+    
     # Currency related models
     'Currency', 'Transaction', 'TokenSwap',
     'CurrencyType', 'TransactionType',
