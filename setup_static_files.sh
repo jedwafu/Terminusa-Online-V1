@@ -58,7 +58,13 @@ for css_file in "${REQUIRED_CSS[@]}"; do
         log_error "Required CSS file missing in source: $css_file"
         exit 1
     fi
+    log_success "Found $css_file"
 done
+
+# Stop nginx before making changes
+log_info "Stopping nginx..."
+sudo systemctl stop nginx
+check_command "Failed to stop nginx"
 
 # Create nginx root directory if it doesn't exist
 log_info "Creating nginx root directory..."
@@ -75,36 +81,22 @@ fi
 
 # Create nginx static directory structure
 log_info "Creating nginx static directory structure..."
-sudo mkdir -p $NGINX_STATIC_DIR/css
-sudo mkdir -p $NGINX_STATIC_DIR/js
-sudo mkdir -p $NGINX_STATIC_DIR/images
+sudo mkdir -p $NGINX_STATIC_DIR/{css,js,images}
 check_command "Failed to create nginx static directories"
 
-# Copy static files with specific handling for CSS
+# Copy static files
 log_info "Copying static files..."
+
+# Copy CSS files with verification
 log_info "Copying CSS files..."
 for css_file in "${REQUIRED_CSS[@]}"; do
+    log_info "Copying $css_file..."
     sudo cp "$STATIC_DIR/css/$css_file" "$NGINX_STATIC_DIR/css/"
     check_command "Failed to copy $css_file"
-    log_info "Copied $css_file"
-done
-
-# Copy remaining static files
-log_info "Copying remaining static files..."
-sudo cp -r $STATIC_DIR/js/* $NGINX_STATIC_DIR/js/ 2>/dev/null || true
-sudo cp -r $STATIC_DIR/images/* $NGINX_STATIC_DIR/images/ 2>/dev/null || true
-
-# Set permissions
-log_info "Setting permissions..."
-sudo chown -R www-data:www-data $NGINX_ROOT
-sudo chmod -R 755 $NGINX_ROOT
-check_command "Failed to set permissions"
-
-# Verify CSS files in nginx directory
-log_info "Verifying nginx CSS files..."
-for css_file in "${REQUIRED_CSS[@]}"; do
+    
+    # Verify the copy
     if ! verify_file "$NGINX_STATIC_DIR/css/$css_file"; then
-        log_error "Failed to verify $css_file in nginx directory"
+        log_error "Failed to verify copied file: $css_file"
         if [ -d "$BACKUP_DIR" ]; then
             log_info "Restoring from backup..."
             sudo rm -rf $NGINX_STATIC_DIR
@@ -112,8 +104,23 @@ for css_file in "${REQUIRED_CSS[@]}"; do
         fi
         exit 1
     fi
-    log_success "Verified $css_file"
+    log_success "Successfully copied and verified $css_file"
 done
+
+# Copy remaining static files
+log_info "Copying remaining static files..."
+if [ -d "$STATIC_DIR/js" ]; then
+    sudo cp -r $STATIC_DIR/js/* $NGINX_STATIC_DIR/js/ 2>/dev/null || true
+fi
+if [ -d "$STATIC_DIR/images" ]; then
+    sudo cp -r $STATIC_DIR/images/* $NGINX_STATIC_DIR/images/ 2>/dev/null || true
+fi
+
+# Set permissions
+log_info "Setting permissions..."
+sudo chown -R www-data:www-data $NGINX_ROOT
+sudo chmod -R 755 $NGINX_ROOT
+check_command "Failed to set permissions"
 
 # Print directory structure for verification
 log_info "Static files structure:"
@@ -124,19 +131,16 @@ log_info "Testing nginx configuration..."
 sudo nginx -t
 check_command "Nginx configuration test failed"
 
-# Clear nginx cache
-log_info "Clearing nginx cache..."
-sudo rm -rf /var/cache/nginx/*
-check_command "Failed to clear nginx cache"
+# Start nginx
+log_info "Starting nginx..."
+sudo systemctl start nginx
+check_command "Failed to start nginx"
 
-# Restart nginx
-log_info "Restarting nginx..."
-sudo systemctl restart nginx
-check_command "Failed to restart nginx"
-
-# Verify file permissions and ownership
-log_info "Final verification:"
-ls -la $NGINX_STATIC_DIR/css/
+# Verify nginx is running
+if ! systemctl is-active --quiet nginx; then
+    log_error "nginx failed to start"
+    exit 1
+fi
 
 # Test file access
 log_info "Testing file access..."
@@ -147,5 +151,14 @@ for css_file in "${REQUIRED_CSS[@]}"; do
     fi
     log_success "www-data can read $css_file"
 done
+
+# Clear nginx cache
+log_info "Clearing nginx cache..."
+sudo rm -rf /var/cache/nginx/*
+check_command "Failed to clear nginx cache"
+
+# Verify file permissions and ownership
+log_info "Final verification:"
+ls -la $NGINX_STATIC_DIR/css/
 
 log_success "Static files setup completed successfully"
