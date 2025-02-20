@@ -80,10 +80,39 @@ info_log() {
     echo "[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> logs/deploy.log
 }
 
-# Setup static files
+# Setup static files with enhanced error handling
 setup_static_files() {
     info_log "Setting up static files..."
-    bash setup_static_files.sh || return 1
+    
+    # Create required directories
+    mkdir -p /var/www/terminusa/static/{css,js,images}
+    
+    # Copy static files
+    info_log "Copying static files..."
+    cp -r static/* /var/www/terminusa/static/
+    
+    # Set permissions
+    info_log "Setting permissions..."
+    chown -R www-data:www-data /var/www/terminusa
+    chmod -R 755 /var/www/terminusa
+    
+    # Verify files exist
+    if [ ! -f "/var/www/terminusa/static/css/style.css" ] || \
+       [ ! -f "/var/www/terminusa/static/css/buttons.css" ] || \
+       [ ! -f "/var/www/terminusa/static/css/alerts.css" ]; then
+        error_log "Static files not copied correctly!"
+        return 1
+    fi
+    
+    # Verify nginx configuration
+    info_log "Verifying nginx configuration..."
+    if ! nginx -t; then
+        error_log "Nginx configuration test failed!"
+        return 1
+    fi
+    
+    success_log "Static files setup completed"
+    return 0
 }
 
 # Check Python version
@@ -196,6 +225,14 @@ initialize_deployment() {
     # Setup static files
     setup_static_files || return 1
     
+    # Run database migrations
+    info_log "Running database migrations..."
+    source venv/bin/activate
+    flask db upgrade heads || {
+        error_log "Database migration failed!"
+        return 1
+    }
+    
     success_log "Initialization complete"
 }
 
@@ -205,6 +242,12 @@ start_services() {
     
     # Create logs directory
     mkdir -p logs
+    
+    # Setup static files first
+    setup_static_files || {
+        error_log "Static files setup failed!"
+        return 1
+    }
     
     # Start system services
     info_log "Starting system services..."
@@ -435,7 +478,7 @@ show_menu() {
                         fi
                         ;;
                     3)
-                        flask db upgrade
+                        flask db upgrade heads
                         success_log "Database migrations completed"
                         ;;
                     4)
