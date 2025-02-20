@@ -3,18 +3,19 @@ monkey.patch_all()
 
 import os
 from flask import Flask, render_template, redirect, url_for, flash, request, jsonify
-from flask_login import LoginManager, current_user, login_user, logout_user, login_required
+from flask_login import LoginManager, current_user, login_required
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 from flask_migrate import Migrate
 from dotenv import load_dotenv
 import logging
 from logging.handlers import RotatingFileHandler
-from datetime import datetime, timedelta
+from datetime import datetime
 from functools import wraps
 
-from models import db, User, Announcement, init_db
-from routes_announcements import announcements
+from database import db
+from models import User, Announcement
+from routes.auth_routes import auth
 
 # Load environment variables
 print("[DEBUG] Loading environment variables")
@@ -56,7 +57,7 @@ jwt = JWTManager(app)
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'auth.login'
 
 # Initialize database
 db.init_app(app)
@@ -98,7 +99,7 @@ def admin_required(f):
     return decorated_function
 
 # Register blueprints
-app.register_blueprint(announcements, url_prefix='/announcements')
+app.register_blueprint(auth, url_prefix='/auth')
 
 # Routes
 @app.route('/')
@@ -108,63 +109,6 @@ def index():
         .limit(3)\
         .all()
     return render_template('index.html', announcements=announcements)
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
-    
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        user = User.query.filter_by(username=username).first()
-        
-        if user and user.check_password(password):
-            login_user(user)
-            user.last_login = datetime.utcnow()
-            db.session.commit()
-            
-            next_page = request.args.get('next')
-            if not next_page or not next_page.startswith('/'):
-                next_page = 'https://play.terminusa.online'
-            return redirect(next_page)
-        
-        flash('Invalid username or password', 'error')
-    return render_template('login.html')
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('index'))
-    
-    if request.method == 'POST':
-        username = request.form.get('username')
-        email = request.form.get('email')
-        password = request.form.get('password')
-        
-        if User.query.filter_by(username=username).first():
-            flash('Username already exists', 'error')
-            return redirect(url_for('register'))
-        
-        if User.query.filter_by(email=email).first():
-            flash('Email already registered', 'error')
-            return redirect(url_for('register'))
-        
-        user = User(username=username, email=email)
-        user.set_password(password)
-        db.session.add(user)
-        db.session.commit()
-        
-        flash('Registration successful! Please log in.', 'success')
-        return redirect(url_for('login'))
-    
-    return render_template('register.html')
-
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for('index'))
 
 @app.route('/profile')
 @login_required
