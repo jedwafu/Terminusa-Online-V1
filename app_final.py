@@ -19,7 +19,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from database import db
 from models import User, Announcement
-from routes.auth_routes import auth  # Import auth blueprint
+from routes import init_app as init_routes  # Import route initialization
 
 # Load environment variables
 print("[DEBUG] Loading environment variables")
@@ -102,39 +102,8 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# Register blueprints
-app.register_blueprint(auth, url_prefix='/auth')
-
-# Routes
-@app.route('/')
-def index():
-    announcements = Announcement.query.filter_by(is_active=True)\
-        .order_by(Announcement.priority.desc(), Announcement.created_at.desc())\
-        .limit(3)\
-        .all()
-    return render_template('index.html', announcements=announcements)
-
-@app.route('/profile')
-@login_required
-def profile():
-    return render_template('profile.html')
-
-@app.route('/api/connect-wallet', methods=['POST'])
-@login_required
-def connect_wallet():
-    data = request.get_json()
-    wallet_address = data.get('wallet_address')
-    
-    if not wallet_address:
-        return jsonify({'error': 'Wallet address is required'}), 400
-    
-    current_user.web3_wallet = wallet_address
-    db.session.commit()
-    
-    return jsonify({
-        'message': 'Wallet connected successfully',
-        'wallet_address': wallet_address
-    })
+# Initialize routes
+init_routes(app)
 
 # Error handlers
 @app.errorhandler(404)
