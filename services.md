@@ -6,14 +6,16 @@
 - **Service**: Flask Web Application (app_final.py)
 - **Port**: 5000
 - **Purpose**: Serves the main web interface
-- **Dependencies**: Python, Flask
+- **Dependencies**: Python, Flask, Gevent
+- **Implementation**: Uses Gevent WSGI Server (no Gunicorn needed)
 - **Start Command**: `python app_final.py`
+- **Note**: Gevent provides production-grade WSGI server with async support
 
 ### 2. Terminal Server
 - **Service**: Terminal WebSocket Server (terminal_server.py)
 - **Port**: 6789
 - **Purpose**: Handles terminal-based game interactions
-- **Dependencies**: Python, WebSocket
+- **Dependencies**: Python, WebSocket, Gevent
 - **Start Command**: `systemctl start terminusa-terminal.service`
 
 ### 3. Database
@@ -37,28 +39,38 @@
 - **Dependencies**: Redis Server
 - **Start Command**: `systemctl start redis-server`
 
-## Supporting Services
+## Service Architecture
 
-### 6. SSL Certificate Manager
-- **Service**: Certbot
-- **Purpose**: SSL certificate automation
-- **Dependencies**: Certbot
-- **Renewal Command**: `certbot renew`
+### Web Application Stack
+1. Nginx (Front-end reverse proxy)
+2. Gevent WSGI Server (Production WSGI server)
+3. Flask Application (Web framework)
 
-### 7. Task Scheduler
-- **Service**: Supervisor
-- **Purpose**: Process management and monitoring
-- **Dependencies**: Supervisor
-- **Start Command**: `systemctl start supervisor`
+### Terminal Server Stack
+1. Nginx (WebSocket proxy)
+2. Gevent WebSocket Server
+3. Terminal Application
 
-## Monitoring Services
+## Why Gevent Instead of Gunicorn?
 
-### 8. Logging Service
-- **Service**: System Logging
-- **Location**: /var/log/terminusa/
-- **Purpose**: Application and error logging
-- **Dependencies**: logrotate
-- **Log Rotation**: Daily with 7-day retention
+1. **Built-in Async Support**: 
+   - Gevent provides native async capabilities needed for WebSocket and real-time features
+   - Better integration with our WebSocket-based terminal server
+
+2. **Single Process Model**: 
+   - Uses Gevent's coroutines for concurrency
+   - Eliminates need for multiple worker processes
+   - More memory efficient than multiple Gunicorn workers
+
+3. **Simplified Architecture**:
+   - No need for additional WSGI server layer
+   - Direct integration with Flask application
+   - Better control over async operations
+
+4. **Performance Benefits**:
+   - Lower memory footprint
+   - Reduced context switching
+   - Better suited for long-lived connections
 
 ## Service Dependencies
 
@@ -76,54 +88,24 @@
 - Alembic
 - psycopg2-binary
 - redis
-- gevent
+- gevent (for WSGI server and async operations)
 - websockets
 
-## Service Configuration Files
-
-### 1. Nginx Configuration
-- Main config: `/etc/nginx/nginx.conf`
-- Site config: `/etc/nginx/conf.d/terminusa.conf`
-- Terminal config: `/etc/nginx/conf.d/terminusa-terminal.conf`
-
-### 2. Supervisor Configuration
-- Terminal service: `/etc/supervisor/conf.d/terminusa-terminal.conf`
-
-### 3. System Service Files
-- Terminal service: `/etc/systemd/system/terminusa-terminal.service`
-
-### 4. Environment Configuration
-- Main config: `.env`
-- Example config: `.env.example`
-
-## Service Management Commands
+## Service Management
 
 ### Start All Services
 ```bash
-systemctl start postgresql
-systemctl start redis-server
-systemctl start nginx
-systemctl start supervisor
-systemctl start terminusa-terminal.service
-python app_final.py
+./manage_services.sh start
 ```
 
 ### Stop All Services
 ```bash
-systemctl stop terminusa-terminal.service
-systemctl stop nginx
-systemctl stop redis-server
-systemctl stop postgresql
-systemctl stop supervisor
+./manage_services.sh stop
 ```
 
 ### Check Service Status
 ```bash
-systemctl status postgresql
-systemctl status redis-server
-systemctl status nginx
-systemctl status supervisor
-systemctl status terminusa-terminal.service
+./manage_services.sh status
 ```
 
 ### View Logs
@@ -132,23 +114,6 @@ tail -f /var/log/terminusa/app.log
 tail -f /var/log/terminusa/terminal.log
 tail -f /var/log/nginx/terminusa.access.log
 tail -f /var/log/nginx/terminusa.error.log
-```
-
-## Maintenance Tasks
-
-### Database Backup
-```bash
-pg_dump -U terminusa terminusa_db > backup.sql
-```
-
-### SSL Certificate Renewal
-```bash
-certbot renew
-```
-
-### Log Rotation
-```bash
-logrotate /etc/logrotate.d/terminusa
 ```
 
 ## Monitoring Checklist
@@ -160,3 +125,4 @@ logrotate /etc/logrotate.d/terminusa
 - [ ] Check SSL certificate expiration
 - [ ] Monitor Redis memory usage
 - [ ] Check nginx access and error logs
+- [ ] Monitor Gevent worker status
