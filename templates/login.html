@@ -3,367 +3,158 @@
 {% block title %}Login - Terminusa Online{% endblock %}
 
 {% block content %}
-<section class="login-section">
-    <div class="container">
-        <div class="login-container">
-            <div class="login-content">
-                <h1>Welcome Back, Hunter</h1>
-                <p class="subtitle">Log in to continue your adventure in the Gates</p>
-
-                <form class="login-form" method="POST">
-                    <div class="form-group">
-                        <label for="username" class="form-label">Username or Email</label>
-                        <input type="text" id="username" name="username" class="form-input" required autocomplete="username">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="password" class="form-label">Password</label>
-                        <input type="password" id="password" name="password" class="form-input" required autocomplete="current-password">
-                        <div class="password-options">
-                            <label class="remember-me">
-                                <input type="checkbox" name="remember" id="remember">
-                                <span>Remember me</span>
-                            </label>
-                            <a href="/forgot-password" class="forgot-password">Forgot Password?</a>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary btn-block glow">
-                        <span class="btn-text">Enter the Gate</span>
-                    </button>
-                </form>
-
-                <div class="form-footer">
-                    <p>Not a Hunter yet? <a href="/register" class="glow-text">Join the Hunt</a></p>
-                </div>
-
-                <div class="cli-login-info">
-                    <h3>Terminal Access</h3>
-                    <p>To log in via terminal, use:</p>
-                    <div class="code-block">
-                        <code>terminusa login --username YOUR_USERNAME</code>
-                    </div>
-                </div>
+<div class="auth-container">
+    <div class="auth-box">
+        <h2 class="auth-title">Login to Terminusa</h2>
+        <form method="POST" action="{{ url_for('auth.login') }}" class="auth-form">
+            <div class="form-group">
+                <label for="username">Username or Email</label>
+                <input type="text" id="username" name="username" required 
+                       class="form-input" placeholder="Enter your username or email">
             </div>
-
-            <div class="login-sidebar">
-                <div class="news-card">
-                    <h3>Latest Gate Reports</h3>
-                    <div class="news-items">
-                        <div class="news-item">
-                            <span class="news-date">New Gate</span>
-                            <h4>S-Rank Gate Discovered</h4>
-                            <p>A new S-Rank Gate has appeared in the northern region!</p>
-                        </div>
-                        <div class="news-item">
-                            <span class="news-date">Guild Update</span>
-                            <h4>Shadow Legion Rises</h4>
-                            <p>The Shadow Legion guild has cleared 100 A-Rank Gates!</p>
-                        </div>
-                        <div class="news-item">
-                            <span class="news-date">Event</span>
-                            <h4>Double Crystal Week</h4>
-                            <p>All Gate rewards are doubled until next maintenance!</p>
-                        </div>
-                    </div>
-                </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required 
+                       class="form-input" placeholder="Enter your password">
             </div>
+            <div class="form-group form-checkbox">
+                <input type="checkbox" id="remember" name="remember">
+                <label for="remember">Remember me</label>
+            </div>
+            <button type="submit" class="btn btn-primary btn-glow btn-full">Login</button>
+        </form>
+        <div class="auth-links">
+            <a href="#" class="text-matrix">Forgot Password?</a>
+            <span class="separator">|</span>
+            <a href="{{ url_for('auth.register') }}" class="text-matrix">Create Account</a>
         </div>
     </div>
-</section>
-{% endblock %}
+</div>
 
-{% block extra_css %}
 <style>
-.login-section {
-    padding: 4rem 0;
-    min-height: calc(100vh - 60px - 300px);
+.auth-container {
     display: flex;
-    align-items: center;
     justify-content: center;
-    position: relative;
-    z-index: 1;
+    align-items: center;
+    min-height: 70vh;
+    padding: 2rem;
 }
 
-.login-container {
-    display: grid;
-    grid-template-columns: 1fr 300px;
-    gap: 2rem;
+.auth-box {
     background: rgba(0, 24, 0, 0.95);
+    border: 1px solid var(--matrix-green);
     border-radius: 8px;
-    border: 1px solid var(--matrix-green);
-    box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
-    overflow: hidden;
-    max-width: 900px;
-    width: 100%;
-    margin: 0 auto;
-    position: relative;
-}
-
-.login-content {
     padding: 2rem;
-}
-
-.login-content h1 {
-    color: var(--matrix-green);
-    margin-bottom: 0.5rem;
-    font-size: 2.5rem;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    text-shadow: var(--text-shadow);
-}
-
-.subtitle {
-    color: var(--text-color);
-    margin-bottom: 2rem;
-    opacity: 0.8;
-    font-size: 1.1rem;
-}
-
-.login-form {
+    width: 100%;
     max-width: 400px;
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
 }
 
-.form-group {
-    margin-bottom: 1.5rem;
-}
-
-.form-label {
-    display: block;
-    margin-bottom: 0.5rem;
+.auth-title {
     color: var(--matrix-green);
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    text-shadow: var(--text-shadow);
-}
-
-.form-input {
-    width: 100%;
-    padding: 0.75rem;
-    background-color: rgba(0, 255, 65, 0.1);
-    border: 1px solid var(--matrix-green);
-    border-radius: 4px;
-    color: var(--text-color);
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-}
-
-.form-input:focus {
-    outline: none;
-    border-color: var(--neon-blue);
-    box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
-    transform: translateY(-2px);
-}
-
-.password-options {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 0.5rem;
-    font-size: 0.875rem;
-}
-
-.remember-me {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--text-color);
-}
-
-.forgot-password {
-    color: var(--neon-blue);
-    text-decoration: none;
-    transition: all 0.3s ease;
-}
-
-.forgot-password:hover {
-    color: var(--matrix-green);
-    text-shadow: var(--text-shadow);
-}
-
-.btn-block {
-    width: 100%;
-    margin-top: 1.5rem;
-    font-size: 1.1rem;
-    letter-spacing: 2px;
-}
-
-.form-footer {
-    margin-top: 2rem;
     text-align: center;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(0, 255, 65, 0.1);
-}
-
-.form-footer a {
-    color: var(--matrix-green);
-    text-decoration: none;
-    transition: all 0.3s ease;
-    font-weight: 600;
-}
-
-.form-footer a:hover {
-    text-shadow: var(--text-shadow);
-}
-
-.cli-login-info {
-    margin-top: 2rem;
-    padding-top: 2rem;
-    border-top: 1px solid rgba(0, 255, 65, 0.1);
-}
-
-.cli-login-info h3 {
-    color: var(--matrix-green);
-    margin-bottom: 1rem;
-    font-size: 1.1rem;
+    margin-bottom: 2rem;
+    font-size: 1.8rem;
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
     text-shadow: var(--text-shadow);
 }
 
-.code-block {
-    background-color: var(--matrix-black);
-    color: var(--text-color);
-    padding: 1rem;
-    border-radius: 4px;
-    margin-top: 0.5rem;
-    font-family: monospace;
-    border: 1px solid var(--matrix-green);
-    position: relative;
-    overflow: hidden;
-}
-
-.code-block::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(0, 255, 65, 0.2),
-        transparent
-    );
-    animation: code-shine 3s infinite;
-}
-
-@keyframes code-shine {
-    to {
-        left: 100%;
-    }
-}
-
-.login-sidebar {
-    background-color: var(--matrix-dark);
-    color: var(--text-color);
-    padding: 2rem;
-    border-left: 1px solid var(--matrix-green);
-    position: relative;
-    overflow: hidden;
-}
-
-.news-card h3 {
-    margin-bottom: 1.5rem;
-    font-size: 1.25rem;
-    color: var(--matrix-green);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    text-shadow: var(--text-shadow);
-}
-
-.news-items {
+.auth-form {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
 }
 
-.news-item {
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid rgba(0, 255, 65, 0.1);
-    position: relative;
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
-.news-item:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-}
-
-.news-date {
-    display: inline-block;
-    background-color: var(--matrix-green);
-    color: var(--matrix-black);
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
+.form-group label {
+    color: var(--matrix-green);
+    font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 1px;
+    font-size: 0.9rem;
 }
 
-.news-item h4 {
-    margin-bottom: 0.5rem;
-    font-size: 1rem;
-    color: var(--neon-blue);
-    text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+.form-input {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--matrix-green);
+    border-radius: 4px;
+    padding: 0.75rem;
+    color: var(--text-color);
+    font-family: 'Rajdhani', sans-serif;
+    transition: all 0.3s ease;
 }
 
-.news-item p {
-    font-size: 0.875rem;
-    opacity: 0.9;
-    line-height: 1.4;
+.form-input:focus {
+    outline: none;
+    border-color: var(--matrix-light-green);
+    box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
 }
 
-@media (max-width: 768px) {
-    .login-container {
-        grid-template-columns: 1fr;
-    }
-
-    .login-content {
-        padding: 1.5rem;
-    }
-
-    .login-form {
-        max-width: 100%;
-    }
-
-    .password-options {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-    }
-
-    .login-sidebar {
-        border-left: none;
-        border-top: 1px solid var(--matrix-green);
-    }
+.form-checkbox {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-.glow-text {
+.form-checkbox input[type="checkbox"] {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--matrix-green);
+    border-radius: 3px;
+    background: transparent;
+    cursor: pointer;
     position: relative;
-    display: inline-block;
 }
 
-.glow-text::after {
-    content: '';
+.form-checkbox input[type="checkbox"]:checked::before {
+    content: '✓';
     position: absolute;
-    width: 100%;
-    height: 100%;
-    top: 0;
-    left: 0;
-    background: var(--matrix-green);
-    filter: blur(8px);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    z-index: -1;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--matrix-green);
+    font-size: 12px;
 }
 
-.glow-text:hover::after {
-    opacity: 0.5;
+.btn-full {
+    width: 100%;
+}
+
+.auth-links {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.auth-links a {
+    color: var(--matrix-green);
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.auth-links a:hover {
+    color: var(--matrix-light-green);
+    text-shadow: var(--text-shadow);
+}
+
+.separator {
+    color: var(--matrix-green);
+    margin: 0 0.5rem;
+}
+
+.text-matrix {
+    color: var(--matrix-green);
 }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/auth.js') }}"></script>
 {% endblock %}

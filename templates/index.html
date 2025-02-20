@@ -1,245 +1,184 @@
 {% extends "base.html" %}
 
-{% block title %}Terminusa Online - Enter the Digital Realm{% endblock %}
+{% block title %}Welcome to Terminusa Online{% endblock %}
 
 {% block content %}
-<section class="hero scan-line">
-    <div class="matrix-code"></div>
-    <div class="container">
-        <div class="hero-content">
-            <h1 class="glitch" data-text="Welcome to Terminusa Online">Welcome to Terminusa Online</h1>
-            <p class="hero-subtitle neon-text">Where The Matrix meets Solo Leveling</p>
-            <div class="hero-text">
-                <p class="typing-effect" data-text="A new generation of hunters rises in the digital realm"></p>
-            </div>
-            <div class="system-status">
-                <div class="status-line">
-                    <span class="label digital-distortion">System Status:</span>
-                    <span class="value neon-text">ONLINE</span>
-                </div>
-                <div class="status-line">
-                    <span class="label digital-distortion">Active Hunters:</span>
-                    <span class="value neon-text">1,337</span>
-                </div>
-                <div class="loading-bar"></div>
-            </div>
-            <div class="hero-buttons">
-                <a href="{{ url_for('register') }}" class="btn btn-primary energy-surge">Initialize System</a>
-                <a href="{{ url_for('login') }}" class="btn btn-secondary system-access">Access Gateway</a>
-            </div>
+<div class="hero-section">
+    <div class="hero-content">
+        <h1 class="hero-title">Welcome to Terminusa Online</h1>
+        <p class="hero-subtitle">Enter a world of cybernetic adventure</p>
+        {% if not current_user.is_authenticated %}
+        <div class="hero-actions">
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-glow">Get Started</a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline">Login</a>
+        </div>
+        {% else %}
+        <div class="hero-actions">
+            <a href="#" class="btn btn-primary btn-glow">Enter Game</a>
+            <a href="#" class="btn btn-outline">View Profile</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="features-section">
+    <div class="feature-grid">
+        <div class="feature-card">
+            <div class="feature-icon">⚔️</div>
+            <h3>Epic Combat</h3>
+            <p>Engage in tactical battles with unique combat mechanics</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🌍</div>
+            <h3>Vast World</h3>
+            <p>Explore a rich, dynamic world filled with mysteries</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">🤝</div>
+            <h3>Community</h3>
+            <p>Join guilds and make allies in your journey</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon">📈</div>
+            <h3>Progress</h3>
+            <p>Level up and customize your character's abilities</p>
         </div>
     </div>
-</section>
+</div>
 
-<section class="features">
-    <div class="container">
-        <h2 class="section-title glitch" data-text="System Protocols">System Protocols</h2>
-        <div class="feature-grid">
-            <div class="feature-card portal-frame rank-s">
-                <div class="rank-badge">S</div>
-                <i class="fas fa-terminal neon-text"></i>
-                <h3 class="digital-distortion">Dual Interface</h3>
-                <p>Navigate through the Matrix via CLI or Web Interface</p>
-                <div class="feature-stats">
-                    <div class="stat">
-                        <span class="stat-label">Power</span>
-                        <div class="stat-bar"><div class="stat-fill" style="width: 95%"></div></div>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-label">Speed</span>
-                        <div class="stat-bar"><div class="stat-fill" style="width: 90%"></div></div>
-                    </div>
-                </div>
-                <div class="feature-glow"></div>
-            </div>
-            <div class="feature-card portal-frame rank-ss">
-                <div class="rank-badge">SS</div>
-                <i class="fas fa-level-up-alt neon-text"></i>
-                <h3 class="digital-distortion">System Evolution</h3>
-                <p>Upgrade your abilities through digital dungeons</p>
-                <div class="feature-stats">
-                    <div class="stat">
-                        <span class="stat-label">Power</span>
-                        <div class="stat-bar"><div class="stat-fill" style="width: 98%"></div></div>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-label">Growth</span>
-                        <div class="stat-bar"><div class="stat-fill" style="width: 100%"></div></div>
-                    </div>
-                </div>
-                <div class="feature-glow"></div>
-            </div>
-            <div class="feature-card portal-frame rank-s">
-                <div class="rank-badge">S</div>
-                <i class="fas fa-network-wired neon-text"></i>
-                <h3 class="digital-distortion">Neural Network</h3>
-                <p>Connect and trade with other system operators</p>
-                <div class="feature-stats">
-                    <div class="stat">
-                        <span class="stat-label">Range</span>
-                        <div class="stat-bar"><div class="stat-fill" style="width: 92%"></div></div>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-label">Sync</span>
-                        <div class="stat-bar"><div class="stat-fill" style="width: 88%"></div></div>
-                    </div>
-                </div>
-                <div class="feature-glow"></div>
-            </div>
-            <div class="feature-card portal-frame rank-sss">
-                <div class="rank-badge">SSS</div>
-                <i class="fas fa-code-branch neon-text"></i>
-                <h3 class="digital-distortion">Protocol Rankings</h3>
-                <p>Climb the system hierarchy and prove your worth</p>
-                <div class="feature-stats">
-                    <div class="stat">
-                        <span class="stat-label">Power</span>
-                        <div class="stat-bar"><div class="stat-fill" style="width: 100%"></div></div>
-                    </div>
-                    <div class="stat">
-                        <span class="stat-label">Potential</span>
-                        <div class="stat-bar"><div class="stat-fill" style="width: 100%"></div></div>
-                    </div>
-                </div>
-                <div class="feature-glow"></div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="cta scan-line">
-    <div class="matrix-rain"></div>
-    <div class="container">
-        <h2 class="glitch" data-text="Ready to Enter the System?">Ready to Enter the System?</h2>
-        <p class="digital-distortion">Join the ranks of digital hunters in this unique reality</p>
-        <div class="cta-status">
-            <div class="status-indicator energy-surge"></div>
-            <span class="neon-text">System Access Available</span>
-        </div>
-        <div class="rank-display">
-            <div class="rank-title neon-text">Current Rank</div>
-            <div class="rank-value glitch" data-text="E">E</div>
-            <div class="rank-message digital-distortion">Begin your journey to SSS Rank</div>
-        </div>
-        <a href="{{ url_for('register') }}" class="btn btn-primary portal-frame">Initialize Connection</a>
-    </div>
-</section>
-
-{% if latest_announcements %}
-<section class="announcements">
-    <div class="container">
-        <h2 class="section-title neon-text">System Updates</h2>
-        <div class="announcements-grid">
-            {% for announcement in latest_announcements %}
-            <div class="announcement-card system-access">
-                <div class="card-header">
-                    <h3 class="digital-distortion">{{ announcement.title }}</h3>
-                    <span class="date-chip neon-text">{{ announcement.created_at.strftime('%Y.%m.%d') }}</span>
-                </div>
-                <div class="announcement-content">
-                    {{ announcement.content }}
-                </div>
-                <div class="card-glow"></div>
-            </div>
-            {% endfor %}
-        </div>
-        <div class="announcements-footer">
-            <a href="{{ url_for('announcements_page') }}" class="btn btn-secondary energy-surge">Access Archives</a>
-        </div>
-    </div>
-</section>
-{% endif %}
-{% endblock %}
-
-{% block extra_css %}
 <style>
-.rank-badge {
-    position: absolute;
-    top: -10px;
-    right: -10px;
-    background: var(--matrix-black);
-    color: var(--matrix-green);
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-weight: bold;
-    border: 1px solid var(--matrix-green);
-    box-shadow: 0 0 10px rgba(0, 255, 65, 0.3);
-    z-index: 1;
-}
-
-.rank-s .rank-badge { color: #FFD700; border-color: #FFD700; }
-.rank-ss .rank-badge { color: #FF00FF; border-color: #FF00FF; }
-.rank-sss .rank-badge { 
-    background: linear-gradient(45deg, #FF0000, #00FF00, #0000FF);
-    -webkit-background-clip: text;
-    color: transparent;
-    border-image: linear-gradient(45deg, #FF0000, #00FF00, #0000FF) 1;
-}
-
-.feature-stats {
-    margin-top: 1rem;
-    width: 100%;
-}
-
-.stat {
-    margin-bottom: 0.5rem;
-}
-
-.stat-label {
-    display: block;
-    color: var(--matrix-green);
-    font-size: 0.875rem;
-    margin-bottom: 0.25rem;
-}
-
-.stat-bar {
-    width: 100%;
-    height: 4px;
-    background: rgba(0, 255, 65, 0.1);
-    border-radius: 2px;
+.hero-section {
+    min-height: 60vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4rem 1rem;
+    position: relative;
     overflow: hidden;
 }
 
-.stat-fill {
-    height: 100%;
-    background: var(--matrix-green);
-    transition: width 1s ease;
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at center, rgba(0, 255, 65, 0.1) 0%, transparent 70%);
+    pointer-events: none;
 }
 
-.rank-display {
-    background: rgba(0, 255, 65, 0.1);
+.hero-content {
+    max-width: 800px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+}
+
+.hero-title {
+    font-size: 3.5rem;
+    color: var(--matrix-green);
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    text-shadow: var(--text-shadow);
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+.hero-subtitle {
+    font-size: 1.5rem;
+    color: var(--text-color);
+    margin-bottom: 2rem;
+    opacity: 0.9;
+}
+
+.hero-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.features-section {
+    padding: 4rem 1rem;
+    background: rgba(0, 24, 0, 0.5);
+    border-top: 1px solid var(--matrix-green);
+    border-bottom: 1px solid var(--matrix-green);
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.feature-card {
+    background: rgba(0, 24, 0, 0.95);
     border: 1px solid var(--matrix-green);
     border-radius: 8px;
     padding: 2rem;
-    margin: 2rem auto;
-    max-width: 300px;
     text-align: center;
+    transition: all 0.3s ease;
 }
 
-.rank-title {
-    font-size: 1.2rem;
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+}
+
+.feature-icon {
+    font-size: 2.5rem;
     margin-bottom: 1rem;
+    background: linear-gradient(135deg, var(--matrix-green), var(--matrix-light-green));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
 }
 
-.rank-value {
-    font-size: 4rem;
-    font-weight: bold;
+.feature-card h3 {
+    color: var(--matrix-green);
+    font-size: 1.5rem;
     margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
-.rank-message {
-    font-size: 0.9rem;
+.feature-card p {
+    color: var(--text-color);
     opacity: 0.8;
+    line-height: 1.6;
+}
+
+@keyframes glow {
+    from {
+        text-shadow: 0 0 10px var(--matrix-green),
+                     0 0 20px var(--matrix-green),
+                     0 0 30px var(--matrix-green);
+    }
+    to {
+        text-shadow: 0 0 20px var(--matrix-green),
+                     0 0 30px var(--matrix-green),
+                     0 0 40px var(--matrix-green);
+    }
 }
 
 @media (max-width: 768px) {
-    .feature-grid {
-        grid-template-columns: 1fr;
-        gap: 2rem;
+    .hero-title {
+        font-size: 2.5rem;
     }
     
-    .rank-display {
-        margin: 2rem 1rem;
+    .hero-subtitle {
+        font-size: 1.2rem;
+    }
+    
+    .hero-actions {
+        flex-direction: column;
+    }
+    
+    .feature-grid {
+        grid-template-columns: 1fr;
     }
 }
 </style>

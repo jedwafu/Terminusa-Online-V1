@@ -4,184 +4,127 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Terminusa Online{% endblock %}</title>
-    <!-- Core CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/buttons.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/alerts.css') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <!-- Matrix Rain Canvas -->
     <canvas id="matrixRain"></canvas>
-
-    <!-- Alert container -->
-    <div class="alert-group" id="alertContainer"></div>
-
-    <!-- Header -->
     <header class="main-header">
         <nav class="main-nav">
             <div class="nav-brand">
-                <a href="/" class="logo-link">
+                <a href="{{ url_for('main.index') }}" class="logo-link">
                     <div class="logo">
-                        <span class="logo-text">T</span>
                         <div class="logo-glow"></div>
+                        <span class="logo-text">T</span>
                     </div>
-                    <span class="brand-text">TERMINUSA</span>
+                    <span class="brand-text">Terminusa</span>
                 </a>
             </div>
             <div class="nav-links">
-                <a href="/" class="nav-link">Home</a>
-                <a href="https://terminusa-online.gitbook.io/terminusa-online-whitepaper" target="_blank" class="nav-link">Whitepaper</a>
-                <a href="/leaderboards" class="nav-link">Leaderboards</a>
-                <a href="/marketplace" class="nav-link">Marketplace</a>
-                <a href="/swap" class="nav-link">Buy Exons</a>
-                {% if current_user %}
-                    <a href="/play" class="nav-button glow">Play Now</a>
-                    <a href="/logout" class="nav-button">Logout</a>
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('main.index') }}" class="nav-link">Home</a>
+                    <a href="#" class="nav-link">Profile</a>
+                    <a href="{{ url_for('auth.logout') }}" class="nav-button">Logout</a>
                 {% else %}
-                    <a href="/login" class="nav-button">Login</a>
-                    <a href="/register" class="nav-button glow">Sign Up</a>
+                    <a href="{{ url_for('auth.login') }}" class="nav-link">Login</a>
+                    <a href="{{ url_for('auth.register') }}" class="nav-button glow">Register</a>
                 {% endif %}
             </div>
         </nav>
     </header>
 
-    <!-- Main Content -->
     <main>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-matrix">
-                        {{ message }}
-                        <span class="close" onclick="this.parentElement.remove()">&times;</span>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        
-        {% block content %}{% endblock %}
+        <div class="container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-matrix">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            {% block content %}{% endblock %}
+        </div>
     </main>
 
-    <!-- Footer -->
     <footer class="main-footer">
         <div class="footer-content">
             <div class="footer-section">
-                <h3>Game Features</h3>
+                <h3>About</h3>
                 <ul>
-                    <li><a href="/features#gates">Gate System</a></li>
-                    <li><a href="/features#ai">AI-Powered Quests</a></li>
-                    <li><a href="/features#guilds">Guild System</a></li>
-                    <li><a href="/features#marketplace">Marketplace</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Statistics</h3>
-                <ul>
-                    <li><a href="/stats#gates">Gates Cleared</a></li>
-                    <li><a href="/stats#players">Active Hunters</a></li>
-                    <li><a href="/stats#guilds">Active Guilds</a></li>
-                    <li><a href="/stats#economy">Market Volume</a></li>
+                    <li><a href="#">About Us</a></li>
+                    <li><a href="#">Terms of Service</a></li>
+                    <li><a href="#">Privacy Policy</a></li>
                 </ul>
             </div>
             <div class="footer-section">
                 <h3>Community</h3>
                 <ul>
-                    <li><a href="/discord" target="_blank">Discord</a></li>
-                    <li><a href="/twitter" target="_blank">Twitter</a></li>
-                    <li><a href="/telegram" target="_blank">Telegram</a></li>
-                    <li><a href="/blog">News & Updates</a></li>
+                    <li><a href="#">Discord</a></li>
+                    <li><a href="#">Twitter</a></li>
+                    <li><a href="#">Blog</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Support</h3>
+                <ul>
+                    <li><a href="#">Help Center</a></li>
+                    <li><a href="#">Contact Us</a></li>
+                    <li><a href="#">FAQ</a></li>
                 </ul>
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; 2024 Terminusa Online. All rights reserved.</p>
+            <p>&copy; 2025 Terminusa Online. All rights reserved.</p>
         </div>
     </footer>
 
-    <!-- Core JavaScript -->
     <script>
-    // Matrix Rain Effect
-    const canvas = document.getElementById('matrixRain');
-    const ctx = canvas.getContext('2d');
+        // Matrix Rain Animation
+        const canvas = document.getElementById('matrixRain');
+        const ctx = canvas.getContext('2d');
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    const matrix = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789";
-    const characters = matrix.split("");
-    const fontSize = 14;
-    const columns = canvas.width / fontSize;
-    const drops = Array(Math.floor(columns)).fill(1);
-
-    function drawMatrix() {
-        ctx.fillStyle = "rgba(0, 24, 0, 0.05)";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        ctx.fillStyle = "#00FF41";
-        ctx.font = fontSize + "px monospace";
-
-        for (let i = 0; i < drops.length; i++) {
-            const text = characters[Math.floor(Math.random() * characters.length)];
-            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-            
-            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-                drops[i] = 0;
-            }
-            drops[i]++;
-        }
-    }
-
-    window.addEventListener('resize', () => {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-    });
 
-    setInterval(drawMatrix, 50);
+        const matrix = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%";
+        const drops = [];
+        const fontSize = 16;
+        const columns = canvas.width/fontSize;
 
-    // Alert management
-    function showAlert(message, type = 'info', duration = 5000) {
-        const alertContainer = document.getElementById('alertContainer');
-        const alert = document.createElement('div');
-        alert.className = `alert alert-${type} alert-matrix alert-fixed`;
-        alert.innerHTML = `
-            ${message}
-            <span class="close" onclick="this.parentElement.remove()">&times;</span>
-        `;
-        alertContainer.appendChild(alert);
-
-        if (duration > 0) {
-            setTimeout(() => {
-                alert.style.animation = 'slideOut 0.3s ease forwards';
-                setTimeout(() => alert.remove(), 300);
-            }, duration);
+        for(let x = 0; x < columns; x++) {
+            drops[x] = 1;
         }
-    }
 
-    // Button loading state management
-    document.addEventListener('DOMContentLoaded', function() {
-        const buttons = document.querySelectorAll('.btn, .nav-button');
-        buttons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                if (this.target === '_blank' || this.closest('form')) return;
-                this.classList.add('loading');
-            });
-        });
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        const forms = document.querySelectorAll('form');
-        forms.forEach(form => {
-            form.addEventListener('submit', function(e) {
-                const submitButton = this.querySelector('button[type="submit"]');
-                if (submitButton) {
-                    submitButton.classList.add('loading');
-                }
-            });
+            ctx.fillStyle = '#00FF41';
+            ctx.font = fontSize + 'px monospace';
+
+            for(let i = 0; i < drops.length; i++) {
+                const text = matrix[Math.floor(Math.random() * matrix.length)];
+                ctx.fillText(text, i*fontSize, drops[i]*fontSize);
+
+                if(drops[i]*fontSize > canvas.height && Math.random() > 0.975)
+                    drops[i] = 0;
+
+                drops[i]++;
+            }
+        }
+
+        setInterval(draw, 35);
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
         });
-    });
     </script>
-
     {% block extra_js %}{% endblock %}
 </body>
 </html>
