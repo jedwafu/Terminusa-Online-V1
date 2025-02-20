@@ -41,7 +41,7 @@ if missing_vars:
 
 # Initialize Flask app
 print("[DEBUG] Creating Flask app")
-app = Flask(__name__)
+app = Flask(__name__, static_folder='/var/www/terminusa/static', static_url_path='/static')
 
 # Configure app
 print("[DEBUG] Configuring Flask app")
@@ -56,8 +56,6 @@ app.config.update(
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
     CORS_HEADERS='Content-Type',
     SEND_FILE_MAX_AGE_DEFAULT=31536000,  # 1 year in seconds
-    STATIC_FOLDER='/var/www/terminusa/static',  # Use nginx's static directory
-    STATIC_URL_PATH='/static'  # URL path for static files
 )
 
 # Initialize extensions
