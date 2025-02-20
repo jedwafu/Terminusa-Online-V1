@@ -1,244 +1,156 @@
 # Terminusa Online
 
-A Solo-leveling inspired MMORPG with CLI and web interfaces.
+A web-based MMORPG inspired by Solo Leveling, featuring AI-driven game mechanics, Web3 integration, and a dynamic economy system.
 
-## System Requirements
+## Key Features
 
-### Server Requirements
-- Ubuntu 20.04 or later
-- Python 3.10 or later
-- PostgreSQL 12 or later
-- Redis 6 or later
-- Nginx
-- Screen
-- Supervisor
+- **Gate System**: Dynamic dungeon system with AI-generated content and difficulty scaling
+- **AI-Powered Mechanics**: Intelligent quest generation, combat predictions, and player behavior analysis
+- **Web3 Integration**: Solana-based currency system with Exons token
+- **Multi-Currency Economy**: Integrated Solana, Exons, and Crystals with token swapping
+- **Guild System**: Comprehensive guild management with quests and rewards
+- **Party System**: Flexible party system with dynamic reward sharing
+- **Job System**: Advanced job progression with AI-driven class quests
+- **Achievement System**: AI-tailored achievements and milestones
+- **Combat System**: Automated combat with strategic elements
+- **Equipment System**: Detailed equipment management with durability
+- **Marketplace**: Player-driven economy with trading system
 
-### Client Requirements
-- Python 3.8 or later
-- Terminal with ANSI color support
+## Getting Started
 
-## Quick Start
+### Prerequisites
 
-### Server Deployment
+- Python 3.10 or higher
+- PostgreSQL 13 or higher
+- Redis 6 or higher
+- Node.js 18 or higher (for web client)
+
+### Installation
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/jedwafu/terminusa-online.git
-cd terminusa-online
+git clone https://github.com/jedwafu/Terminusa-Online-V1.git
+cd Terminusa-Online-V1
 ```
 
-2. Run the deployment script:
+2. Run the development setup script:
 ```bash
-# Linux/Unix
-chmod +x deploy.sh
-./deploy.sh
-
-# Windows
-# Not supported - server must be deployed on Linux/Unix
+chmod +x scripts/setup_dev.sh
+./scripts/setup_dev.sh
 ```
 
-3. Start the server:
+3. Update the .env file with your configuration:
 ```bash
-./start_server.sh
+cp .env.example .env
+# Edit .env with your settings
 ```
 
-### CLI Client Installation
-
-#### Windows
-1. Navigate to the client directory and run the installation script:
-```cmd
-cd client
-install_client.bat
-```
-
-2. Run the client:
-```cmd
-venv-client\Scripts\activate.bat
-python client.py
-```
-
-#### Linux/Unix
-1. Navigate to the client directory and run the installation script:
+4. Start the development server:
 ```bash
-cd client
-chmod +x install_client.sh
-./install_client.sh
+source venv/bin/activate
+python app_final.py
 ```
 
-2. Run the client:
+### Deployment
+
+1. Set up SSL certificates:
 ```bash
-source venv-client/bin/activate
-python client.py
+sudo certbot certonly --nginx -d terminusa.online -d play.terminusa.online
 ```
 
-## Server Management
-
-### Screen Session Layout
-
-The server runs in a Screen session with the following windows:
-1. Main Server (0)
-2. Game Manager (1)
-3. Email Monitor (2)
-4. System Monitor (3)
-5. Log Viewer (4)
-
-### Screen Commands
-- `Ctrl+a c`: Create new window
-- `Ctrl+a n`: Next window
-- `Ctrl+a p`: Previous window
-- `Ctrl+a d`: Detach from screen
-- `Ctrl+a ?`: Help
-
-To reattach to a detached session:
+2. Configure Nginx:
 ```bash
-screen -r terminusa
+sudo cp nginx/terminusa.conf /etc/nginx/sites-available/
+sudo ln -s /etc/nginx/sites-available/terminusa.conf /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl restart nginx
 ```
 
-### Server Monitoring
+3. Set up system services:
+```bash
+sudo cp terminusa.service /etc/systemd/system/
+sudo systemctl enable terminusa
+sudo systemctl start terminusa
+```
 
-- Main logs: `logs/main.log`
-- Game logs: `logs/game.log`
-- Email logs: `logs/email.log`
-- Supervisor logs: `logs/supervisor.*.log`
+## Architecture
 
-### Database Management
+### Backend Services
 
-- Reset database: `python reset_db.py`
-- Run migrations: `flask db upgrade`
-- Create migration: `flask db migrate -m "description"`
+- **Flask Application**: Main web application server
+- **Terminal Server**: xterm.js-based game client server
+- **Game Server**: Core game mechanics and state management
+- **AI Manager**: AI model training and inference
+- **Combat Manager**: Combat system processing
+- **Economy Manager**: Currency and marketplace management
+
+### Database Schema
+
+- **User Models**: Authentication and profile management
+- **Game Models**: Core game mechanics and state
+- **Economy Models**: Currency and transaction handling
+- **Social Models**: Guild and party management
+- **AI Models**: Machine learning model management
+
+### AI Systems
+
+- **Quest Generation**: Dynamic quest creation based on player profile
+- **Combat Prediction**: Strategic combat outcome prediction
+- **Achievement Evaluation**: Player progress analysis
+- **Behavior Analysis**: Player activity pattern recognition
 
 ## Development
 
-### Setup Development Environment
+### Directory Structure
 
-1. Create virtual environment:
-```bash
-# Linux/Unix
-python3 -m venv venv
-source venv/bin/activate
-
-# Windows
-python -m venv venv
-venv\Scripts\activate
 ```
-
-2. Install dependencies:
-```bash
-# Server (Linux/Unix only)
-pip install -r requirements-server.txt
-
-# Client (Both platforms)
-cd client
-pip install -r requirements-client.txt
-```
-
-3. Set up environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
+Terminusa-Online/
+├── app_final.py          # Main application entry point
+├── models/              # Database models
+├── routes/              # Route handlers
+├── scripts/            # Utility scripts
+├── static/             # Static assets
+├── templates/          # HTML templates
+├── migrations/         # Database migrations
+├── tests/             # Test suite
+└── docs/              # Documentation
 ```
 
 ### Running Tests
 
 ```bash
-pytest
-pytest --cov=. tests/
+pytest tests/
 ```
 
 ### Code Style
 
+We use Black for code formatting and Flake8 for linting:
+
 ```bash
 black .
 flake8
-mypy .
-```
-
-## Project Structure
-
-```
-terminusa-online/
-├── client/                 # CLI client
-│   ├── client.py          # Client main script
-│   ├── install_client.bat # Windows installation script
-│   ├── install_client.sh  # Unix installation script
-│   └── requirements.txt   # Client dependencies
-├── game_systems/          # Game mechanics
-├── static/                # Static files
-├── templates/             # HTML templates
-├── tests/                 # Test suite
-├── app.py                 # Main application
-├── deploy.sh             # Server deployment script
-├── requirements-server.txt # Server dependencies
-└── start_server.sh       # Server startup script
-```
-
-## Architecture
-
-### Components
-
-1. Main Server
-   - Flask web application
-   - REST API endpoints
-   - WebSocket server
-   - Authentication
-
-2. Game Manager
-   - Game state management
-   - Combat system
-   - Gate system
-   - Economy system
-
-3. Email Monitor
-   - Email verification
-   - Password reset
-   - Notifications
-
-### Database Schema
-
-- Users
-- PlayerCharacters
-- Items
-- Inventory
-- Gates
-- Guilds
-- Parties
-- Transactions
-
-## API Documentation
-
-### Authentication
-
-```
-POST /api/login
-POST /api/register
-POST /api/verify-email
-POST /api/request-password-reset
-```
-
-### Game
-
-```
-GET /api/game/profile
-GET /api/game/gates
-POST /api/game/gates/{id}/enter
-GET /api/game/inventory
-```
-
-### Admin
-
-```
-GET /api/admin/users
-POST /api/admin/users/{id}/ban
 ```
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Contact
+
+- Website: [https://terminusa.online](https://terminusa.online)
+- Email: [contact@terminusa.online](mailto:contact@terminusa.online)
+- Discord: [Join our server](https://discord.gg/terminusa)
+
+## Acknowledgments
+
+- Inspired by Solo Leveling
+- Built with Flask and Python
+- Powered by Solana blockchain
