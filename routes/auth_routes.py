@@ -1,5 +1,6 @@
 """Authentication routes blueprint"""
 from flask import Blueprint, jsonify, request, render_template, redirect, url_for, flash, g, current_app
+from flask_login import login_user, logout_user, login_required, current_user
 from flask_jwt_extended import (
     create_access_token, create_refresh_token, 
     set_access_cookies, set_refresh_cookies,
@@ -15,17 +16,25 @@ auth = Blueprint('auth', __name__)
 
 def get_latest_announcements(limit=5):
     """Get latest active announcements"""
-    return Announcement.query.filter_by(is_active=True)\
-        .order_by(Announcement.priority.desc(), Announcement.created_at.desc())\
-        .limit(limit)\
-        .all()
+    try:
+        return Announcement.query.filter_by(is_active=True)\
+            .order_by(Announcement.priority.desc(), Announcement.created_at.desc())\
+            .limit(limit)\
+            .all()
+    except Exception as e:
+        current_app.logger.error(f"Error fetching announcements: {str(e)}")
+        return []
 
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
     """Handle login page and form submission"""
     if request.method == 'GET':
-        announcements = get_latest_announcements()
-        return render_template('login.html', announcements=announcements)
+        try:
+            announcements = get_latest_announcements()
+            return render_template('login.html', announcements=announcements)
+        except Exception as e:
+            current_app.logger.error(f"Error rendering login page: {str(e)}")
+            return render_template('login.html', announcements=[])
     
     try:
         # Handle AJAX request
@@ -79,6 +88,9 @@ def login():
         user.last_login = datetime.utcnow()
         db.session.commit()
 
+        # Log in the user
+        login_user(user, remember=remember)
+
         # Create tokens
         expires = timedelta(days=30 if remember else 1)
         access_token = create_access_token(
@@ -131,6 +143,7 @@ def login():
 def logout():
     """Handle user logout"""
     try:
+        logout_user()
         response = redirect(url_for('main.index'))
         unset_jwt_cookies(response)
         flash('Logged out successfully', 'success')
@@ -144,8 +157,12 @@ def logout():
 def register():
     """Handle registration page and form submission"""
     if request.method == 'GET':
-        announcements = get_latest_announcements()
-        return render_template('register.html', announcements=announcements)
+        try:
+            announcements = get_latest_announcements()
+            return render_template('register.html', announcements=announcements)
+        except Exception as e:
+            current_app.logger.error(f"Error rendering register page: {str(e)}")
+            return render_template('register.html', announcements=[])
     
     try:
         # Handle AJAX request
