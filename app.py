@@ -1,41 +1,87 @@
-from flask import Flask, render_template, g
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
+from gevent import monkey
+monkey.patch_all()
+
+import os
+import sys
+from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, g
+from flask_login import LoginManager, current_user, login_required
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
-from datetime import timedelta
-import os
+from flask_migrate import Migrate
+from flask_sqlalchemy import SQLAlchemy
+from dotenv import load_dotenv
 import logging
 from logging.handlers import RotatingFileHandler
-from dotenv import load_dotenv
+from datetime import datetime, timedelta
+from functools import wraps
+
+# Add the current directory to Python path
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from database import db
+from models import User, Announcement
+from routes import init_app as init_routes  # Import route initialization
 
 # Load environment variables
-load_dotenv()
+print("[DEBUG] Loading environment variables")
+load_dotenv(override=True)
+
+# Validate required environment variables
+required_env_vars = [
+    'FLASK_SECRET_KEY',
+    'JWT_SECRET_KEY',
+    'DATABASE_URL',
+    'SERVER_PORT',
+    'WEBAPP_PORT'
+]
+
+missing_vars = [var for var in required_env_vars if not os.getenv(var)]
+if missing_vars:
+    raise ValueError(f"Missing required environment variables: {missing_vars}")
 
 # Initialize Flask app
+print("[DEBUG] Creating Flask app")
 app = Flask(__name__)
 
 # Configure app
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-change-this')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://localhost/terminusa_db')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'jwt-key-change-this')
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(days=1)
-app.config['JWT_TOKEN_LOCATION'] = ['headers', 'cookies']
-app.config['JWT_COOKIE_SECURE'] = os.getenv('ENV', 'development') == 'production'
-app.config['JWT_COOKIE_CSRF_PROTECT'] = True
+print("[DEBUG] Configuring Flask app")
+app.config.update(
+    SECRET_KEY=os.getenv('FLASK_SECRET_KEY'),
+    JWT_SECRET_KEY=os.getenv('JWT_SECRET_KEY'),
+    JWT_ACCESS_TOKEN_EXPIRES=timedelta(hours=1),
+    JWT_TOKEN_LOCATION=['headers', 'cookies'],
+    JWT_COOKIE_SECURE=os.getenv('FLASK_ENV', 'development') == 'production',
+    JWT_COOKIE_CSRF_PROTECT=True,
+    SQLALCHEMY_DATABASE_URI=os.getenv('DATABASE_URL'),
+    SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    CORS_HEADERS='Content-Type',
+    SEND_FILE_MAX_AGE_DEFAULT=31536000,  # 1 year in seconds
+    STATIC_FOLDER=os.path.abspath('static')
+)
 
 # Initialize extensions
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
+print("[DEBUG] Initializing extensions")
 jwt = JWTManager(app)
-CORS(app)
+cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'auth.login'
 
-# Set up logging
+# Initialize database
+db.init_app(app)
+
+# Initialize Flask-Migrate
+migrate = Migrate(app, db)
+
+# Configure logging
 if not os.path.exists('logs'):
-    os.mkdir('logs')
+    os.makedirs('logs')
 
-file_handler = RotatingFileHandler('logs/app.log', maxBytes=10240, backupCount=10)
+file_handler = RotatingFileHandler(
+    'logs/terminusa.log',
+    maxBytes=1024 * 1024,  # 1MB
+    backupCount=10
+)
 file_handler.setFormatter(logging.Formatter(
     '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
 ))
@@ -45,10 +91,48 @@ app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
 app.logger.info('Terminusa Online startup')
 
-# Import models and routes
-from models import *
-from routes_auth import *
-from routes import *
+# User loader for Flask-Login
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# Admin required decorator
+def admin_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated or not current_user.is_admin:
+            flash('You do not have permission to access this page.', 'error')
+            return redirect(url_for('index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Initialize routes
+init_routes(app)
+
+# Error handlers
+@app.errorhandler(404)
+def not_found_error(error):
+    app.logger.error(f'Page not found: {error}')
+    return render_template('error.html',
+                         error_message='The page you are looking for could not be found.',
+                         title='404 Not Found'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    app.logger.error(f'Server error: {error}')
+    db.session.rollback()
+    return render_template('error.html',
+                         error_message='An internal server error occurred. Please try again later.',
+                         title='500 Server Error'), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.getenv('SERVER_PORT', 5000))
+    debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    
+    if debug:
+        app.run(host='0.0.0.0', port=port, debug=True)
+    else:
+        # Use gevent WSGI server in production
+        from gevent.pywsgi import WSGIServer
+        http_server = WSGIServer(('0.0.0.0', port), app)
+        http_server.serve_forever()
