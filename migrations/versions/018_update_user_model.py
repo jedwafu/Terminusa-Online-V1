@@ -10,30 +10,40 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '018_update_user_model'
-down_revision = '017_initialize_all_models'
+down_revision = '017_initialize_all_models'  # Make sure this matches your latest migration
 branch_labels = None
 depends_on = None
 
 def upgrade():
-    # Rename password_hash to password
-    op.alter_column('users', 'password_hash',
-                    new_column_name='password',
-                    existing_type=sa.String(length=128))
-    
-    # Add new columns
-    op.add_column('users', sa.Column('salt', sa.String(length=128), nullable=True))
-    op.add_column('users', sa.Column('role', sa.String(length=20), server_default='player'))
-    op.add_column('users', sa.Column('is_email_verified', sa.Boolean(), server_default='false'))
-    op.add_column('users', sa.Column('last_login', sa.DateTime(), nullable=True))
+    # Rename password_hash to password if it exists
+    with op.batch_alter_table('users') as batch_op:
+        # Check if password_hash exists
+        if 'password_hash' in [col['name'] for col in sa.inspect(op.get_bind()).get_columns('users')]:
+            batch_op.alter_column('password_hash',
+                                new_column_name='password',
+                                existing_type=sa.String(length=128))
+        
+        # Add new columns if they don't exist
+        columns = [col['name'] for col in sa.inspect(op.get_bind()).get_columns('users')]
+        
+        if 'salt' not in columns:
+            batch_op.add_column(sa.Column('salt', sa.String(length=128), nullable=True))
+        if 'role' not in columns:
+            batch_op.add_column(sa.Column('role', sa.String(length=20), server_default='player'))
+        if 'is_email_verified' not in columns:
+            batch_op.add_column(sa.Column('is_email_verified', sa.Boolean(), server_default='false'))
+        if 'last_login' not in columns:
+            batch_op.add_column(sa.Column('last_login', sa.DateTime(), nullable=True))
 
 def downgrade():
     # Remove new columns
-    op.drop_column('users', 'last_login')
-    op.drop_column('users', 'is_email_verified')
-    op.drop_column('users', 'role')
-    op.drop_column('users', 'salt')
-    
-    # Rename password back to password_hash
-    op.alter_column('users', 'password',
-                    new_column_name='password_hash',
-                    existing_type=sa.String(length=128))
+    with op.batch_alter_table('users') as batch_op:
+        batch_op.drop_column('last_login')
+        batch_op.drop_column('is_email_verified')
+        batch_op.drop_column('role')
+        batch_op.drop_column('salt')
+        
+        # Rename password back to password_hash
+        batch_op.alter_column('password',
+                            new_column_name='password_hash',
+                            existing_type=sa.String(length=128))
