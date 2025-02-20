@@ -44,6 +44,19 @@ verify_file() {
 
 log_info "Starting static files setup..."
 
+# Clean up old nginx configurations
+log_info "Cleaning up old nginx configurations..."
+sudo rm -f /etc/nginx/sites-enabled/terminusa.conf
+sudo rm -f /etc/nginx/sites-available/terminusa
+sudo rm -f /etc/nginx/sites-available/terminusa.conf
+sudo rm -f /etc/nginx/conf.d/terminusa.conf
+
+# Install new nginx configurations
+log_info "Installing new nginx configurations..."
+sudo cp nginx/terminusa.conf /etc/nginx/sites-available/
+sudo cp nginx/terminusa-terminal.conf /etc/nginx/conf.d/
+sudo ln -sf /etc/nginx/sites-available/terminusa.conf /etc/nginx/sites-enabled/
+
 # Verify source static directory exists
 if [ ! -d "$STATIC_DIR" ]; then
     log_error "Source static directory not found: $STATIC_DIR"
@@ -159,6 +172,28 @@ check_command "Failed to clear nginx cache"
 
 # Verify file permissions and ownership
 log_info "Final verification:"
+ls -la $NGINX_STATIC_DIR/css/
+
+# Test nginx configuration one last time
+log_info "Final nginx configuration test..."
+sudo nginx -t
+check_command "Final nginx configuration test failed"
+
+# Reload nginx to apply changes
+log_info "Reloading nginx..."
+sudo systemctl reload nginx
+check_command "Failed to reload nginx"
+
+# Print nginx configuration status
+log_info "Nginx configuration files:"
+echo "sites-available:"
+ls -la /etc/nginx/sites-available/
+echo "sites-enabled:"
+ls -la /etc/nginx/sites-enabled/
+echo "conf.d:"
+ls -la /etc/nginx/conf.d/
+
+log_info "Static files in nginx directory:"
 ls -la $NGINX_STATIC_DIR/css/
 
 log_success "Static files setup completed successfully"
