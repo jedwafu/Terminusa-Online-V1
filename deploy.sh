@@ -197,6 +197,17 @@ start_services() {
     # Create logs directory
     mkdir -p logs
     
+    # Check and clear ports if needed
+    for service in "${!SERVICE_PORTS[@]}"; do
+        IFS=',' read -ra PORTS <<< "${SERVICE_PORTS[$service]}"
+        for port in "${PORTS[@]}"; do
+            if ./manage_ports.sh check $port; then
+                info_log "Port $port is in use. Attempting to free it..."
+                ./manage_ports.sh kill $port
+            fi
+        done
+    done
+    
     # Start system services
     info_log "Starting system services..."
     systemctl start postgresql
@@ -210,18 +221,35 @@ start_services() {
     # Start Flask application
     info_log "Starting Flask application..."
     if ! check_screen_session ${SERVICE_SCREENS["flask"]}; then
+        if ./manage_ports.sh check 5000; then
+            info_log "Port 5000 is in use. Attempting to free it..."
+            ./manage_ports.sh kill 5000
+        fi
         start_screen ${SERVICE_SCREENS["flask"]} "cd $(pwd) && source venv/bin/activate && FLASK_APP=app_final.py FLASK_ENV=production python app_final.py > logs/flask.log 2>&1"
+        sleep 2
+        if ! ./manage_ports.sh check 5000; then
+            error_log "Failed to start Flask application. Check logs/flask.log for details."
+            tail -n 20 logs/flask.log
+        fi
     fi
     
     # Start Terminal server
     info_log "Starting Terminal server..."
     if ! check_screen_session ${SERVICE_SCREENS["terminal"]}; then
+        if ./manage_ports.sh check 6789; then
+            info_log "Port 6789 is in use. Attempting to free it..."
+            ./manage_ports.sh kill 6789
+        fi
         start_screen ${SERVICE_SCREENS["terminal"]} "cd $(pwd) && source venv/bin/activate && python terminal_server.py > logs/terminal.log 2>&1"
     fi
     
     # Start Game server
     info_log "Starting Game server..."
     if ! check_screen_session ${SERVICE_SCREENS["game"]}; then
+        if ./manage_ports.sh check 5001; then
+            info_log "Port 5001 is in use. Attempting to free it..."
+            ./manage_ports.sh kill 5001
+        fi
         start_screen ${SERVICE_SCREENS["game"]} "cd $(pwd) && source venv/bin/activate && python game_server.py > logs/game.log 2>&1"
     fi
     
@@ -311,7 +339,8 @@ show_menu() {
         echo "7) Database Operations"
         echo "8) Nginx Operations"
         echo "9) System Status"
-        echo "10) Debug Mode"
+        echo "10) Port Management"
+        echo "11) Debug Mode"
         echo "0) Exit"
         echo
         read -p "Select an option: " choice
@@ -423,6 +452,29 @@ show_menu() {
                 bash status_monitor.sh
                 ;;
             10)
+                echo -e "\n${YELLOW}Port Management:${NC}"
+                echo "1) Check Port Status"
+                echo "2) Kill Process on Port"
+                echo "3) Show All Used Ports"
+                echo "0) Back to main menu"
+                read -p "Select operation: " port_choice
+                case $port_choice in
+                    1)
+                        read -p "Enter port number: " port
+                        ./manage_ports.sh status $port
+                        ;;
+                    2)
+                        read -p "Enter port number: " port
+                        ./manage_ports.sh kill $port
+                        ;;
+                    3)
+                        netstat -tulpn | grep LISTEN
+                        ;;
+                    0) continue ;;
+                    *) error_log "Invalid option" ;;
+                esac
+                ;;
+            11)
                 if [ "$DEBUG" = true ]; then
                     DEBUG=false
                     info_log "Debug mode disabled"
