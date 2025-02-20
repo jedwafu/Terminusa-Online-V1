@@ -4,16 +4,12 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Debug mode flag
 DEBUG=false
-
-# Monitor interval
-MONITOR_INTERVAL=5
-
-# Monitor running flag
-MONITOR_RUNNING=false
 
 # Service status tracking
 declare -A SERVICE_STATUS
@@ -84,45 +80,6 @@ info_log() {
     echo "[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> logs/deploy.log
 }
 
-# Check if port is in use
-check_port() {
-    local port=$1
-    if lsof -i :$port > /dev/null 2>&1; then
-        return 0  # Port is in use
-    else
-        return 1  # Port is free
-    fi
-}
-
-# Kill process using port
-kill_port_process() {
-    local port=$1
-    local pid=$(lsof -t -i:$port)
-    if [ ! -z "$pid" ]; then
-        info_log "Port $port is in use by PID $pid. Stopping process..."
-        kill -15 $pid
-        sleep 2
-        if kill -0 $pid 2>/dev/null; then
-            kill -9 $pid
-            sleep 1
-        fi
-    fi
-}
-
-# Show port status
-show_port_status() {
-    local port=$1
-    info_log "Checking port $port..."
-    if check_port $port; then
-        pid=$(lsof -t -i:$port)
-        process=$(ps -p $pid -o comm=)
-        error_log "Port $port is in use by process $process (PID: $pid)"
-        lsof -i :$port
-    else
-        success_log "Port $port is free"
-    fi
-}
-
 # Check Python version
 check_python() {
     info_log "Checking Python version..."
@@ -190,7 +147,7 @@ kill_screen() {
     screen -X -S $name quit >/dev/null 2>&1
 }
 
-# Initialize deployment
+# Initialize deployment with enhanced checks
 initialize_deployment() {
     info_log "Initializing deployment..."
     
@@ -204,12 +161,10 @@ initialize_deployment() {
     mkdir -p logs
     mkdir -p instance
     mkdir -p static/downloads
-    mkdir -p data/{market,combat,social,ai}
     
     # Set proper permissions
     chmod -R 755 static
     chmod +x *.py
-    chmod +x scripts/*.py
     chmod +x *.sh
     
     # Check .env file
@@ -235,19 +190,92 @@ initialize_deployment() {
     success_log "Initialization complete"
 }
 
+# Start services
+start_services() {
+    info_log "Starting services..."
+    
+    # Create logs directory
+    mkdir -p logs
+    
+    # Start system services
+    info_log "Starting system services..."
+    systemctl start postgresql
+    systemctl start redis-server
+    systemctl start nginx
+    systemctl start postfix
+    
+    # Activate virtual environment
+    source venv/bin/activate
+    
+    # Start Flask application
+    info_log "Starting Flask application..."
+    if ! check_screen_session ${SERVICE_SCREENS["flask"]}; then
+        start_screen ${SERVICE_SCREENS["flask"]} "cd $(pwd) && source venv/bin/activate && FLASK_APP=app_final.py FLASK_ENV=production python app_final.py > logs/flask.log 2>&1"
+    fi
+    
+    # Start Terminal server
+    info_log "Starting Terminal server..."
+    if ! check_screen_session ${SERVICE_SCREENS["terminal"]}; then
+        start_screen ${SERVICE_SCREENS["terminal"]} "cd $(pwd) && source venv/bin/activate && python terminal_server.py > logs/terminal.log 2>&1"
+    fi
+    
+    # Start Game server
+    info_log "Starting Game server..."
+    if ! check_screen_session ${SERVICE_SCREENS["game"]}; then
+        start_screen ${SERVICE_SCREENS["game"]} "cd $(pwd) && source venv/bin/activate && python game_server.py > logs/game.log 2>&1"
+    fi
+    
+    # Start Email monitor
+    info_log "Starting Email monitor..."
+    if ! check_screen_session ${SERVICE_SCREENS["email_monitor"]}; then
+        start_screen ${SERVICE_SCREENS["email_monitor"]} "cd $(pwd) && source venv/bin/activate && python email_monitor.py > logs/email_monitor.log 2>&1"
+    fi
+    
+    # Start AI manager
+    info_log "Starting AI manager..."
+    if ! check_screen_session ${SERVICE_SCREENS["ai_manager"]}; then
+        start_screen ${SERVICE_SCREENS["ai_manager"]} "cd $(pwd) && source venv/bin/activate && python ai_manager.py > logs/ai_manager.log 2>&1"
+    fi
+    
+    # Start Combat manager
+    info_log "Starting Combat manager..."
+    if ! check_screen_session ${SERVICE_SCREENS["combat_manager"]}; then
+        start_screen ${SERVICE_SCREENS["combat_manager"]} "cd $(pwd) && source venv/bin/activate && python combat_manager.py > logs/combat_manager.log 2>&1"
+    fi
+    
+    # Start Economy systems
+    info_log "Starting Economy systems..."
+    if ! check_screen_session ${SERVICE_SCREENS["economy_systems"]}; then
+        start_screen ${SERVICE_SCREENS["economy_systems"]} "cd $(pwd) && source venv/bin/activate && python economy_systems.py > logs/economy_systems.log 2>&1"
+    fi
+    
+    # Start Game mechanics
+    info_log "Starting Game mechanics..."
+    if ! check_screen_session ${SERVICE_SCREENS["game_mechanics"]}; then
+        start_screen ${SERVICE_SCREENS["game_mechanics"]} "cd $(pwd) && source venv/bin/activate && python game_mechanics.py > logs/game_mechanics.log 2>&1"
+    fi
+    
+    # Wait for services to start
+    sleep 5
+    
+    # Check service status
+    bash status_monitor.sh
+    
+    success_log "All services started"
+}
+
 # Stop services
 stop_services() {
     info_log "Stopping services..."
     
-    # Kill all screen sessions first
-    info_log "Stopping screen sessions..."
+    # Stop all screen sessions
     for screen_name in "${SERVICE_SCREENS[@]}"; do
         if check_screen_session $screen_name; then
-            info_log "Stopping screen session: $screen_name"
+            info_log "Stopping $screen_name..."
             kill_screen $screen_name
         fi
     done
-
+    
     # Stop system services
     info_log "Stopping system services..."
     systemctl stop nginx
@@ -258,7 +286,17 @@ stop_services() {
     success_log "All services stopped"
 }
 
-# Show menu function
+# Enhanced monitoring with automatic restart
+enhanced_monitor_services() {
+    info_log "Starting enhanced service monitoring..."
+    
+    while [ "$MONITOR_RUNNING" = true ]; do
+        bash status_monitor.sh
+        sleep $MONITOR_INTERVAL
+    done
+}
+
+# Show menu
 show_menu() {
     while true; do
         clear
@@ -268,13 +306,12 @@ show_menu() {
         echo "2) Start All Services"
         echo "3) Stop All Services"
         echo "4) Restart All Services"
-        echo "5) Enhanced Monitoring"
+        echo "5) Enhanced Monitoring (with auto-restart)"
         echo "6) View Logs"
         echo "7) Database Operations"
-        echo "8) Game Systems"
+        echo "8) Nginx Operations"
         echo "9) System Status"
-        echo "10) Port Management"
-        echo "11) Debug Mode"
+        echo "10) Debug Mode"
         echo "0) Exit"
         echo
         read -p "Select an option: " choice
@@ -331,22 +368,68 @@ show_menu() {
                     0) continue ;;
                     *) error_log "Invalid option" ;;
                 esac
-                read -p "Press Enter to return to the previous menu..."
                 ;;
             7)
-                # Database operations code...
+                echo -e "\n${YELLOW}Database Operations:${NC}"
+                echo "1) Backup Database"
+                echo "2) Restore Database"
+                echo "3) Run Migrations"
+                echo "4) Initialize Database"
+                echo "0) Back to main menu"
+                read -p "Select operation: " db_choice
+                case $db_choice in
+                    1) 
+                        backup_file="backup_$(date +%Y%m%d_%H%M%S).sql"
+                        pg_dump -U terminusa terminusa_db > $backup_file
+                        success_log "Database backed up to $backup_file"
+                        ;;
+                    2)
+                        read -p "Enter backup file path: " restore_file
+                        if [ -f "$restore_file" ]; then
+                            psql -U terminusa terminusa_db < $restore_file
+                            success_log "Database restored from $restore_file"
+                        else
+                            error_log "Backup file not found"
+                        fi
+                        ;;
+                    3)
+                        flask db upgrade
+                        success_log "Database migrations completed"
+                        ;;
+                    4)
+                        python init_database.py
+                        success_log "Database initialized"
+                        ;;
+                    0) continue ;;
+                    *) error_log "Invalid option" ;;
+                esac
                 ;;
             8)
-                # Game systems code...
+                echo -e "\n${YELLOW}Nginx Operations:${NC}"
+                echo "1) Test Configuration"
+                echo "2) Reload Configuration"
+                echo "3) View Active Sites"
+                echo "0) Back to main menu"
+                read -p "Select operation: " nginx_choice
+                case $nginx_choice in
+                    1) nginx -t ;;
+                    2) systemctl reload nginx ;;
+                    3) ls -l /etc/nginx/sites-enabled/ ;;
+                    0) continue ;;
+                    *) error_log "Invalid option" ;;
+                esac
                 ;;
             9)
-                # System status code...
+                bash status_monitor.sh
                 ;;
             10)
-                # Port management code...
-                ;;
-            11)
-                # Debug mode code...
+                if [ "$DEBUG" = true ]; then
+                    DEBUG=false
+                    info_log "Debug mode disabled"
+                else
+                    DEBUG=true
+                    info_log "Debug mode enabled"
+                fi
                 ;;
             0)
                 info_log "Exiting..."
@@ -361,6 +444,9 @@ show_menu() {
         read -p "Press Enter to continue..."
     done
 }
+
+# Trap signals for graceful shutdown
+trap 'MONITOR_RUNNING=false; stop_services; exit 0' SIGINT SIGTERM
 
 # Main execution
 mkdir -p logs
