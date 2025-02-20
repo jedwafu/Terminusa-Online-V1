@@ -19,7 +19,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from database import db
 from models import User, Announcement
-from routes.auth_routes import auth  # Import directly from auth_routes.py
+from routes.auth_routes import auth  # Import auth blueprint
 
 # Load environment variables
 print("[DEBUG] Loading environment variables")

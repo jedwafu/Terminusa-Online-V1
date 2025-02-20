@@ -1,8 +1,18 @@
-from app import db
+from database import db
 from datetime import datetime
-from enum import Enum
+from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Enum, Table
+import enum
 
-class GateGrade(Enum):
+# Association table for gate-magic_beast relationship
+gate_magic_beasts = Table(
+    'gate_magic_beasts',
+    db.Model.metadata,
+    Column('gate_id', Integer, ForeignKey('gates.id'), primary_key=True),
+    Column('magic_beast_id', Integer, ForeignKey('magic_beasts.id'), primary_key=True)
+)
+
+class GateGrade(enum.Enum):
     F = "F"
     E = "E"
     D = "D"
@@ -10,147 +20,94 @@ class GateGrade(Enum):
     B = "B"
     A = "A"
     S = "S"
-    MONARCH = "MONARCH"
+    SS = "SS"
+    SSS = "SSS"
 
-class MagicBeastType(Enum):
-    NORMAL = "normal"
-    ELITE = "elite"
-    BOSS = "boss"
-    MASTER = "master"
-    MONARCH = "monarch"
+class MagicBeastType(enum.Enum):
+    NORMAL = "Normal"
+    ELITE = "Elite"
+    BOSS = "Boss"
+    RAID = "Raid"
+    EVENT = "Event"
 
 class Gate(db.Model):
-    """Gate (dungeon) model"""
     __tablename__ = 'gates'
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    grade = db.Column(db.Enum(GateGrade), nullable=False)
-    level_requirement = db.Column(db.Integer, nullable=False)
-    rank_requirement = db.Column(db.Enum(GateGrade), nullable=False)
-    min_players = db.Column(db.Integer, default=1)
-    max_players = db.Column(db.Integer, default=1)
-    
-    # Rewards
-    base_crystal_reward = db.Column(db.Integer, nullable=False)
-    base_exp_reward = db.Column(db.Integer, nullable=False)
-    loot_table = db.Column(db.JSON, nullable=False)  # Possible item drops and rates
-    
-    # Difficulty factors
-    monster_level_bonus = db.Column(db.Float, default=1.0)
-    monster_stat_bonus = db.Column(db.Float, default=1.0)
-    monster_count_bonus = db.Column(db.Float, default=1.0)
-    time_limit = db.Column(db.Integer, nullable=True)  # in seconds, null for no limit
-    
-    # AI Configuration
-    ai_difficulty_adjustment = db.Column(db.Float, default=1.0)
-    ai_behavior_pattern = db.Column(db.String(50), nullable=True)
-    
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    description = Column(String(500))
+    grade = Column(Enum(GateGrade), nullable=False)
+    level = Column(Integer, nullable=False)
+    difficulty = Column(Float, nullable=False)
+    is_active = Column(Boolean, default=True)
+    max_players = Column(Integer, default=1)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    magic_beasts = db.relationship('MagicBeast', secondary='gate_magic_beasts', backref='gates')
-    sessions = db.relationship('GateSession', backref='gate', lazy='dynamic')
+    magic_beasts = relationship('MagicBeast', secondary=gate_magic_beasts, back_populates='gates')
+    sessions = relationship('GateSession', back_populates='gate')
 
     def __repr__(self):
-        return f"<Gate {self.name} ({self.grade.value})>"
+        return f'<Gate {self.name} ({self.grade.value})>'
 
 class MagicBeast(db.Model):
-    """Magic Beast model"""
     __tablename__ = 'magic_beasts'
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    beast_type = db.Column(db.Enum(MagicBeastType), nullable=False)
-    level = db.Column(db.Integer, nullable=False)
-    
-    # Base Stats
-    hp = db.Column(db.Integer, nullable=False)
-    mp = db.Column(db.Integer, nullable=False)
-    physical_attack = db.Column(db.Integer, nullable=False)
-    magical_attack = db.Column(db.Integer, nullable=False)
-    physical_defense = db.Column(db.Integer, nullable=False)
-    magical_defense = db.Column(db.Integer, nullable=False)
-    speed = db.Column(db.Integer, nullable=False)
-    
-    # Combat Properties
-    skills = db.Column(db.JSON, nullable=False)  # List of skill IDs
-    loot_table = db.Column(db.JSON, nullable=False)  # Possible drops and rates
-    crystal_value = db.Column(db.Integer, nullable=False)
-    exp_value = db.Column(db.Integer, nullable=False)
-    
-    # AI Behavior
-    ai_behavior_id = db.Column(db.Integer, db.ForeignKey('ai_behaviors.id'), nullable=False)
-    
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    def __repr__(self):
-        return f"<MagicBeast {self.name}>"
-
-class GateSession(db.Model):
-    """Gate session model for tracking active and completed gate runs"""
-    __tablename__ = 'gate_sessions'
-
-    id = db.Column(db.Integer, primary_key=True)
-    gate_id = db.Column(db.Integer, db.ForeignKey('gates.id'), nullable=False)
-    party_id = db.Column(db.Integer, db.ForeignKey('parties.id'), nullable=True)  # Null for solo
-    status = db.Column(db.String(20), default='active')  # active, completed, failed
-    started_at = db.Column(db.DateTime, default=datetime.utcnow)
-    completed_at = db.Column(db.DateTime, nullable=True)
-    time_taken = db.Column(db.Integer, nullable=True)  # in seconds
-    
-    # Session Results
-    total_crystal_reward = db.Column(db.Integer, nullable=True)
-    total_exp_reward = db.Column(db.Integer, nullable=True)
-    dropped_items = db.Column(db.JSON, nullable=True)  # Items dropped during session
-    player_deaths = db.Column(db.JSON, nullable=True)  # Player death records
-    combat_log = db.Column(db.JSON, nullable=True)  # Detailed combat log
-    
-    # Performance Metrics
-    damage_dealt = db.Column(db.JSON, nullable=True)  # Per player damage stats
-    damage_taken = db.Column(db.JSON, nullable=True)  # Per player damage taken
-    healing_done = db.Column(db.JSON, nullable=True)  # Per player healing stats
-    kills = db.Column(db.JSON, nullable=True)  # Per player kill counts
-
-    def __repr__(self):
-        return f"<GateSession {self.id}>"
-
-class AIBehavior(db.Model):
-    """AI behavior patterns for magic beasts"""
-    __tablename__ = 'ai_behaviors'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), nullable=False)
-    description = db.Column(db.Text, nullable=False)
-    behavior_type = db.Column(db.String(20), nullable=False)  # aggressive, defensive, balanced
-    skill_priorities = db.Column(db.JSON, nullable=False)  # Skill usage priorities
-    target_selection = db.Column(db.JSON, nullable=False)  # Target selection rules
-    hp_thresholds = db.Column(db.JSON, nullable=False)  # Behavior changes at HP %
-    mp_thresholds = db.Column(db.JSON, nullable=False)  # Behavior changes at MP %
-    
-    # Advanced AI Settings
-    learning_rate = db.Column(db.Float, default=0.1)
-    adaptation_factor = db.Column(db.Float, default=0.1)
-    memory_length = db.Column(db.Integer, default=10)  # Number of rounds to remember
-    
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = Column(Integer, primary_key=True)
+    name = Column(String(100), nullable=False)
+    description = Column(String(500))
+    type = Column(Enum(MagicBeastType), nullable=False)
+    level = Column(Integer, nullable=False)
+    hp = Column(Integer, nullable=False)
+    attack = Column(Integer, nullable=False)
+    defense = Column(Integer, nullable=False)
+    speed = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
-    magic_beasts = db.relationship('MagicBeast', backref='ai_behavior')
+    gates = relationship('Gate', secondary=gate_magic_beasts, back_populates='magic_beasts')
+    behaviors = relationship('AIBehavior', back_populates='magic_beast')
 
     def __repr__(self):
-        return f"<AIBehavior {self.name}>"
+        return f'<MagicBeast {self.name} ({self.type.value})>'
 
-# Association Tables
-gate_magic_beasts = db.Table('gate_magic_beasts',
-    db.Column('gate_id', db.Integer, db.ForeignKey('gates.id'), primary_key=True),
-    db.Column('magic_beast_id', db.Integer, db.ForeignKey('magic_beasts.id'), primary_key=True),
-    db.Column('spawn_rate', db.Float, nullable=False),  # Percentage chance to spawn
-    db.Column('min_count', db.Integer, nullable=False),  # Minimum number per gate
-    db.Column('max_count', db.Integer, nullable=False)  # Maximum number per gate
-)
+class GateSession(db.Model):
+    __tablename__ = 'gate_sessions'
+
+    id = Column(Integer, primary_key=True)
+    gate_id = Column(Integer, ForeignKey('gates.id'), nullable=False)
+    player_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    start_time = Column(DateTime, default=datetime.utcnow)
+    end_time = Column(DateTime)
+    status = Column(String(20), default='active')  # active, completed, failed
+    score = Column(Integer)
+    rewards = Column(String(500))  # JSON string of rewards
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    gate = relationship('Gate', back_populates='sessions')
+    player = relationship('User', back_populates='gate_sessions')
+
+    def __repr__(self):
+        return f'<GateSession {self.id} ({self.status})>'
+
+class AIBehavior(db.Model):
+    __tablename__ = 'ai_behaviors'
+
+    id = Column(Integer, primary_key=True)
+    magic_beast_id = Column(Integer, ForeignKey('magic_beasts.id'), nullable=False)
+    trigger_condition = Column(String(200), nullable=False)
+    action = Column(String(200), nullable=False)
+    cooldown = Column(Integer, default=0)
+    priority = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    magic_beast = relationship('MagicBeast', back_populates='behaviors')
+
+    def __repr__(self):
+        return f'<AIBehavior {self.id} for MagicBeast {self.magic_beast_id}>'
