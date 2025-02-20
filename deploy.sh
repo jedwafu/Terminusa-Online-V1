@@ -55,7 +55,7 @@ SERVICE_SCREENS=(
     ["game_mechanics"]="terminusa-mechanics"
 )
 
-# Check if port is in use
+# Port management functions
 check_port() {
     local port=$1
     if lsof -i :$port > /dev/null 2>&1; then
@@ -65,7 +65,6 @@ check_port() {
     fi
 }
 
-# Kill process using port
 kill_port_process() {
     local port=$1
     local pid=$(lsof -t -i:$port)
@@ -80,7 +79,6 @@ kill_port_process() {
     fi
 }
 
-# Show port status
 show_port_status() {
     local port=$1
     info_log "Checking port $port..."
@@ -93,62 +91,6 @@ show_port_status() {
         success_log "Port $port is free"
     fi
 }
-#!/bin/bash
-
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
-
-# Debug mode flag
-DEBUG=false
-
-# Service status tracking
-declare -A SERVICE_STATUS
-declare -A SERVICE_PIDS
-declare -A SERVICE_PORTS
-declare -A SERVICE_LOGS
-declare -A SERVICE_SCREENS
-
-# Initialize service configurations
-SERVICE_PORTS=(
-    ["postgresql"]="5432"
-    ["nginx"]="80,443"
-    ["flask"]="5000"
-    ["terminal"]="6789"
-    ["redis"]="6379"
-    ["postfix"]="25"
-    ["game"]="5001"
-)
-
-SERVICE_LOGS=(
-    ["postgresql"]="/var/log/postgresql/postgresql-main.log"
-    ["nginx"]="/var/log/nginx/error.log"
-    ["flask"]="logs/flask.log"
-    ["terminal"]="logs/terminal.log"
-    ["redis"]="/var/log/redis/redis-server.log"
-    ["postfix"]="/var/log/mail.log"
-    ["game"]="logs/game.log"
-    ["email_monitor"]="logs/email_monitor.log"
-    ["ai_manager"]="logs/ai_manager.log"
-    ["combat_manager"]="logs/combat_manager.log"
-    ["economy_systems"]="logs/economy_systems.log"
-    ["game_mechanics"]="logs/game_mechanics.log"
-)
-
-SERVICE_SCREENS=(
-    ["flask"]="terminusa-flask"
-    ["terminal"]="terminusa-terminal"
-    ["game"]="terminusa-game"
-    ["email_monitor"]="terminusa-email"
-    ["ai_manager"]="terminusa-ai"
-    ["combat_manager"]="terminusa-combat"
-    ["economy_systems"]="terminusa-economy"
-    ["game_mechanics"]="terminusa-mechanics"
-)
 
 # Debug logging function
 debug_log() {
