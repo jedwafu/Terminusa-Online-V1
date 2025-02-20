@@ -4,29 +4,48 @@
 
 {% block content %}
 <div class="auth-container">
-    <div class="auth-box">
-        <h2 class="auth-title">Login to Terminusa</h2>
-        <form method="POST" action="{{ url_for('auth.login') }}" class="auth-form">
-            <div class="form-group">
-                <label for="username">Username or Email</label>
-                <input type="text" id="username" name="username" required 
-                       class="form-input" placeholder="Enter your username or email">
+    <div class="auth-panel">
+        <div class="auth-box">
+            <h2 class="auth-title">Login to Terminusa</h2>
+            <form method="POST" action="{{ url_for('auth.login') }}" class="auth-form">
+                <div class="form-group">
+                    <label for="username">Username or Email</label>
+                    <input type="text" id="username" name="username" required 
+                           class="form-input" placeholder="Enter your username or email">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required 
+                           class="form-input" placeholder="Enter your password">
+                </div>
+                <div class="form-group form-checkbox">
+                    <input type="checkbox" id="remember" name="remember">
+                    <label for="remember">Remember me</label>
+                </div>
+                <button type="submit" class="btn btn-primary btn-glow btn-full">Login</button>
+            </form>
+            <div class="auth-links">
+                <a href="#" class="text-neon">Forgot Password?</a>
+                <span class="separator">|</span>
+                <a href="{{ url_for('auth.register') }}" class="text-neon">Create Account</a>
             </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required 
-                       class="form-input" placeholder="Enter your password">
+        </div>
+        <div class="announcements-box">
+            <h2 class="announcements-title">Latest News</h2>
+            <div class="announcements-list">
+                {% for announcement in announcements %}
+                <div class="announcement-item">
+                    <h3 class="announcement-title">{{ announcement.title }}</h3>
+                    <div class="announcement-meta">
+                        <span class="announcement-date">{{ announcement.created_at.strftime('%B %d, %Y') }}</span>
+                        <span class="announcement-author">by {{ announcement.author.username }}</span>
+                    </div>
+                    <div class="announcement-content">{{ announcement.content }}</div>
+                </div>
+                {% else %}
+                <div class="announcement-empty">No announcements available</div>
+                {% endfor %}
             </div>
-            <div class="form-group form-checkbox">
-                <input type="checkbox" id="remember" name="remember">
-                <label for="remember">Remember me</label>
-            </div>
-            <button type="submit" class="btn btn-primary btn-glow btn-full">Login</button>
-        </form>
-        <div class="auth-links">
-            <a href="#" class="text-matrix">Forgot Password?</a>
-            <span class="separator">|</span>
-            <a href="{{ url_for('auth.register') }}" class="text-matrix">Create Account</a>
         </div>
     </div>
 </div>
@@ -40,24 +59,43 @@
     padding: 2rem;
 }
 
+.auth-panel {
+    display: flex;
+    gap: 2rem;
+    width: 100%;
+    max-width: 1000px;
+}
+
 .auth-box {
     background: rgba(0, 24, 0, 0.95);
-    border: 1px solid var(--matrix-green);
+    border: 1px solid var(--neon-blue);
     border-radius: 8px;
     padding: 2rem;
     width: 100%;
     max-width: 400px;
-    box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+    box-shadow: var(--neon-shadow);
+    animation: neonPulse 2s infinite;
 }
 
-.auth-title {
-    color: var(--matrix-green);
+.announcements-box {
+    background: rgba(0, 24, 0, 0.95);
+    border: 1px solid var(--neon-blue);
+    border-radius: 8px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: var(--neon-shadow);
+    animation: neonPulse 2s infinite;
+}
+
+.auth-title, .announcements-title {
+    color: var(--neon-blue);
     text-align: center;
     margin-bottom: 2rem;
     font-size: 1.8rem;
     text-transform: uppercase;
     letter-spacing: 2px;
-    text-shadow: var(--text-shadow);
+    text-shadow: var(--neon-shadow);
 }
 
 .auth-form {
@@ -73,16 +111,17 @@
 }
 
 .form-group label {
-    color: var(--matrix-green);
+    color: var(--neon-blue);
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 1px;
     font-size: 0.9rem;
+    text-shadow: var(--neon-shadow);
 }
 
 .form-input {
     background: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--matrix-green);
+    border: 1px solid var(--neon-blue);
     border-radius: 4px;
     padding: 0.75rem;
     color: var(--text-color);
@@ -92,8 +131,8 @@
 
 .form-input:focus {
     outline: none;
-    border-color: var(--matrix-light-green);
-    box-shadow: 0 0 10px rgba(0, 255, 65, 0.2);
+    border-color: var(--neon-blue);
+    box-shadow: var(--neon-shadow);
 }
 
 .form-checkbox {
@@ -106,7 +145,7 @@
     appearance: none;
     width: 16px;
     height: 16px;
-    border: 1px solid var(--matrix-green);
+    border: 1px solid var(--neon-blue);
     border-radius: 3px;
     background: transparent;
     cursor: pointer;
@@ -119,8 +158,9 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    color: var(--matrix-green);
+    color: var(--neon-blue);
     font-size: 12px;
+    text-shadow: var(--neon-shadow);
 }
 
 .btn-full {
@@ -134,23 +174,112 @@
 }
 
 .auth-links a {
-    color: var(--matrix-green);
+    color: var(--neon-blue);
     text-decoration: none;
     transition: all 0.3s ease;
+    text-shadow: var(--neon-shadow);
 }
 
 .auth-links a:hover {
-    color: var(--matrix-light-green);
-    text-shadow: var(--text-shadow);
+    color: var(--text-color);
+    text-shadow: var(--neon-shadow);
 }
 
 .separator {
-    color: var(--matrix-green);
+    color: var(--neon-blue);
     margin: 0 0.5rem;
+    text-shadow: var(--neon-shadow);
 }
 
-.text-matrix {
-    color: var(--matrix-green);
+.text-neon {
+    color: var(--neon-blue);
+    text-shadow: var(--neon-shadow);
+}
+
+/* Announcements Styles */
+.announcements-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 1rem;
+}
+
+.announcements-list::-webkit-scrollbar {
+    width: 8px;
+}
+
+.announcements-list::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+}
+
+.announcements-list::-webkit-scrollbar-thumb {
+    background: var(--neon-blue);
+    border-radius: 4px;
+    box-shadow: var(--neon-shadow);
+}
+
+.announcement-item {
+    border: 1px solid var(--neon-blue);
+    border-radius: 4px;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    transition: all 0.3s ease;
+}
+
+.announcement-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--neon-shadow);
+}
+
+.announcement-title {
+    color: var(--neon-blue);
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+    text-shadow: var(--neon-shadow);
+}
+
+.announcement-meta {
+    font-size: 0.8rem;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+    opacity: 0.8;
+}
+
+.announcement-date {
+    margin-right: 1rem;
+}
+
+.announcement-content {
+    color: var(--text-color);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.announcement-empty {
+    color: var(--text-color);
+    text-align: center;
+    padding: 2rem;
+    opacity: 0.7;
+}
+
+@media (max-width: 900px) {
+    .auth-panel {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .auth-box, .announcements-box {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .auth-container {
+        padding: 1rem;
+    }
 }
 </style>
 {% endblock %}

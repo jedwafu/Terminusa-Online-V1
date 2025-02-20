@@ -7,17 +7,25 @@ from flask_jwt_extended import (
     jwt_required, get_jwt
 )
 from database import db
-from models import User
+from models import User, Announcement
 from datetime import datetime, timedelta
 import bcrypt
 
 auth = Blueprint('auth', __name__)
 
+def get_latest_announcements(limit=5):
+    """Get latest active announcements"""
+    return Announcement.query.filter_by(is_active=True)\
+        .order_by(Announcement.priority.desc(), Announcement.created_at.desc())\
+        .limit(limit)\
+        .all()
+
 @auth.route('/login', methods=['GET', 'POST'])
 def login():
     """Handle login page and form submission"""
     if request.method == 'GET':
-        return render_template('login.html')
+        announcements = get_latest_announcements()
+        return render_template('login.html', announcements=announcements)
     
     try:
         # Handle AJAX request
@@ -136,7 +144,8 @@ def logout():
 def register():
     """Handle registration page and form submission"""
     if request.method == 'GET':
-        return render_template('register.html')
+        announcements = get_latest_announcements()
+        return render_template('register.html', announcements=announcements)
     
     try:
         # Handle AJAX request
