@@ -296,9 +296,9 @@ start_services() {
     for service in "${!SERVICE_PORTS[@]}"; do
         IFS=',' read -ra PORTS <<< "${SERVICE_PORTS[$service]}"
         for port in "${PORTS[@]}"; do
-            if ./manage_ports.sh check $port; then
+            if check_port $port; then
                 info_log "Port $port is in use. Attempting to free it..."
-                ./manage_ports.sh kill $port
+                kill_port_process $port
             fi
         done
     done
@@ -316,13 +316,13 @@ start_services() {
     # Start Flask application
     info_log "Starting Flask application..."
     if ! check_screen_session ${SERVICE_SCREENS["flask"]}; then
-        if ./manage_ports.sh check 5000; then
+        if check_port 5000; then
             info_log "Port 5000 is in use. Attempting to free it..."
-            ./manage_ports.sh kill 5000
+            kill_port_process 5000
         fi
         start_screen ${SERVICE_SCREENS["flask"]} "cd $(pwd) && source venv/bin/activate && FLASK_APP=app_final.py FLASK_ENV=production python app_final.py > logs/flask.log 2>&1"
         sleep 2
-        if ! ./manage_ports.sh check 5000; then
+        if ! check_port 5000; then
             error_log "Failed to start Flask application. Check logs/flask.log for details."
             tail -n 20 logs/flask.log
         fi
@@ -331,9 +331,9 @@ start_services() {
     # Start Terminal server
     info_log "Starting Terminal server..."
     if ! check_screen_session ${SERVICE_SCREENS["terminal"]}; then
-        if ./manage_ports.sh check 6789; then
+        if check_port 6789; then
             info_log "Port 6789 is in use. Attempting to free it..."
-            ./manage_ports.sh kill 6789
+            kill_port_process 6789
         fi
         start_screen ${SERVICE_SCREENS["terminal"]} "cd $(pwd) && source venv/bin/activate && python terminal_server.py > logs/terminal.log 2>&1"
     fi
@@ -341,9 +341,9 @@ start_services() {
     # Start Game server
     info_log "Starting Game server..."
     if ! check_screen_session ${SERVICE_SCREENS["game"]}; then
-        if ./manage_ports.sh check 5001; then
+        if check_port 5001; then
             info_log "Port 5001 is in use. Attempting to free it..."
-            ./manage_ports.sh kill 5001
+            kill_port_process 5001
         fi
         start_screen ${SERVICE_SCREENS["game"]} "cd $(pwd) && source venv/bin/activate && python game_server.py > logs/game.log 2>&1"
     fi
@@ -556,11 +556,11 @@ show_menu() {
                 case $port_choice in
                     1)
                         read -p "Enter port number: " port
-                        ./manage_ports.sh status $port
+                        show_port_status $port
                         ;;
                     2)
                         read -p "Enter port number: " port
-                        ./manage_ports.sh kill $port
+                        kill_port_process $port
                         ;;
                     3)
                         netstat -tulpn | grep LISTEN
