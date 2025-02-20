@@ -5,18 +5,18 @@ Requires=postgresql.service redis-server.service nginx.service
 
 [Service]
 Type=simple
-User=terminusa
-Group=terminusa
-WorkingDirectory=/opt/terminusa
+User=root
+Group=root
+WorkingDirectory=/root/Terminusa
 Environment=FLASK_APP=app.py
 Environment=FLASK_ENV=production
-EnvironmentFile=/opt/terminusa/.env
+EnvironmentFile=/root/Terminusa/.env
 
 # Start the terminal server
 ExecStartPre=/bin/bash -c 'systemctl start terminusa-terminal.service'
 
 # Start the main application
-ExecStart=/opt/terminusa/venv/bin/python app.py
+ExecStart=/root/Terminusa/venv/bin/python app.py
 
 # Stop all services
 ExecStop=/bin/bash -c 'systemctl stop terminusa-terminal.service'

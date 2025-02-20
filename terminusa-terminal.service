@@ -5,14 +5,14 @@ Requires=postgresql.service redis-server.service
 
 [Service]
 Type=simple
-User=terminusa
-Group=terminusa
-WorkingDirectory=/opt/terminusa
+User=root
+Group=root
+WorkingDirectory=/root/Terminusa
 Environment=FLASK_ENV=production
-EnvironmentFile=/opt/terminusa/.env
+EnvironmentFile=/root/Terminusa/.env
 
 # Start the terminal server
-ExecStart=/opt/terminusa/venv/bin/python terminal_server.py
+ExecStart=/root/Terminusa/venv/bin/python terminal_server.py
 
 # Restart on failure
 Restart=always
