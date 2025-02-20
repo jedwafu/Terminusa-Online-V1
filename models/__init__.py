@@ -1,61 +1,44 @@
 """
-Models package for Terminusa Online.
-Contains all database models for the application.
+Models package initialization.
+Exposes all models through a clean interface.
 """
 
 from database import db
-from .base import User, Announcement
+
+# Import all models
 from .gate import Gate, GateGrade, MagicBeast, MagicBeastType, GateSession, AIBehavior
-from .character import PlayerCharacter, PlayerSkill, Skill, JobHistory, JobQuest, HunterClass, BaseJob, HealthStatus
-from .currency import Currency, CurrencyType, Wallet, Transaction, TokenSwap, LoyaltyReward
-from .inventory import Item, ItemType, ItemGrade, ItemSlot, Inventory, InventoryItem, EquippedItem, ItemDrop, Trade, TradeItem, ShopTransaction
-from .social import Guild, GuildRank, GuildMember, GuildQuest, GuildLog, Party, PartyMember, PartyInvitation, PartyLog
-from .progression import Achievement, Quest, QuestType, QuestStatus, PlayerQuest, PlayerAchievement, QuestLog, QuestBank, ReferralReward
-from .ai import AIModel, AIModelType, PlayerActivityType, PlayerProfile, ActivityLog, AIDecision, GachaSystem, GachaHistory, GamblingSystem, GamblingHistory
+from .character import (
+    PlayerCharacter, PlayerSkill, Skill, JobHistory, 
+    JobQuest, HunterClass, BaseJob, HealthStatus
+)
+from .currency import Currency, Transaction, CurrencyType, TransactionType
+from .inventory import Item, ItemType, Inventory, ItemRarity
+from .social import Guild, GuildMember, Party, PartyMember, Friend
+from .progression import Achievement, Quest, QuestProgress, Milestone
+from .ai import AIModel, AITrainingData, AIEvaluation, AIMetric
 
-# Initialize all models
-def init_app(app):
-    """Initialize all models with the app"""
-    db.init_app(app)
-
-# Export all models
+# Define which models are exposed
 __all__ = [
-    # Database
-    'db', 'init_app',
-    
-    # Base Models
-    'User', 'Announcement',
-    
-    # Gate Models
-    'Gate', 'GateGrade', 'MagicBeast', 'MagicBeastType',
+    # Gate related models
+    'Gate', 'GateGrade', 'MagicBeast', 'MagicBeastType', 
     'GateSession', 'AIBehavior',
     
-    # Character Models
+    # Character related models
     'PlayerCharacter', 'PlayerSkill', 'Skill', 'JobHistory',
     'JobQuest', 'HunterClass', 'BaseJob', 'HealthStatus',
     
-    # Currency Models
-    'Currency', 'CurrencyType', 'Wallet', 'Transaction',
-    'TokenSwap', 'LoyaltyReward',
+    # Currency related models
+    'Currency', 'Transaction', 'CurrencyType', 'TransactionType',
     
-    # Inventory Models
-    'Item', 'ItemType', 'ItemGrade', 'ItemSlot', 'Inventory',
-    'InventoryItem', 'EquippedItem', 'ItemDrop', 'Trade',
-    'TradeItem', 'ShopTransaction',
+    # Inventory related models
+    'Item', 'ItemType', 'Inventory', 'ItemRarity',
     
-    # Social Models
-    'Guild', 'GuildRank', 'GuildMember', 'GuildQuest',
-    'GuildLog', 'Party', 'PartyMember', 'PartyInvitation',
-    'PartyLog',
+    # Social related models
+    'Guild', 'GuildMember', 'Party', 'PartyMember', 'Friend',
     
-    # Progression Models
-    'Achievement', 'Quest', 'QuestType', 'QuestStatus',
-    'PlayerQuest', 'PlayerAchievement', 'QuestLog',
-    'QuestBank', 'ReferralReward',
+    # Progression related models
+    'Achievement', 'Quest', 'QuestProgress', 'Milestone',
     
-    # AI Models
-    'AIModel', 'AIModelType', 'PlayerActivityType',
-    'PlayerProfile', 'ActivityLog', 'AIDecision',
-    'GachaSystem', 'GachaHistory', 'GamblingSystem',
-    'GamblingHistory'
+    # AI related models
+    'AIModel', 'AITrainingData', 'AIEvaluation', 'AIMetric'
 ]
