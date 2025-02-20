@@ -8,7 +8,20 @@ from database import db
 # Base models that don't have dependencies
 from .currency import (
     Currency, Transaction, TokenSwap,
-    CurrencyType, TransactionType
+    CurrencyType, TransactionType,
+    init_currencies
+)
+
+from .inventory import (
+    Item, ItemType, Inventory, ItemRarity,
+    Equipment, EquipmentSlot, EquipmentType,
+    init_items
+)
+
+from .ai import (
+    AIModel, AITrainingData, AIEvaluation,
+    AIMetric, ActivityType, PlayerActivity,
+    init_ai_models
 )
 
 # Models with dependencies on base models
@@ -22,28 +35,20 @@ from .gate import (
     GateSession, AIBehavior
 )
 
-from .inventory import (
-    Item, ItemType, Inventory, ItemRarity,
-    Equipment, EquipmentSlot, EquipmentType
-)
-
 from .social import (
     Guild, GuildMember, GuildRank,
     Party, PartyMember, PartyRole,
-    Friend, FriendStatus
+    Friend, FriendStatus,
+    init_guild_settings
 )
 
 from .progression import (
     Achievement, AchievementType,
     Quest, QuestType, QuestStatus,
     QuestProgress, QuestReward,
-    Milestone, MilestoneType
-)
-
-from .ai import (
-    AIModel, AITrainingData,
-    AIEvaluation, AIMetric,
-    PlayerActivity, ActivityType
+    Milestone, MilestoneType,
+    UserAchievement, UserMilestone,
+    init_progression
 )
 
 # Define which models are exposed
@@ -51,6 +56,14 @@ __all__ = [
     # Currency related models
     'Currency', 'Transaction', 'TokenSwap',
     'CurrencyType', 'TransactionType',
+    
+    # Inventory related models
+    'Item', 'ItemType', 'Inventory', 'ItemRarity',
+    'Equipment', 'EquipmentSlot', 'EquipmentType',
+    
+    # AI related models
+    'AIModel', 'AITrainingData', 'AIEvaluation',
+    'AIMetric', 'ActivityType', 'PlayerActivity',
     
     # Character related models
     'PlayerCharacter', 'PlayerSkill', 'Skill', 
@@ -60,10 +73,6 @@ __all__ = [
     # Gate related models
     'Gate', 'GateGrade', 'MagicBeast', 
     'MagicBeastType', 'GateSession', 'AIBehavior',
-    
-    # Inventory related models
-    'Item', 'ItemType', 'Inventory', 'ItemRarity',
-    'Equipment', 'EquipmentSlot', 'EquipmentType',
     
     # Social related models
     'Guild', 'GuildMember', 'GuildRank',
@@ -75,21 +84,19 @@ __all__ = [
     'Quest', 'QuestType', 'QuestStatus',
     'QuestProgress', 'QuestReward',
     'Milestone', 'MilestoneType',
-    
-    # AI related models
-    'AIModel', 'AITrainingData',
-    'AIEvaluation', 'AIMetric',
-    'PlayerActivity', 'ActivityType'
+    'UserAchievement', 'UserMilestone'
 ]
 
-# Initialize default data
+# Initialize database with default data
 def init_db():
     """Initialize database with default data"""
-    from .currency import init_currencies
-    
     # Admin wallet and username from environment variables
     admin_wallet = "FNEdD3PWMLwbNKxtaHy3W2NVfRJ7wqDNx4M9je8Xc6Mw"
     admin_username = "adminbb"
     
-    # Initialize currencies
+    # Initialize all models in correct order
     init_currencies(admin_wallet, admin_username)
+    init_items()
+    init_ai_models()
+    init_guild_settings()
+    init_progression()
