@@ -1,7 +1,9 @@
-from flask import jsonify, request, render_template, redirect, url_for, flash, g
+from flask import Blueprint, jsonify, request, render_template, redirect, url_for, flash, g
 from flask_jwt_extended import create_access_token, set_access_cookies, unset_access_cookies
-from app import app, db
+from database import db
 from models import User
+
+auth = Blueprint('auth', __name__)
 from datetime import datetime, timedelta
 import bcrypt
 import logging
