@@ -3,8 +3,9 @@
 
 from database import db
 from datetime import datetime
-from sqlalchemy import Column, Integer, DateTime, event, Boolean, String  # Added Boolean and String imports
+from sqlalchemy import Column, Integer, DateTime, event, Boolean, String, ForeignKey  # Added ForeignKey
 from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy.orm import relationship  # Added relationship import
 
 class BaseModel(db.Model):
     """Abstract base model class that provides common functionality."""
