@@ -80,6 +80,12 @@ info_log() {
     echo "[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> logs/deploy.log
 }
 
+# Setup static files
+setup_static_files() {
+    info_log "Setting up static files..."
+    bash setup_static_files.sh || return 1
+}
+
 # Check Python version
 check_python() {
     info_log "Checking Python version..."
@@ -186,6 +192,9 @@ initialize_deployment() {
         pip install --upgrade pip
         pip install -r requirements.txt
     fi
+    
+    # Setup static files
+    setup_static_files || return 1
     
     success_log "Initialization complete"
 }
