@@ -3,7 +3,7 @@ monkey.patch_all()
 
 import os
 import sys
-from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, g
+from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, g, send_from_directory
 from flask_login import LoginManager, current_user, login_required
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
@@ -41,7 +41,7 @@ if missing_vars:
 
 # Initialize Flask app
 print("[DEBUG] Creating Flask app")
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/static', static_folder='/var/www/terminusa/static')
 
 # Configure app
 print("[DEBUG] Configuring Flask app")
@@ -56,7 +56,6 @@ app.config.update(
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
     CORS_HEADERS='Content-Type',
     SEND_FILE_MAX_AGE_DEFAULT=31536000,  # 1 year in seconds
-    STATIC_FOLDER=os.path.abspath('static')
 )
 
 # Initialize extensions
@@ -105,6 +104,12 @@ def admin_required(f):
             return redirect(url_for('index'))
         return f(*args, **kwargs)
     return decorated_function
+
+# Custom static files handler
+@app.route('/static/<path:filename>')
+def custom_static(filename):
+    app.logger.info(f"Serving static file: {filename}")
+    return send_from_directory(app.static_folder, filename)
 
 # Initialize routes
 init_routes(app)
