@@ -136,42 +136,6 @@ kill_screen() {
     screen -X -S $name quit >/dev/null 2>&1
 }
 
-# Save service status to JSON
-save_status() {
-    local status_file="logs/service_status.json"
-    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-    local cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}')
-    local mem_usage=$(free -m | awk 'NR==2{printf "%.2f", $3*100/$2}')
-    local disk_usage=$(df -h / | awk 'NR==2{print $5}')
-    
-    cat > "$status_file" << EOF
-{
-    "timestamp": "$timestamp",
-    "system": {
-        "cpu_usage": "$cpu_usage%",
-        "memory_usage": "$mem_usage%",
-        "disk_usage": "$disk_usage"
-    },
-    "services": {
-EOF
-    
-    # Add service status
-    local first=true
-    for service in "${!SERVICE_STATUS[@]}"; do
-        if [ "$first" = true ]; then
-            first=false
-        else
-            echo "," >> "$status_file"
-        fi
-        echo "        \"$service\": \"${SERVICE_STATUS[$service]}\"" >> "$status_file"
-    done
-    
-    cat >> "$status_file" << EOF
-    }
-}
-EOF
-}
-
 # Initialize deployment with enhanced checks
 initialize_deployment() {
     info_log "Initializing deployment..."
@@ -190,6 +154,7 @@ initialize_deployment() {
     # Set proper permissions
     chmod -R 755 static
     chmod +x *.py
+    chmod +x *.sh
     
     # Check .env file
     if [ ! -f ".env" ]; then
@@ -264,63 +229,7 @@ enhanced_monitor_services() {
     info_log "Starting enhanced service monitoring..."
     
     while [ "$MONITOR_RUNNING" = true ]; do
-        clear
-        echo -e "${CYAN}=== Terminusa Online Service Monitor ===${NC}"
-        echo -e "Time: $(date '+%Y-%m-%d %H:%M:%S')\n"
-        
-        # System Resources
-        echo -e "${YELLOW}System Resources:${NC}"
-        echo "CPU Usage: $(top -bn1 | grep "Cpu(s)" | awk '{print $2}')%"
-        echo "Memory Usage: $(free -m | awk 'NR==2{printf "%.2f%%", $3*100/$2}')"
-        echo "Disk Usage: $(df -h / | awk 'NR==2{print $5}')"
-        echo
-        
-        # Screen Sessions
-        echo -e "${YELLOW}Screen Sessions:${NC}"
-        screen -list | grep -v "There are screens" || echo "No active screens"
-        echo
-        
-        # Service Status with Auto-Restart
-        echo -e "${YELLOW}Service Status:${NC}"
-        printf "%-15s %-10s %-20s %-20s\n" "Service" "Status" "Port" "Auto-Restart"
-        echo "--------------------------------------------------------"
-        
-        for service in "${!SERVICE_PORTS[@]}"; do
-            local status="stopped"
-            local auto_restart="enabled"
-            
-            case $service in
-                "postgresql"|"nginx"|"redis")
-                    if systemctl is-active --quiet $service; then
-                        status="running"
-                    else
-                        systemctl start $service
-                    fi
-                    ;;
-                "flask"|"terminal")
-                    if check_screen_session ${SERVICE_SCREENS[$service]}; then
-                        status="running"
-                    else
-                        start_screen ${SERVICE_SCREENS[$service]} \
-                            "source venv/bin/activate && python ${service}_server.py"
-                    fi
-                    ;;
-            esac
-            
-            SERVICE_STATUS[$service]=$status
-            
-            if [ "$status" = "running" ]; then
-                printf "%-15s ${GREEN}%-10s${NC} %-20s %-20s\n" \
-                    "$service" "$status" "${SERVICE_PORTS[$service]}" "$auto_restart"
-            else
-                printf "%-15s ${RED}%-10s${NC} %-20s %-20s\n" \
-                    "$service" "$status" "${SERVICE_PORTS[$service]}" "$auto_restart"
-            fi
-        done
-        
-        # Save status to JSON
-        save_status
-        
+        bash system_status.sh
         sleep $MONITOR_INTERVAL
     done
 }
@@ -381,7 +290,13 @@ show_menu() {
                     4) tail -f /var/log/nginx/access.log ;;
                     5) tail -f /var/log/postgresql/postgresql-main.log ;;
                     6) tail -f /var/log/redis/redis-server.log ;;
-                    7) cat logs/service_status.json | python3 -m json.tool ;;
+                    7) 
+                        if [ -f logs/service_status.json ]; then
+                            cat logs/service_status.json | python3 -m json.tool
+                        else
+                            bash system_status.sh
+                        fi
+                        ;;
                     0) continue ;;
                     *) error_log "Invalid option" ;;
                 esac
@@ -437,7 +352,7 @@ show_menu() {
                 esac
                 ;;
             9)
-                cat logs/service_status.json | python3 -m json.tool
+                bash system_status.sh
                 ;;
             10)
                 if [ "$DEBUG" = true ]; then
