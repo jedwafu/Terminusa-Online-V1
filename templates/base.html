@@ -8,9 +8,15 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/buttons.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/alerts.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <!-- Matrix Rain Canvas -->
+    <canvas id="matrixRain"></canvas>
+
     <!-- Alert container -->
     <div class="alert-group" id="alertContainer"></div>
 
@@ -18,20 +24,26 @@
     <header class="main-header">
         <nav class="main-nav">
             <div class="nav-brand">
-                <a href="/">
-                    <div class="logo">T</div>
-                    <span>Terminusa</span>
+                <a href="/" class="logo-link">
+                    <div class="logo">
+                        <span class="logo-text">T</span>
+                        <div class="logo-glow"></div>
+                    </div>
+                    <span class="brand-text">TERMINUSA</span>
                 </a>
             </div>
             <div class="nav-links">
+                <a href="/" class="nav-link">Home</a>
+                <a href="https://terminusa-online.gitbook.io/terminusa-online-whitepaper" target="_blank" class="nav-link">Whitepaper</a>
+                <a href="/leaderboards" class="nav-link">Leaderboards</a>
+                <a href="/marketplace" class="nav-link">Marketplace</a>
+                <a href="/swap" class="nav-link">Buy Exons</a>
                 {% if current_user %}
-                    <a href="/play" class="nav-link">Play</a>
-                    <a href="/marketplace" class="nav-link">Marketplace</a>
-                    <a href="/profile" class="nav-link">Profile</a>
+                    <a href="/play" class="nav-button glow">Play Now</a>
                     <a href="/logout" class="nav-button">Logout</a>
                 {% else %}
                     <a href="/login" class="nav-button">Login</a>
-                    <a href="/register" class="nav-button">Register</a>
+                    <a href="/register" class="nav-button glow">Sign Up</a>
                 {% endif %}
             </div>
         </nav>
@@ -42,7 +54,7 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">
+                    <div class="alert alert-{{ category }} alert-matrix">
                         {{ message }}
                         <span class="close" onclick="this.parentElement.remove()">&times;</span>
                     </div>
@@ -57,27 +69,30 @@
     <footer class="main-footer">
         <div class="footer-content">
             <div class="footer-section">
-                <h3>About</h3>
+                <h3>Game Features</h3>
                 <ul>
-                    <li><a href="/about">About Us</a></li>
-                    <li><a href="/features">Features</a></li>
-                    <li><a href="/roadmap">Roadmap</a></li>
+                    <li><a href="/features#gates">Gate System</a></li>
+                    <li><a href="/features#ai">AI-Powered Quests</a></li>
+                    <li><a href="/features#guilds">Guild System</a></li>
+                    <li><a href="/features#marketplace">Marketplace</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Statistics</h3>
+                <ul>
+                    <li><a href="/stats#gates">Gates Cleared</a></li>
+                    <li><a href="/stats#players">Active Hunters</a></li>
+                    <li><a href="/stats#guilds">Active Guilds</a></li>
+                    <li><a href="/stats#economy">Market Volume</a></li>
                 </ul>
             </div>
             <div class="footer-section">
                 <h3>Community</h3>
                 <ul>
-                    <li><a href="/discord">Discord</a></li>
-                    <li><a href="/twitter">Twitter</a></li>
-                    <li><a href="/blog">Blog</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Support</h3>
-                <ul>
-                    <li><a href="/faq">FAQ</a></li>
-                    <li><a href="/contact">Contact</a></li>
-                    <li><a href="/docs">Documentation</a></li>
+                    <li><a href="/discord" target="_blank">Discord</a></li>
+                    <li><a href="/twitter" target="_blank">Twitter</a></li>
+                    <li><a href="/telegram" target="_blank">Telegram</a></li>
+                    <li><a href="/blog">News & Updates</a></li>
                 </ul>
             </div>
         </div>
@@ -88,11 +103,49 @@
 
     <!-- Core JavaScript -->
     <script>
+    // Matrix Rain Effect
+    const canvas = document.getElementById('matrixRain');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const matrix = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789";
+    const characters = matrix.split("");
+    const fontSize = 14;
+    const columns = canvas.width / fontSize;
+    const drops = Array(Math.floor(columns)).fill(1);
+
+    function drawMatrix() {
+        ctx.fillStyle = "rgba(0, 24, 0, 0.05)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "#00FF41";
+        ctx.font = fontSize + "px monospace";
+
+        for (let i = 0; i < drops.length; i++) {
+            const text = characters[Math.floor(Math.random() * characters.length)];
+            ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+            
+            if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                drops[i] = 0;
+            }
+            drops[i]++;
+        }
+    }
+
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+
+    setInterval(drawMatrix, 50);
+
     // Alert management
     function showAlert(message, type = 'info', duration = 5000) {
         const alertContainer = document.getElementById('alertContainer');
         const alert = document.createElement('div');
-        alert.className = `alert alert-${type} alert-fixed`;
+        alert.className = `alert alert-${type} alert-matrix alert-fixed`;
         alert.innerHTML = `
             ${message}
             <span class="close" onclick="this.parentElement.remove()">&times;</span>

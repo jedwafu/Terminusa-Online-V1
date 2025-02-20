@@ -1,49 +1,99 @@
-/* Alert Styles */
+/* Alert Base Styles */
 .alert {
     padding: 1rem;
     margin-bottom: 1rem;
     border-radius: 4px;
+    border: 1px solid;
     position: relative;
-    animation: slideIn 0.3s ease;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    animation: alertSlideIn 0.3s ease;
 }
 
+/* Alert Types */
 .alert-success {
     background-color: rgba(0, 230, 118, 0.1);
-    border: 1px solid #00e676;
+    border-color: #00e676;
     color: #00e676;
+    text-shadow: 0 0 10px rgba(0, 230, 118, 0.5);
 }
 
 .alert-error {
     background-color: rgba(255, 23, 68, 0.1);
-    border: 1px solid #ff1744;
+    border-color: #ff1744;
     color: #ff1744;
+    text-shadow: 0 0 10px rgba(255, 23, 68, 0.5);
 }
 
 .alert-info {
     background-color: rgba(0, 176, 255, 0.1);
-    border: 1px solid #00b0ff;
+    border-color: #00b0ff;
     color: #00b0ff;
+    text-shadow: 0 0 10px rgba(0, 176, 255, 0.5);
 }
 
 .alert-warning {
     background-color: rgba(255, 214, 0, 0.1);
-    border: 1px solid #ffd600;
+    border-color: #ffd600;
     color: #ffd600;
+    text-shadow: 0 0 10px rgba(255, 214, 0, 0.5);
 }
 
-/* Alert Animations */
-@keyframes slideIn {
-    from {
-        transform: translateY(-10px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
+/* Matrix Theme Alerts */
+.alert-matrix {
+    background-color: rgba(0, 24, 0, 0.9);
+    border-color: var(--matrix-green);
+    color: var(--matrix-green);
+    text-shadow: 0 0 10px var(--matrix-green);
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.2);
 }
 
-/* Alert Close Button */
+.alert-solana {
+    background-color: rgba(20, 241, 149, 0.1);
+    border-color: #14F195;
+    color: #14F195;
+    text-shadow: 0 0 10px rgba(20, 241, 149, 0.5);
+}
+
+.alert-exon {
+    background-color: rgba(153, 69, 255, 0.1);
+    border-color: #9945FF;
+    color: #9945FF;
+    text-shadow: 0 0 10px rgba(153, 69, 255, 0.5);
+}
+
+.alert-crystal {
+    background-color: rgba(0, 243, 255, 0.1);
+    border-color: #00F3FF;
+    color: #00F3FF;
+    text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+}
+
+/* Alert Positioning */
+.alert-fixed {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1000;
+    min-width: 300px;
+    max-width: 500px;
+    margin-bottom: 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.alert-group {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: 500px;
+}
+
+/* Close Button */
 .alert .close {
     position: absolute;
     right: 1rem;
@@ -52,17 +102,17 @@
     cursor: pointer;
     opacity: 0.7;
     transition: opacity 0.3s ease;
+    color: inherit;
 }
 
 .alert .close:hover {
     opacity: 1;
 }
 
-/* Alert Icon */
+/* Alert Icons */
 .alert::before {
-    font-family: 'Font Awesome 5 Free';
-    font-weight: 900;
     margin-right: 0.5rem;
+    font-weight: bold;
 }
 
 .alert-success::before {
@@ -81,46 +131,6 @@
     content: '⚠';
 }
 
-/* Alert Positioning */
-.alert-fixed {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
-    z-index: 1000;
-    min-width: 300px;
-    max-width: 500px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-/* Alert Groups */
-.alert-group {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    max-width: 500px;
-}
-
-.alert-group .alert {
-    margin-bottom: 0;
-}
-
-/* Alert Themes */
-.alert-matrix {
-    background-color: rgba(0, 255, 65, 0.1);
-    border: 1px solid var(--matrix-green);
-    color: var(--matrix-green);
-}
-
-.alert-neon {
-    background-color: rgba(0, 243, 255, 0.1);
-    border: 1px solid var(--neon-blue);
-    color: var(--neon-blue);
-}
-
 /* Alert Sizes */
 .alert-sm {
     padding: 0.5rem 1rem;
@@ -130,4 +140,106 @@
 .alert-lg {
     padding: 1.5rem;
     font-size: 1.125rem;
+}
+
+/* Alert Animations */
+@keyframes alertSlideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes alertSlideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+.alert.sliding-out {
+    animation: alertSlideOut 0.3s ease forwards;
+}
+
+/* Game-specific Alerts */
+.alert-gate {
+    background-color: rgba(0, 255, 65, 0.1);
+    border-color: var(--matrix-green);
+    color: var(--matrix-green);
+    text-shadow: 0 0 10px var(--matrix-green);
+}
+
+.alert-combat {
+    background-color: rgba(255, 0, 0, 0.1);
+    border-color: var(--accent-red);
+    color: var(--accent-red);
+    text-shadow: 0 0 10px var(--accent-red);
+}
+
+.alert-guild {
+    background-color: rgba(123, 44, 191, 0.1);
+    border-color: var(--hunter-purple);
+    color: var(--hunter-purple);
+    text-shadow: 0 0 10px var(--hunter-purple);
+}
+
+.alert-achievement {
+    background-color: rgba(255, 215, 0, 0.1);
+    border-color: #FFD700;
+    color: #FFD700;
+    text-shadow: 0 0 10px #FFD700;
+}
+
+/* Status Effect Alerts */
+.alert-burn {
+    background-color: rgba(255, 87, 34, 0.1);
+    border-color: #FF5722;
+    color: #FF5722;
+    text-shadow: 0 0 10px #FF5722;
+}
+
+.alert-poison {
+    background-color: rgba(156, 39, 176, 0.1);
+    border-color: #9C27B0;
+    color: #9C27B0;
+    text-shadow: 0 0 10px #9C27B0;
+}
+
+.alert-frozen {
+    background-color: rgba(3, 169, 244, 0.1);
+    border-color: #03A9F4;
+    color: #03A9F4;
+    text-shadow: 0 0 10px #03A9F4;
+}
+
+.alert-fear {
+    background-color: rgba(96, 125, 139, 0.1);
+    border-color: #607D8B;
+    color: #607D8B;
+    text-shadow: 0 0 10px #607D8B;
+}
+
+.alert-shadow {
+    background-color: rgba(33, 33, 33, 0.1);
+    border-color: #212121;
+    color: #212121;
+    text-shadow: 0 0 10px #212121;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .alert-fixed,
+    .alert-group {
+        left: 1rem;
+        right: 1rem;
+        min-width: auto;
+    }
 }

@@ -11,7 +11,8 @@
     letter-spacing: 1px;
     cursor: pointer;
     position: relative;
-    z-index: 1;
+    font-family: 'Rajdhani', sans-serif;
+    overflow: hidden;
 }
 
 /* Primary Button */
@@ -22,8 +23,9 @@
 }
 
 .btn-primary:hover {
-    color: var(--matrix-black);
     background-color: var(--matrix-green);
+    color: var(--matrix-black);
+    box-shadow: 0 0 20px var(--matrix-green);
 }
 
 /* Secondary Button */
@@ -34,29 +36,35 @@
 }
 
 .btn-secondary:hover {
-    color: var(--matrix-black);
     background-color: var(--neon-blue);
-}
-
-/* Navigation Button */
-.nav-button {
-    background-color: transparent;
-    color: var(--matrix-green);
-    padding: 0.75rem 1.5rem;
-    border: 1px solid var(--matrix-green);
-    border-radius: 4px;
-    text-decoration: none;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    font-weight: 600;
-    letter-spacing: 1px;
-    position: relative;
-    z-index: 1;
-}
-
-.nav-button:hover {
     color: var(--matrix-black);
-    background-color: var(--matrix-green);
+    box-shadow: 0 0 20px var(--neon-blue);
+}
+
+/* Hunter Button */
+.btn-hunter {
+    background-color: transparent;
+    color: var(--hunter-purple);
+    border-color: var(--hunter-purple);
+}
+
+.btn-hunter:hover {
+    background-color: var(--hunter-purple);
+    color: var(--text-color);
+    box-shadow: 0 0 20px var(--hunter-purple);
+}
+
+/* Danger Button */
+.btn-danger {
+    background-color: transparent;
+    color: var(--accent-red);
+    border-color: var(--accent-red);
+}
+
+.btn-danger:hover {
+    background-color: var(--accent-red);
+    color: var(--text-color);
+    box-shadow: 0 0 20px var(--accent-red);
 }
 
 /* Block Button */
@@ -66,26 +74,37 @@
     text-align: center;
 }
 
-/* Disabled Button */
+/* Button Sizes */
+.btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+.btn-lg {
+    padding: 1rem 2rem;
+    font-size: 1.125rem;
+}
+
+/* Button States */
 .btn:disabled,
 .btn.disabled {
     opacity: 0.6;
     cursor: not-allowed;
+    pointer-events: none;
 }
 
-/* Loading Button */
+/* Loading State */
 .btn.loading {
-    position: relative;
     color: transparent;
 }
 
 .btn.loading::after {
     content: '';
     position: absolute;
-    left: 50%;
-    top: 50%;
     width: 16px;
     height: 16px;
+    top: 50%;
+    left: 50%;
     margin: -8px 0 0 -8px;
     border: 2px solid currentColor;
     border-right-color: transparent;
@@ -94,70 +113,115 @@
 }
 
 @keyframes button-loading {
-    from {
-        transform: rotate(0deg);
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Glow Effect */
+.btn.glow {
+    box-shadow: 0 0 10px currentColor;
+}
+
+.btn.glow:hover {
+    box-shadow: 0 0 20px currentColor;
+}
+
+/* Currency Buttons */
+.btn-solana {
+    background-color: transparent;
+    color: #14F195;
+    border-color: #14F195;
+}
+
+.btn-solana:hover {
+    background-color: #14F195;
+    color: var(--matrix-black);
+    box-shadow: 0 0 20px #14F195;
+}
+
+.btn-exon {
+    background-color: transparent;
+    color: #9945FF;
+    border-color: #9945FF;
+}
+
+.btn-exon:hover {
+    background-color: #9945FF;
+    color: var(--text-color);
+    box-shadow: 0 0 20px #9945FF;
+}
+
+.btn-crystal {
+    background-color: transparent;
+    color: #00F3FF;
+    border-color: #00F3FF;
+}
+
+.btn-crystal:hover {
+    background-color: #00F3FF;
+    color: var(--matrix-black);
+    box-shadow: 0 0 20px #00F3FF;
+}
+
+/* Game Action Buttons */
+.btn-gate {
+    background-color: transparent;
+    color: var(--matrix-green);
+    border-color: var(--matrix-green);
+    font-weight: 700;
+}
+
+.btn-gate:hover {
+    background-color: var(--matrix-green);
+    color: var(--matrix-black);
+    box-shadow: 0 0 20px var(--matrix-green);
+}
+
+.btn-shop {
+    background-color: transparent;
+    color: #FFD700;
+    border-color: #FFD700;
+}
+
+.btn-shop:hover {
+    background-color: #FFD700;
+    color: var(--matrix-black);
+    box-shadow: 0 0 20px #FFD700;
+}
+
+.btn-guild {
+    background-color: transparent;
+    color: var(--hunter-purple);
+    border-color: var(--hunter-purple);
+    font-weight: 700;
+}
+
+.btn-guild:hover {
+    background-color: var(--hunter-purple);
+    color: var(--text-color);
+    box-shadow: 0 0 20px var(--hunter-purple);
+}
+
+/* Button Groups */
+.btn-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-group-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .btn-group {
+        flex-direction: column;
     }
-    to {
-        transform: rotate(360deg);
+    
+    .btn {
+        width: 100%;
+        text-align: center;
     }
-}
-
-/* Small Button */
-.btn-sm {
-    padding: 0.5rem 1rem;
-    font-size: 0.875rem;
-}
-
-/* Large Button */
-.btn-lg {
-    padding: 1rem 2rem;
-    font-size: 1.125rem;
-}
-
-/* Success Button */
-.btn-success {
-    background-color: transparent;
-    color: #00e676;
-    border-color: #00e676;
-}
-
-.btn-success:hover {
-    color: var(--matrix-black);
-    background-color: #00e676;
-}
-
-/* Danger Button */
-.btn-danger {
-    background-color: transparent;
-    color: #ff1744;
-    border-color: #ff1744;
-}
-
-.btn-danger:hover {
-    color: var(--matrix-black);
-    background-color: #ff1744;
-}
-
-/* Warning Button */
-.btn-warning {
-    background-color: transparent;
-    color: #ffd600;
-    border-color: #ffd600;
-}
-
-.btn-warning:hover {
-    color: var(--matrix-black);
-    background-color: #ffd600;
-}
-
-/* Info Button */
-.btn-info {
-    background-color: transparent;
-    color: #00b0ff;
-    border-color: #00b0ff;
-}
-
-.btn-info:hover {
-    color: var(--matrix-black);
-    background-color: #00b0ff;
 }
