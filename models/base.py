@@ -1,10 +1,9 @@
-"""
-Base model class providing common functionality for all models.
+"""Base model class providing common functionality for all models.
 """
 
 from database import db
 from datetime import datetime
-from sqlalchemy import Column, Integer, DateTime, event
+from sqlalchemy import Column, Integer, DateTime, event, Boolean, String  # Added Boolean and String imports
 from sqlalchemy.ext.declarative import declared_attr
 
 class BaseModel(db.Model):
