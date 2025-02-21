@@ -658,14 +658,22 @@ show_menu() {
                 case $db_choice in
                     1) 
                         backup_file="backup_$(date +%Y%m%d_%H%M%S).sql"
-                        pg_dump -U terminusa terminusa_db > $backup_file
-                        success_log "Database backed up to $backup_file"
+                        PGPASSWORD=${POSTGRES_PASSWORD} pg_dump -h localhost -U ${POSTGRES_USER} ${POSTGRES_DB} > $backup_file
+                        if [ $? -eq 0 ]; then
+                            success_log "Database backed up to $backup_file"
+                        else
+                            error_log "Database backup failed"
+                        fi
                         ;;
                     2)
                         read -p "Enter backup file path: " restore_file
                         if [ -f "$restore_file" ]; then
-                            psql -U terminusa terminusa_db < $restore_file
-                            success_log "Database restored from $restore_file"
+                            PGPASSWORD=${POSTGRES_PASSWORD} psql -h localhost -U ${POSTGRES_USER} ${POSTGRES_DB} < $restore_file
+                            if [ $? -eq 0 ]; then
+                                success_log "Database restored from $restore_file"
+                            else
+                                error_log "Database restore failed"
+                            fi
                         else
                             error_log "Backup file not found"
                         fi
@@ -680,14 +688,30 @@ show_menu() {
                     4)
                         source venv/bin/activate
                         # Create database if it doesn't exist
-                        psql -U terminusa -d postgres -c "CREATE DATABASE terminusa_db;" 2>/dev/null || true
+                        PGPASSWORD=${POSTGRES_PASSWORD} psql -h localhost -U ${POSTGRES_USER} -d postgres -c "CREATE DATABASE ${POSTGRES_DB};" 2>/dev/null || true
                         # Initialize database schema
-                        flask db init || true
-                        flask db migrate
-                        flask db upgrade
-                        # Create initial tables
-                        python -c "from app import app, db; from models import init_models; app.app_context().push(); db.create_all(); init_models()"
-                        success_log "Database initialized"
+                        if flask db init; then
+                            info_log "Database migrations initialized"
+                            if flask db migrate; then
+                                info_log "Migration script created"
+                                if flask db upgrade; then
+                                    info_log "Migration applied successfully"
+                                    # Create initial tables
+                                    python -c "from app import app, db; from models import init_models; app.app_context().push(); db.create_all(); init_models()"
+                                    if [ $? -eq 0 ]; then
+                                        success_log "Database initialized successfully"
+                                    else
+                                        error_log "Failed to initialize database models"
+                                    fi
+                                else
+                                    error_log "Failed to apply migration"
+                                fi
+                            else
+                                error_log "Failed to create migration script"
+                            fi
+                        else
+                            error_log "Failed to initialize database migrations"
+                        fi
                         ;;
                     0) continue ;;
                     *) error_log "Invalid option" ;;
