@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from datetime import datetime
 import json
 import asyncio
-from flask import Flask
+from flask import Flask, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_login import current_user
 
@@ -16,6 +16,7 @@ class WebSocketConnection:
 
 class WebSocketManager:
     def __init__(self, app: Flask):
+        self.app = app  # Store the app instance
         self.socketio = SocketIO(app, cors_allowed_origins="*")
         self.connections: Dict[str, WebSocketConnection] = {}
         
@@ -139,4 +140,4 @@ class WebSocketManager:
 
     def run(self, host: str = '0.0.0.0', port: int = 5000, debug: bool = False):
         """Run the WebSocket server"""
-        self.socketio.run(app, host=host, port=port, debug=debug)
+        self.socketio.run(self.app, host=host, port=port, debug=debug)
