@@ -11,7 +11,9 @@ def reset_database():
         db.drop_all()
         
         # Drop alembic_version table
-        db.engine.execute(text('DROP TABLE IF EXISTS alembic_version'))
+        with db.engine.connect() as conn:
+            conn.execute(text('DROP TABLE IF EXISTS alembic_version'))
+            conn.commit()
         
         print("Database reset complete")
 
