@@ -1,7 +1,7 @@
 """
 User model for Terminusa Online
 """
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 from datetime import datetime
 from sqlalchemy.dialects.postgresql import JSONB
 
