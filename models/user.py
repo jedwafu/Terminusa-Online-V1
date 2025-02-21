@@ -52,7 +52,7 @@ class User(db.Model):
     # Social
     friends = db.Column(JSONB, nullable=False, default=[])
     blocked_users = db.Column(JSONB, nullable=False, default=[])
-    guild_id = db.Column(db.Integer, db.ForeignKey('guilds.id'), nullable=True)
+    guild_id = db.Column(db.Integer, db.ForeignKey('guilds.id', deferrable=True, initially='DEFERRED'), nullable=True)
     guild_rank = db.Column(db.String(20), nullable=True)
     
     # Wallet
