@@ -8,8 +8,19 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# Production deployment configuration
+PROD_SERVER="46.250.228.210"
+PROD_USER="root"
+APP_DIR="/var/www/terminusa"
+BACKUP_DIR="/var/www/backups"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
 # Debug mode flag
 DEBUG=false
+
+# Error handling for production deployment
+set -e
+trap 'echo -e "${RED}Deployment failed${NC}"; exit 1' ERR
 
 # Service status tracking
 declare -A SERVICE_STATUS
@@ -381,6 +392,171 @@ enhanced_monitor_services() {
     done
 }
 
+# Function to deploy to production
+deploy_production() {
+    info_log "Preparing for production deployment..."
+
+    # Create backup directory if it doesn't exist
+    ssh $PROD_USER@$PROD_SERVER "mkdir -p $BACKUP_DIR"
+
+    # Backup current version
+    info_log "Creating backup of current version..."
+    ssh $PROD_USER@$PROD_SERVER "if [ -d $APP_DIR ]; then tar -czf $BACKUP_DIR/terminusa_$TIMESTAMP.tar.gz -C $APP_DIR .; fi"
+
+    # Build and optimize static assets
+    info_log "Building and optimizing static assets..."
+    npm run build
+    python manage.py collectstatic --noinput
+    python manage.py compress --force
+
+    # Create deployment package
+    info_log "Creating deployment package..."
+    tar -czf deploy.tar.gz \
+        --exclude='*.pyc' \
+        --exclude='__pycache__' \
+        --exclude='.git' \
+        --exclude='.env' \
+        --exclude='node_modules' \
+        --exclude='tests' \
+        --exclude='*.log' \
+        .
+
+    # Upload deployment package
+    info_log "Uploading deployment package..."
+    scp deploy.tar.gz $PROD_USER@$PROD_SERVER:/tmp/
+
+    # Deploy on production server
+    info_log "Deploying on production server..."
+    ssh $PROD_USER@$PROD_SERVER << 'EOF'
+        # Stop services
+        systemctl stop terminusa
+        systemctl stop terminusa-terminal
+
+        # Clear application directory
+        rm -rf $APP_DIR/*
+
+        # Extract new version
+        mkdir -p $APP_DIR
+        tar -xzf /tmp/deploy.tar.gz -C $APP_DIR
+
+        # Set permissions
+        chown -R www-data:www-data $APP_DIR
+        chmod -R 755 $APP_DIR
+
+        # Install/update dependencies
+        cd $APP_DIR
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install -r requirements.txt
+
+        # Run database migrations
+        python manage.py migrate --noinput
+
+        # Clear cache
+        python manage.py clear_cache
+
+        # Update static files
+        python manage.py collectstatic --noinput
+
+        # Reload Nginx configuration
+        nginx -t && systemctl reload nginx
+
+        # Start services
+        systemctl start terminusa
+        systemctl start terminusa-terminal
+
+        # Clean up
+        rm /tmp/deploy.tar.gz
+
+        # Verify services
+        systemctl status terminusa
+        systemctl status terminusa-terminal
+EOF
+
+    success_log "Production deployment completed successfully!"
+
+    # Verify deployment
+    info_log "Verifying deployment..."
+    curl -s https://terminusa.online/health | grep -q "ok" && \
+        success_log "Main website is up" || \
+        error_log "Main website verification failed"
+
+    curl -s https://play.terminusa.online/health | grep -q "ok" && \
+        success_log "Game server is up" || \
+        error_log "Game server verification failed"
+
+    # Cleanup local deployment files
+    rm deploy.tar.gz
+}
+
+# Function to rollback production
+rollback_production() {
+    info_log "Available backups:"
+    ssh $PROD_USER@$PROD_SERVER "ls -lt $BACKUP_DIR"
+
+    read -p "Enter backup timestamp to restore (YYYYMMDD_HHMMSS): " BACKUP_TIMESTAMP
+
+    # Verify backup exists
+    ssh $PROD_USER@$PROD_SERVER "test -f $BACKUP_DIR/terminusa_$BACKUP_TIMESTAMP.tar.gz" || {
+        error_log "Backup not found"
+        return 1
+    }
+
+    info_log "Rolling back to backup from $BACKUP_TIMESTAMP..."
+
+    ssh $PROD_USER@$PROD_SERVER << EOF
+        # Stop services
+        systemctl stop terminusa
+        systemctl stop terminusa-terminal
+
+        # Clear application directory
+        rm -rf $APP_DIR/*
+
+        # Restore from backup
+        tar -xzf $BACKUP_DIR/terminusa_$BACKUP_TIMESTAMP.tar.gz -C $APP_DIR
+
+        # Set permissions
+        chown -R www-data:www-data $APP_DIR
+        chmod -R 755 $APP_DIR
+
+        # Activate virtual environment
+        cd $APP_DIR
+        source venv/bin/activate
+
+        # Run database migrations
+        python manage.py migrate --noinput
+
+        # Clear cache
+        python manage.py clear_cache
+
+        # Reload Nginx configuration
+        nginx -t && systemctl reload nginx
+
+        # Start services
+        systemctl start terminusa
+        systemctl start terminusa-terminal
+EOF
+
+    success_log "Rollback completed successfully!"
+}
+
+# Function to deploy locally
+deploy_local() {
+    info_log "Starting local deployment..."
+
+    # Install dependencies
+    pip install -r requirements.txt
+
+    # Run migrations
+    python manage.py migrate
+
+    # Collect static files
+    python manage.py collectstatic --noinput
+
+    # Start development server
+    python manage.py runserver
+}
+
 # Show menu
 show_menu() {
     while true; do
@@ -397,6 +573,8 @@ show_menu() {
         echo "8) Nginx Operations"
         echo "9) System Status"
         echo "10) Debug Mode"
+        echo "11) Production Deployment"
+        echo "12) Local Deployment"
         echo "0) Exit"
         echo
         read -p "Select an option: " choice
@@ -515,6 +693,22 @@ show_menu() {
                     DEBUG=true
                     info_log "Debug mode enabled"
                 fi
+                ;;
+            11)
+                echo -e "\n${YELLOW}Production Deployment Options:${NC}"
+                echo "1) Deploy to Production"
+                echo "2) Rollback Production"
+                echo "0) Back to main menu"
+                read -p "Select operation: " prod_choice
+                case $prod_choice in
+                    1) deploy_production ;;
+                    2) rollback_production ;;
+                    0) continue ;;
+                    *) error_log "Invalid option" ;;
+                esac
+                ;;
+            12)
+                deploy_local
                 ;;
             0)
                 info_log "Exiting..."
