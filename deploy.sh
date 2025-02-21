@@ -472,23 +472,43 @@ show_system_status() {
 deploy_production() {
     info_log "Preparing for production deployment..."
     
+    # Test SSH connection
+    info_log "Testing SSH connection..."
+    if ! ssh -q $PROD_USER@$PROD_SERVER exit; then
+        error_log "SSH connection failed. Please check your SSH key setup."
+        return 1
+    fi
+    
     # Create backups
-    ssh $PROD_USER@$PROD_SERVER "mkdir -p $BACKUP_DIR"
-    ssh $PROD_USER@$PROD_SERVER "
+    info_log "Creating backups..."
+    if ! ssh $PROD_USER@$PROD_SERVER "mkdir -p $BACKUP_DIR"; then
+        error_log "Failed to create backup directory"
+        return 1
+    fi
+    
+    if ! ssh $PROD_USER@$PROD_SERVER "
         if [ -d $MAIN_APP_DIR ]; then 
             tar -czf $BACKUP_DIR/terminusa-web_$TIMESTAMP.tar.gz -C $MAIN_APP_DIR .;
         fi;
         if [ -d $GAME_APP_DIR ]; then 
             tar -czf $BACKUP_DIR/terminusa-game_$TIMESTAMP.tar.gz -C $GAME_APP_DIR .;
         fi
-    "
+    "; then
+        error_log "Failed to create backups"
+        return 1
+    fi
     
     # Create deployment packages
     info_log "Creating deployment packages..."
     
     # Create deployment package
     info_log "Creating deployment package..."
-    tar -czf deploy.tar.gz \
+    if [ "$DEBUG" = true ]; then
+        debug_log "Current directory: $(pwd)"
+        debug_log "Directory contents: $(ls -la)"
+    fi
+    
+    tar -czvf deploy.tar.gz \
         --exclude='*.pyc' \
         --exclude='__pycache__' \
         --exclude='.git' \
@@ -496,15 +516,29 @@ deploy_production() {
         --exclude='node_modules' \
         --exclude='tests' \
         --exclude='*.log' \
-        .
+        . || {
+            error_log "Failed to create deployment package"
+            return 1
+        }
+    
+    if [ ! -f deploy.tar.gz ]; then
+        error_log "Deployment package was not created"
+        return 1
+    fi
+    
+    info_log "Deployment package created successfully"
     
     # Upload and deploy
     info_log "Uploading deployment package..."
-    scp deploy.tar.gz $PROD_USER@$PROD_SERVER:/tmp/
+    if ! scp deploy.tar.gz $PROD_USER@$PROD_SERVER:/tmp/; then
+        error_log "Failed to upload deployment package"
+        return 1
+    fi
     
     info_log "Deploying to main website directory..."
-    ssh $PROD_USER@$PROD_SERVER "
-        systemctl stop terminusa-web
+    if ! ssh $PROD_USER@$PROD_SERVER "
+        set -e
+        systemctl stop terminusa-web || true
         rm -rf $MAIN_APP_DIR/*
         mkdir -p $MAIN_APP_DIR
         cd $MAIN_APP_DIR
@@ -516,11 +550,16 @@ deploy_production() {
         pip install -r requirements.txt
         flask db upgrade
         systemctl start terminusa-web
-    "
+    "; then
+        error_log "Failed to deploy main website"
+        return 1
+    fi
+    success_log "Main website deployed successfully"
     
     info_log "Deploying to game application directory..."
-    ssh $PROD_USER@$PROD_SERVER "
-        systemctl stop terminusa-game terminusa-terminal
+    if ! ssh $PROD_USER@$PROD_SERVER "
+        set -e
+        systemctl stop terminusa-game terminusa-terminal || true
         rm -rf $GAME_APP_DIR/*
         mkdir -p $GAME_APP_DIR
         cd $GAME_APP_DIR
@@ -532,8 +571,12 @@ deploy_production() {
         pip install -r requirements.txt
         flask db upgrade
         systemctl start terminusa-game terminusa-terminal
-        rm /tmp/deploy.tar.gz
-    "
+        rm -f /tmp/deploy.tar.gz
+    "; then
+        error_log "Failed to deploy game application"
+        return 1
+    fi
+    success_log "Game application deployed successfully"
     
     # Verify deployment
     info_log "Verifying deployment..."
