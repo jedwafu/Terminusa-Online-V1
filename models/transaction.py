@@ -65,7 +65,7 @@ class Transaction(db.Model):
     
     # Transaction Data
     details = db.Column(JSONB, nullable=False, default={})
-    metadata = db.Column(JSONB, nullable=False, default={})
+    transaction_metadata = db.Column(JSONB, nullable=False, default={})
     
     # Error Handling
     error_code = db.Column(db.String(50), nullable=True)
@@ -94,7 +94,7 @@ class Transaction(db.Model):
             self.completed_at = datetime.utcnow()
             
             if metadata:
-                self.metadata.update(metadata)
+                self.transaction_metadata.update(metadata)
                 
             db.session.commit()
             return True
@@ -128,7 +128,7 @@ class Transaction(db.Model):
                 
             self.status = TransactionStatus.CANCELLED
             if reason:
-                self.metadata['cancel_reason'] = reason
+                self.transaction_metadata['cancel_reason'] = reason
                 
             db.session.commit()
             return True
@@ -145,7 +145,7 @@ class Transaction(db.Model):
                 
             self.status = TransactionStatus.REFUNDED
             if reason:
-                self.metadata['refund_reason'] = reason
+                self.transaction_metadata['refund_reason'] = reason
                 
             # Create refund transaction
             refund = Transaction(
@@ -197,7 +197,7 @@ class Transaction(db.Model):
                 'converted_amount': str(self.get_conversion_amount()) if self.get_conversion_amount() else None
             } if self.type == TransactionType.SWAP else None,
             'details': self.details,
-            'metadata': self.metadata,
+            'metadata': self.transaction_metadata,
             'error': {
                 'code': self.error_code,
                 'message': self.error_message
