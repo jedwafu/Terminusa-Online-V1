@@ -486,9 +486,9 @@ deploy_production() {
     # Create deployment packages
     info_log "Creating deployment packages..."
     
-    # Main website package
-    info_log "Creating main website package..."
-    tar -czf deploy-web.tar.gz \
+    # Create deployment package
+    info_log "Creating deployment package..."
+    tar -czf deploy.tar.gz \
         --exclude='*.pyc' \
         --exclude='__pycache__' \
         --exclude='.git' \
@@ -496,58 +496,43 @@ deploy_production() {
         --exclude='node_modules' \
         --exclude='tests' \
         --exclude='*.log' \
-        --exclude='static/game' \
-        web/
-    
-    # Game application package
-    info_log "Creating game application package..."
-    tar -czf deploy-game.tar.gz \
-        --exclude='*.pyc' \
-        --exclude='__pycache__' \
-        --exclude='.git' \
-        --exclude='.env' \
-        --exclude='node_modules' \
-        --exclude='tests' \
-        --exclude='*.log' \
-        --exclude='static/web' \
-        game/
+        .
     
     # Upload and deploy
-    info_log "Uploading deployment packages..."
-    scp deploy-web.tar.gz deploy-game.tar.gz $PROD_USER@$PROD_SERVER:/tmp/
+    info_log "Uploading deployment package..."
+    scp deploy.tar.gz $PROD_USER@$PROD_SERVER:/tmp/
     
-    info_log "Deploying main website..."
+    info_log "Deploying to main website directory..."
     ssh $PROD_USER@$PROD_SERVER "
         systemctl stop terminusa-web
         rm -rf $MAIN_APP_DIR/*
         mkdir -p $MAIN_APP_DIR
-        tar -xzf /tmp/deploy-web.tar.gz -C $MAIN_APP_DIR
-        chown -R www-data:www-data $MAIN_APP_DIR
-        chmod -R 755 $MAIN_APP_DIR
         cd $MAIN_APP_DIR
+        tar -xzf /tmp/deploy.tar.gz
+        chown -R www-data:www-data .
+        chmod -R 755 .
         python3 -m venv venv
         source venv/bin/activate
         pip install -r requirements.txt
         flask db upgrade
         systemctl start terminusa-web
-        rm /tmp/deploy-web.tar.gz
     "
     
-    info_log "Deploying game application..."
+    info_log "Deploying to game application directory..."
     ssh $PROD_USER@$PROD_SERVER "
         systemctl stop terminusa-game terminusa-terminal
         rm -rf $GAME_APP_DIR/*
         mkdir -p $GAME_APP_DIR
-        tar -xzf /tmp/deploy-game.tar.gz -C $GAME_APP_DIR
-        chown -R www-data:www-data $GAME_APP_DIR
-        chmod -R 755 $GAME_APP_DIR
         cd $GAME_APP_DIR
+        tar -xzf /tmp/deploy.tar.gz
+        chown -R www-data:www-data .
+        chmod -R 755 .
         python3 -m venv venv
         source venv/bin/activate
         pip install -r requirements.txt
         flask db upgrade
         systemctl start terminusa-game terminusa-terminal
-        rm /tmp/deploy-game.tar.gz
+        rm /tmp/deploy.tar.gz
     "
     
     # Verify deployment
@@ -561,7 +546,7 @@ deploy_production() {
         error_log "Game server verification failed"
     
     # Cleanup local files
-    rm -f deploy-web.tar.gz deploy-game.tar.gz
+    rm -f deploy.tar.gz
     
     success_log "Production deployment completed successfully"
 }
