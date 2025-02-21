@@ -516,6 +516,7 @@ deploy_production() {
         --exclude='node_modules' \
         --exclude='tests' \
         --exclude='*.log' \
+        --exclude='pytest.ini' \
         . || {
             error_log "Failed to create deployment package"
             return 1
