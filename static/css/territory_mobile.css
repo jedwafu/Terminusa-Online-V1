@@ -1,0 +1,268 @@
+/* Mobile Tooltips */
+.mobile-tooltip {
+    position: fixed;
+    background: rgba(0, 0, 0, 0.9);
+    color: #fff;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 14px;
+    pointer-events: none;
+    z-index: 1200;
+    max-width: 80%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Force Slider Customization */
+.force-slider-container {
+    padding: 20px 15px;
+}
+
+.force-value {
+    text-align: center;
+    font-size: 1.2em;
+    margin: 10px 0;
+    color: #fff;
+}
+
+/* Mobile-specific Territory Styles */
+@media (max-width: 768px) {
+    .territory {
+        touch-action: none;
+    }
+
+    .territory-base {
+        r: 25;  /* Larger radius for better touch targets */
+    }
+
+    .territory-label {
+        font-size: 14px;
+        font-weight: bold;
+    }
+
+    .territory-icon {
+        font-size: 24px;
+    }
+
+    .territory.selected {
+        transform: scale(1.2);
+    }
+}
+
+/* Mobile Action Panel */
+.mobile-action-panel {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    padding: 20px;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+}
+
+.mobile-action-panel.active {
+    transform: translateY(0);
+}
+
+.mobile-action-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.mobile-action-title {
+    font-size: 1.2em;
+    color: #fff;
+    margin: 0;
+}
+
+.mobile-action-close {
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 24px;
+    padding: 5px;
+}
+
+/* Mobile Gesture Hints */
+.gesture-hint {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    border-radius: 10px;
+    color: #fff;
+    text-align: center;
+    animation: fadeInOut 2s ease-in-out;
+    pointer-events: none;
+}
+
+@keyframes fadeInOut {
+    0%, 100% { opacity: 0; }
+    20%, 80% { opacity: 1; }
+}
+
+/* Mobile Menu Improvements */
+.mobile-menu-content {
+    position: relative;
+    padding-bottom: 80px; /* Space for close button */
+}
+
+.mobile-menu-section {
+    margin-bottom: 25px;
+}
+
+.mobile-menu-section li {
+    padding: 15px;
+    font-size: 16px;
+}
+
+/* Touch-friendly Buttons */
+.action-btn {
+    min-height: 44px;
+    padding: 12px 20px;
+    font-size: 16px;
+}
+
+/* Force Controls for Touch */
+input[type="range"] {
+    width: 100%;
+    margin: 15px 0;
+    height: 30px; /* Larger touch target */
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    width: 40px;
+    height: 40px;
+}
+
+/* Territory Context Menu */
+.territory-context-menu {
+    min-width: 200px;
+}
+
+.context-menu-item {
+    padding: 15px 20px;
+    font-size: 16px;
+}
+
+/* Landscape Optimizations */
+@media (orientation: landscape) {
+    .mobile-action-panel {
+        width: 50%;
+        right: 0;
+        left: auto;
+        height: 100%;
+        border-top-right-radius: 0;
+        border-top-left-radius: 15px;
+        border-bottom-left-radius: 15px;
+        transform: translateX(100%);
+    }
+
+    .mobile-action-panel.active {
+        transform: translateX(0);
+    }
+
+    .mobile-menu-content {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+    }
+}
+
+/* Loading States */
+.mobile-loading {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    border-radius: 10px;
+    color: #fff;
+    text-align: center;
+    z-index: 2000;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 10px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Error States */
+.mobile-error {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(244, 67, 54, 0.9);
+    padding: 15px 20px;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 16px;
+    z-index: 2000;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from { transform: translate(-50%, -100%); }
+    to { transform: translate(-50%, 0); }
+}
+
+/* Success States */
+.mobile-success {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(76, 175, 80, 0.9);
+    padding: 15px 20px;
+    border-radius: 8px;
+    color: #fff;
+    font-size: 16px;
+    z-index: 2000;
+    animation: slideDown 0.3s ease;
+}
+
+/* Touch Feedback */
+.touch-feedback {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    animation: touchRipple 0.6s ease-out;
+}
+
+@keyframes touchRipple {
+    to {
+        transform: translate(-50%, -50%) scale(3);
+        opacity: 0;
+    }
+}
+
+/* Accessibility Improvements */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

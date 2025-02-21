@@ -1,375 +1,233 @@
 {% extends "base.html" %}
 
-{% block title %}Leaderboard - Terminusa Online{% endblock %}
+{% block title %}Leaderboards - Terminusa Online{% endblock %}
 
 {% block content %}
-<section class="leaderboard-header">
-    <div class="container">
-        <h1>Leaderboard</h1>
-        <div class="leaderboard-controls">
-            <div class="category-tabs">
-                <button class="tab-btn active" data-category="overall">Overall</button>
-                <button class="tab-btn" data-category="pvp">PvP</button>
-                <button class="tab-btn" data-category="dungeons">Dungeons</button>
-                <button class="tab-btn" data-category="guilds">Guilds</button>
-            </div>
-            <div class="time-filter">
-                <select id="timeRange" class="filter-select">
-                    <option value="all-time">All Time</option>
-                    <option value="monthly">This Month</option>
-                    <option value="weekly">This Week</option>
-                    <option value="daily">Today</option>
-                </select>
-            </div>
-        </div>
+<div class="leaderboard-container">
+    <!-- Leaderboard Navigation -->
+    <div class="leaderboard-nav">
+        <button class="nav-btn active" data-target="hunters">Top Hunters</button>
+        <button class="nav-btn" data-target="guilds">Top Guilds</button>
+        <button class="nav-btn" data-target="gates">Gate Rankings</button>
     </div>
-</section>
 
-<section class="leaderboard-content">
-    <div class="container">
-        <div class="top-players">
-            <div class="top-player second">
-                <div class="rank">2</div>
-                <div class="player-avatar">
-                    <img src="{{ url_for('static', filename='images/avatars/player2.png') }}" alt="Second Place">
-                    <div class="level">Lvl 48</div>
-                </div>
-                <div class="player-info">
-                    <h3>DragonSlayer</h3>
-                    <div class="player-stats">
-                        <span><i class="fas fa-trophy"></i> 15,420 pts</span>
-                        <span><i class="fas fa-skull"></i> 245 kills</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="top-player first">
-                <div class="rank">1</div>
-                <div class="player-avatar">
-                    <img src="{{ url_for('static', filename='images/avatars/player1.png') }}" alt="First Place">
-                    <div class="level">Lvl 50</div>
-                </div>
-                <div class="player-info">
-                    <h3>ShadowMaster</h3>
-                    <div class="player-stats">
-                        <span><i class="fas fa-trophy"></i> 18,750 pts</span>
-                        <span><i class="fas fa-skull"></i> 312 kills</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="top-player third">
-                <div class="rank">3</div>
-                <div class="player-avatar">
-                    <img src="{{ url_for('static', filename='images/avatars/player3.png') }}" alt="Third Place">
-                    <div class="level">Lvl 45</div>
-                </div>
-                <div class="player-info">
-                    <h3>MysticHunter</h3>
-                    <div class="player-stats">
-                        <span><i class="fas fa-trophy"></i> 14,890 pts</span>
-                        <span><i class="fas fa-skull"></i> 198 kills</span>
-                    </div>
-                </div>
-            </div>
+    <!-- Top Hunters Section -->
+    <div class="leaderboard-section active" id="hunters-section">
+        <div class="filters">
+            <select id="hunter-class-filter">
+                <option value="">All Classes</option>
+                <option value="fighter">Fighter</option>
+                <option value="mage">Mage</option>
+                <option value="assassin">Assassin</option>
+                <option value="archer">Archer</option>
+                <option value="healer">Healer</option>
+            </select>
+            <select id="hunter-rank-filter">
+                <option value="">All Ranks</option>
+                <option value="F">F Rank</option>
+                <option value="E">E Rank</option>
+                <option value="D">D Rank</option>
+                <option value="C">C Rank</option>
+                <option value="B">B Rank</option>
+                <option value="A">A Rank</option>
+                <option value="S">S Rank</option>
+            </select>
         </div>
 
-        <div class="rankings-table">
+        <div class="leaderboard-table">
             <table>
                 <thead>
                     <tr>
                         <th>Rank</th>
-                        <th>Player</th>
+                        <th>Hunter</th>
                         <th>Level</th>
-                        <th>Points</th>
-                        <th>Kills</th>
-                        <th>Win Rate</th>
+                        <th>Class</th>
+                        <th>Hunter Rank</th>
+                        <th>Gates Cleared</th>
+                        <th>Achievements</th>
                     </tr>
                 </thead>
-                <tbody>
-                    {% for i in range(4, 11) %}
-                    <tr>
-                        <td>{{ i }}</td>
-                        <td class="player-cell">
-                            <img src="{{ url_for('static', filename='images/avatars/default.png') }}" alt="Player Avatar">
-                            <span>Player{{ i }}</span>
+                <tbody id="hunters-tbody">
+                    {% for hunter in top_hunters %}
+                    <tr class="hunter-row {% if hunter.id == current_user.id %}current-user{% endif %}">
+                        <td class="rank">{{ loop.index }}</td>
+                        <td class="hunter-info">
+                            <img src="{{ url_for('static', filename='images/avatars/' + hunter.avatar) if hunter.avatar else url_for('static', filename='images/default_avatar.png') }}" alt="{{ hunter.username }}">
+                            <span>{{ hunter.username }}</span>
+                            {% if hunter.guild %}
+                            <span class="guild-tag">[{{ hunter.guild.name }}]</span>
+                            {% endif %}
                         </td>
-                        <td>{{ 40 + (11-i) }}</td>
-                        <td>{{ 14000 - (i*200) }}</td>
-                        <td>{{ 180 - (i*10) }}</td>
-                        <td>{{ 85 - (i*2) }}%</td>
+                        <td>{{ hunter.level }}</td>
+                        <td class="class-{{ hunter.job_class.value.lower() }}">{{ hunter.job_class.value }}</td>
+                        <td class="rank-{{ hunter.hunter_class.value.lower() }}">{{ hunter.hunter_class.value }}</td>
+                        <td>{{ hunter.gates_cleared }}</td>
+                        <td>{{ hunter.achievements.completed|length }}/{{ hunter.achievements|length }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+    </div>
 
-        <div class="pagination">
-            <button class="pagination-btn" disabled><i class="fas fa-chevron-left"></i></button>
-            <span class="pagination-current">Page 1 of 5</span>
-            <button class="pagination-btn"><i class="fas fa-chevron-right"></i></button>
+    <!-- Top Guilds Section -->
+    <div class="leaderboard-section" id="guilds-section">
+        <div class="filters">
+            <select id="guild-size-filter">
+                <option value="">All Sizes</option>
+                <option value="small">Small (1-10)</option>
+                <option value="medium">Medium (11-30)</option>
+                <option value="large">Large (31+)</option>
+            </select>
+        </div>
+
+        <div class="leaderboard-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Guild</th>
+                        <th>Level</th>
+                        <th>Members</th>
+                        <th>Gates Cleared</th>
+                        <th>Average Level</th>
+                        <th>Achievements</th>
+                    </tr>
+                </thead>
+                <tbody id="guilds-tbody">
+                    {% for guild in top_guilds %}
+                    <tr class="guild-row {% if current_user.guild_id == guild.id %}current-guild{% endif %}">
+                        <td class="rank">{{ loop.index }}</td>
+                        <td class="guild-info">
+                            <img src="{{ url_for('static', filename='images/guilds/' + guild.emblem) if guild.emblem else url_for('static', filename='images/default_guild.png') }}" alt="{{ guild.name }}">
+                            <span>{{ guild.name }}</span>
+                        </td>
+                        <td>{{ guild.level }}</td>
+                        <td>{{ guild.members|length }}/{{ guild.max_members }}</td>
+                        <td>{{ guild.total_gates_cleared }}</td>
+                        <td>{{ "%.1f"|format(guild.average_level) }}</td>
+                        <td>{{ guild.achievements.completed|length }}/{{ guild.achievements|length }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
-</section>
+
+    <!-- Gate Rankings Section -->
+    <div class="leaderboard-section" id="gates-section">
+        <div class="filters">
+            <select id="gate-rank-filter">
+                <option value="">All Ranks</option>
+                <option value="F">F Rank</option>
+                <option value="E">E Rank</option>
+                <option value="D">D Rank</option>
+                <option value="C">C Rank</option>
+                <option value="B">B Rank</option>
+                <option value="A">A Rank</option>
+                <option value="S">S Rank</option>
+            </select>
+            <select id="gate-type-filter">
+                <option value="">All Types</option>
+                <option value="solo">Solo</option>
+                <option value="party">Party</option>
+            </select>
+        </div>
+
+        <div class="stats-summary">
+            <div class="stat-card">
+                <h3>Total Gates Cleared</h3>
+                <div class="stat-value">{{ stats.total_cleared }}</div>
+            </div>
+            {% for rank, count in stats.by_rank.items() %}
+            <div class="stat-card">
+                <h3>{{ rank }} Rank Gates</h3>
+                <div class="stat-value">{{ count }}</div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="leaderboard-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Gate</th>
+                        <th>First Clear</th>
+                        <th>Fastest Clear</th>
+                        <th>Most Efficient</th>
+                        <th>Total Clears</th>
+                    </tr>
+                </thead>
+                <tbody id="gates-tbody">
+                    {% for gate in gate_rankings %}
+                    <tr class="gate-row rank-{{ gate.rank.lower() }}">
+                        <td class="gate-info">
+                            <span class="gate-rank">{{ gate.rank }}</span>
+                            <span class="gate-name">{{ gate.name }}</span>
+                        </td>
+                        <td class="first-clear">
+                            {% if gate.first_clear %}
+                            <div class="player-info">
+                                <img src="{{ url_for('static', filename='images/avatars/' + gate.first_clear.avatar) }}" alt="{{ gate.first_clear.username }}">
+                                <span>{{ gate.first_clear.username }}</span>
+                                <span class="clear-date">{{ format_timestamp(gate.first_clear.timestamp) }}</span>
+                            </div>
+                            {% else %}
+                            <span class="unclaimed">Unclaimed</span>
+                            {% endif %}
+                        </td>
+                        <td class="fastest-clear">
+                            {% if gate.fastest_clear %}
+                            <div class="player-info">
+                                <img src="{{ url_for('static', filename='images/avatars/' + gate.fastest_clear.avatar) }}" alt="{{ gate.fastest_clear.username }}">
+                                <span>{{ gate.fastest_clear.username }}</span>
+                                <span class="clear-time">{{ gate.fastest_clear.duration }}</span>
+                            </div>
+                            {% else %}
+                            <span class="unclaimed">Unclaimed</span>
+                            {% endif %}
+                        </td>
+                        <td class="most-efficient">
+                            {% if gate.most_efficient %}
+                            <div class="player-info">
+                                <img src="{{ url_for('static', filename='images/avatars/' + gate.most_efficient.avatar) }}" alt="{{ gate.most_efficient.username }}">
+                                <span>{{ gate.most_efficient.username }}</span>
+                                <span class="efficiency">{{ gate.most_efficient.efficiency }}%</span>
+                            </div>
+                            {% else %}
+                            <span class="unclaimed">Unclaimed</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ gate.total_clears }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- WebSocket Updates -->
+<script>
+    const socket = io();
+    
+    socket.on('leaderboard_update', function(data) {
+        if (data.type === 'hunters') {
+            updateHuntersTable(data.rankings);
+        } else if (data.type === 'guilds') {
+            updateGuildsTable(data.rankings);
+        } else if (data.type === 'gates') {
+            updateGatesTable(data.rankings);
+        }
+    });
+</script>
+
 {% endblock %}
 
-{% block extra_css %}
-<style>
-.leaderboard-header {
-    background-color: var(--primary-color);
-    color: white;
-    padding: 2rem 0;
-}
-
-.leaderboard-controls {
-    margin-top: 1.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 1rem;
-}
-
-.category-tabs {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.tab-btn {
-    background: none;
-    border: none;
-    color: white;
-    padding: 0.5rem 1.5rem;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.tab-btn:hover {
-    background-color: rgba(255,255,255,0.1);
-}
-
-.tab-btn.active {
-    background-color: var(--secondary-color);
-}
-
-.filter-select {
-    padding: 0.5rem;
-    border: none;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    min-width: 150px;
-}
-
-.leaderboard-content {
-    padding: 2rem 0;
-    background-color: var(--light-bg);
-    min-height: calc(100vh - 60px - 300px);
-}
-
-.top-players {
-    display: flex;
-    justify-content: center;
-    align-items: flex-end;
-    gap: 2rem;
-    margin-bottom: 3rem;
-    padding: 2rem 0;
-}
-
-.top-player {
-    position: relative;
-    background: white;
-    border-radius: 8px;
-    padding: 1rem;
-    text-align: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease;
-}
-
-.top-player:hover {
-    transform: translateY(-5px);
-}
-
-.top-player.first {
-    padding-top: 2rem;
-    margin-bottom: 1rem;
-}
-
-.rank {
-    position: absolute;
-    top: -1rem;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 2rem;
-    height: 2rem;
-    background-color: var(--primary-color);
-    color: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: bold;
-}
-
-.first .rank {
-    background-color: #ffd700;
-    color: var(--primary-color);
-}
-
-.second .rank {
-    background-color: #c0c0c0;
-}
-
-.third .rank {
-    background-color: #cd7f32;
-}
-
-.player-avatar {
-    position: relative;
-    width: 80px;
-    height: 80px;
-    margin: 0 auto 1rem;
-}
-
-.first .player-avatar {
-    width: 100px;
-    height: 100px;
-}
-
-.player-avatar img {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
-.level {
-    position: absolute;
-    bottom: -0.5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: var(--secondary-color);
-    color: white;
-    padding: 0.25rem 0.5rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-}
-
-.player-info h3 {
-    color: var(--primary-color);
-    margin-bottom: 0.5rem;
-}
-
-.player-stats {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-    font-size: 0.875rem;
-    color: #666;
-}
-
-.rankings-table {
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    overflow: hidden;
-    margin-bottom: 2rem;
-}
-
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-th, td {
-    padding: 1rem;
-    text-align: left;
-    border-bottom: 1px solid #eee;
-}
-
-th {
-    background-color: var(--primary-color);
-    color: white;
-    font-weight: 500;
-}
-
-.player-cell {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.player-cell img {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-}
-
-.pagination {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-}
-
-.pagination-btn {
-    background: none;
-    border: none;
-    color: var(--primary-color);
-    cursor: pointer;
-    padding: 0.5rem;
-}
-
-.pagination-btn:disabled {
-    color: #ccc;
-    cursor: not-allowed;
-}
-
-.pagination-current {
-    color: #666;
-}
-
-@media (max-width: 768px) {
-    .leaderboard-controls {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .category-tabs {
-        overflow-x: auto;
-        padding-bottom: 0.5rem;
-    }
-
-    .top-players {
-        flex-direction: column;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .top-player {
-        width: 100%;
-        max-width: 300px;
-    }
-
-    .rankings-table {
-        overflow-x: auto;
-    }
-
-    table {
-        min-width: 600px;
-    }
-}
-</style>
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/leaderboard.css') }}">
 {% endblock %}
 
 {% block scripts %}
-<script>
-document.querySelectorAll('.tab-btn').forEach(button => {
-    button.addEventListener('click', function() {
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        this.classList.add('active');
-        // Add logic to load different leaderboard data
-    });
-});
-</script>
+<script src="{{ url_for('static', filename='js/leaderboard.js') }}"></script>
 {% endblock %}

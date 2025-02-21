@@ -1,158 +1,134 @@
-from gevent import monkey
-monkey.patch_all()
-
-import os
-import sys
-from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, g, send_from_directory
-from flask_login import LoginManager, current_user, login_required
-from flask_jwt_extended import JWTManager
-from flask_cors import CORS
-from flask_migrate import Migrate
+from flask import Flask, render_template
+from flask_login import LoginManager, current_user
 from flask_sqlalchemy import SQLAlchemy
-from dotenv import load_dotenv
-import logging
-from logging.handlers import RotatingFileHandler
-from datetime import datetime, timedelta
-from functools import wraps
+from flask_migrate import Migrate
+from flask_cors import CORS
+from flask_socketio import emit
 
-# Add the current directory to Python path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from routes.pages import pages_bp
+from routes.marketplace import marketplace_bp
+from routes.inventory import inventory_bp
+from routes.auth_routes import auth_bp
+from routes.announcements import announcements_bp
+from websocket_manager import WebSocketManager
 
-from database import db
-from models import User, Announcement
-from routes import init_app as init_routes  # Import route initialization
+def create_app():
+    app = Flask(__name__)
+    app.config.from_object('config.Config')
 
-# Load environment variables
-print("[DEBUG] Loading environment variables")
-load_dotenv(override=True)
+    # Initialize extensions
+    db = SQLAlchemy(app)
+    migrate = Migrate(app, db)
+    login_manager = LoginManager(app)
+    login_manager.login_view = 'auth.login'
+    CORS(app)
+    
+    # Initialize WebSocket manager
+    websocket = WebSocketManager(app)
+    app.websocket = websocket
 
-# Validate required environment variables
-required_env_vars = [
-    'FLASK_SECRET_KEY',
-    'JWT_SECRET_KEY',
-    'DATABASE_URL',
-    'SERVER_PORT',
-    'WEBAPP_PORT'
-]
+    # Register blueprints
+    app.register_blueprint(pages_bp)
+    app.register_blueprint(marketplace_bp, url_prefix='/api/marketplace')
+    app.register_blueprint(inventory_bp, url_prefix='/api/inventory')
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(announcements_bp)
 
-missing_vars = [var for var in required_env_vars if not os.getenv(var)]
-if missing_vars:
-    raise ValueError(f"Missing required environment variables: {missing_vars}")
+    # User loader
+    @login_manager.user_loader
+    def load_user(user_id):
+        from models import User
+        return User.query.get(int(user_id))
 
-# Initialize Flask app
-print("[DEBUG] Creating Flask app")
-app = Flask(__name__, static_folder='/var/www/terminusa/static', static_url_path='/static')
+    # WebSocket event handlers
+    @websocket.socketio.on('connect')
+    def handle_connect():
+        if current_user.is_authenticated:
+            app.logger.info(f'User {current_user.id} connected')
+            emit('connection_success', {'message': 'Connected successfully'})
+        else:
+            return False
 
-# Configure app
-print("[DEBUG] Configuring Flask app")
-app.config.update(
-    SECRET_KEY=os.getenv('FLASK_SECRET_KEY'),
-    JWT_SECRET_KEY=os.getenv('JWT_SECRET_KEY'),
-    JWT_ACCESS_TOKEN_EXPIRES=timedelta(hours=1),
-    JWT_TOKEN_LOCATION=['headers', 'cookies'],
-    JWT_COOKIE_SECURE=os.getenv('FLASK_ENV', 'development') == 'production',
-    JWT_COOKIE_CSRF_PROTECT=True,
-    SQLALCHEMY_DATABASE_URI=os.getenv('DATABASE_URL'),
-    SQLALCHEMY_TRACK_MODIFICATIONS=False,
-    CORS_HEADERS='Content-Type',
-    SEND_FILE_MAX_AGE_DEFAULT=31536000,  # 1 year in seconds
-)
+    @websocket.socketio.on('disconnect')
+    def handle_disconnect():
+        if current_user.is_authenticated:
+            app.logger.info(f'User {current_user.id} disconnected')
 
-# Initialize extensions
-print("[DEBUG] Initializing extensions")
-jwt = JWTManager(app)
-cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = 'auth.login'
+    @websocket.socketio.on_error_default
+    def default_error_handler(e):
+        app.logger.error(f'WebSocket error: {str(e)}')
 
-# Initialize database
-db.init_app(app)
+    # Error handlers
+    @app.errorhandler(404)
+    def not_found_error(error):
+        return render_template('error.html', error=error), 404
 
-# Initialize Flask-Migrate
-migrate = Migrate(app, db)
+    @app.errorhandler(500)
+    def internal_error(error):
+        db.session.rollback()
+        return render_template('error.html', error=error), 500
 
-# Configure logging
-if not os.path.exists('logs'):
-    os.makedirs('logs')
+    # Context processors
+    @app.context_processor
+    def utility_processor():
+        def format_currency(value):
+            return "{:,.2f}".format(float(value))
+            
+        def format_timestamp(timestamp):
+            return timestamp.strftime("%Y-%m-%d %H:%M:%S")
+            
+        return dict(
+            format_currency=format_currency,
+            format_timestamp=format_timestamp
+        )
 
-file_handler = RotatingFileHandler(
-    'logs/terminusa.log',
-    maxBytes=1024 * 1024,  # 1MB
-    backupCount=10
-)
-file_handler.setFormatter(logging.Formatter(
-    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-))
-file_handler.setLevel(logging.INFO)
-app.logger.addHandler(file_handler)
+    # Before request handlers
+    @app.before_request
+    def before_request():
+        if current_user.is_authenticated:
+            # Update last seen timestamp
+            current_user.update_last_seen()
+            db.session.commit()
 
-app.logger.setLevel(logging.INFO)
-app.logger.info('Terminusa Online startup')
+    # After request handlers
+    @app.after_request
+    def after_request(response):
+        # Security headers
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        
+        # CORS headers
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        
+        return response
 
-# Debug logging for static files
-@app.before_request
-def log_request_info():
-    app.logger.debug('Headers: %s', request.headers)
-    app.logger.debug('Body: %s', request.get_data())
-    if request.path.startswith('/static/'):
-        app.logger.info('Static file request: %s', request.path)
-        app.logger.info('Static folder: %s', app.static_folder)
-        full_path = os.path.join(app.static_folder, request.path[8:])  # Remove '/static/' prefix
-        app.logger.info('Full path: %s', full_path)
-        app.logger.info('File exists: %s', os.path.exists(full_path))
+    # Shell context
+    @app.shell_context_processor
+    def make_shell_context():
+        from models import (
+            User, Mount, Pet, Item, Transaction,
+            Gate, Guild, Quest, Achievement
+        )
+        return {
+            'db': db,
+            'User': User,
+            'Mount': Mount,
+            'Pet': Pet,
+            'Item': Item,
+            'Transaction': Transaction,
+            'Gate': Gate,
+            'Guild': Guild,
+            'Quest': Quest,
+            'Achievement': Achievement
+        }
 
-# User loader for Flask-Login
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
+    return app
 
-# Admin required decorator
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or not current_user.is_admin:
-            flash('You do not have permission to access this page.', 'error')
-            return redirect(url_for('index'))
-        return f(*args, **kwargs)
-    return decorated_function
-
-# Custom static files handler
-@app.route('/static/<path:filename>')
-def custom_static(filename):
-    app.logger.info(f"Serving static file: {filename}")
-    if not os.path.exists(os.path.join(app.static_folder, filename)):
-        app.logger.error(f"Static file not found: {filename}")
-        return f"File not found: {filename}", 404
-    return send_from_directory(app.static_folder, filename)
-
-# Initialize routes
-init_routes(app)
-
-# Error handlers
-@app.errorhandler(404)
-def not_found_error(error):
-    app.logger.error(f'Page not found: {error}')
-    return render_template('error.html',
-                         error_message='The page you are looking for could not be found.',
-                         title='404 Not Found'), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    app.logger.error(f'Server error: {error}')
-    db.session.rollback()
-    return render_template('error.html',
-                         error_message='An internal server error occurred. Please try again later.',
-                         title='500 Server Error'), 500
+# Create the application instance
+app = create_app()
 
 if __name__ == '__main__':
-    port = int(os.getenv('SERVER_PORT', 5000))
-    debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-    
-    if debug:
-        app.run(host='0.0.0.0', port=port, debug=True)
-    else:
-        # Use gevent WSGI server in production
-        from gevent.pywsgi import WSGIServer
-        http_server = WSGIServer(('0.0.0.0', port), app)
-        http_server.serve_forever()
+    app.websocket.run(host='0.0.0.0', port=5000, debug=True)

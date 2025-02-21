@@ -9,7 +9,7 @@ from models import (
     HunterClass, JobClass, GateRank, ItemRarity, HealthStatus
 )
 from game_config import (
-    CRYSTAL_TAX_RATE, EXON_TAX_RATE,
+    CRYSTAL_TAX_RATE, EXON_TAX_RATE, SOLANA_TAX_RATE,
     GUILD_CRYSTAL_TAX_RATE, GUILD_EXON_TAX_RATE,
     ADMIN_USERNAME, ADMIN_WALLET,
     PARTY_REWARD_MULTIPLIERS,
@@ -19,10 +19,11 @@ from game_config import (
 from ai_agent import AIAgent
 
 class GameHandler:
-    def __init__(self):
+    def __init__(self, websocket):
         self.ai_agent = AIAgent()
         self.combat_sessions = {}
         self.party_sessions = {}
+        self.event_system = EventSystem(websocket)
 
     def enter_gate(self, user: User, party=None) -> Dict:
         """Enter a gate solo or with party"""
@@ -194,8 +195,30 @@ class GameHandler:
             "damage_taken": 0,
             "gate_cleared": False,
             "drops": [],
-            "messages": []
+            "messages": [],
+            "pet_effects": [],
+            "mount_effects": []
         }
+        
+        # Apply pet stat boost if active
+        active_pet = next((p for p in user.pets if p.is_active), None)
+        if active_pet and active_pet.can_use_ability('Stat Boost'):
+            pet_effect = active_pet.get_ability_effects('Stat Boost')
+            stat_multiplier = pet_effect['value']
+            user.strength *= stat_multiplier
+            user.agility *= stat_multiplier
+            user.intelligence *= stat_multiplier
+            user.vitality *= stat_multiplier
+            active_pet.use_ability('Stat Boost')
+            result['pet_effects'].append(f"Pet {active_pet.name} boosted stats by {(stat_multiplier-1)*100}%")
+        
+        # Apply mount stamina bonus
+        equipped_mount = next((m for m in user.mounts if m.is_equipped), None)
+        if equipped_mount:
+            stamina_bonus = equipped_mount.stats.get('stamina', 0) * 0.1  # 10% of stamina adds to HP
+            user.hp += int(stamina_bonus)
+            user.max_hp += int(stamina_bonus)
+            result['mount_effects'].append(f"Mount {equipped_mount.name} increased HP by {int(stamina_bonus)}")
         
         # Player attacks
         for beast in beasts:
@@ -286,9 +309,27 @@ class GameHandler:
     def _calculate_damage(self, attacker: Dict, defender: Dict, difficulty: float) -> int:
         """Calculate damage for combat"""
         if isinstance(attacker, User):
+            # Base damage calculation
             base_damage = attacker.strength * 2 + attacker.level * 1.5
+            
+            # Apply mount bonuses if equipped
+            equipped_mount = next((m for m in attacker.mounts if m.is_equipped), None)
+            if equipped_mount:
+                mount_bonus = equipped_mount.stats.get('speed', 0) * 0.1  # 10% of speed adds to damage
+                base_damage += mount_bonus
+            
+            # Apply active pet bonuses
+            active_pet = next((p for p in attacker.pets if p.is_active), None)
+            if active_pet and active_pet.can_use_ability('Combat Support'):
+                pet_effect = active_pet.get_ability_effects('Combat Support')
+                base_damage *= pet_effect['value']
+                active_pet.use_ability('Combat Support')
+                
         else:  # MagicBeast
             base_damage = attacker['level'] * 3
+            # Apply shadow beast bonus if applicable
+            if attacker.get('is_shadow', False):
+                base_damage *= 1.5  # 50% bonus for shadow beasts
             
         # Apply difficulty modifier
         base_damage *= difficulty
@@ -305,7 +346,7 @@ class GameHandler:
         user.health_status = HealthStatus.NORMAL  # Reset status on death
         
         # Drop some items and currency
-        self._process_death_drops(user)
+        dropped_items = self._process_death_drops(user)
         
         # Remove from gate/party
         user.is_in_gate = False
@@ -315,11 +356,33 @@ class GameHandler:
             
         db.session.commit()
 
-    def _process_death_drops(self, user: User) -> None:
+        # Emit death event
+        self.event_system.emit_event(GameEvent(
+            type=EventType.COMBAT_UPDATE,
+            user_id=user.id,
+            gate_id=session['gate'].id,
+            guild_id=user.guild_id,
+            data={
+                'type': 'player_death',
+                'player': user.username,
+                'dropped_items': dropped_items,
+                'location': session['gate'].name
+            }
+        ))
+
+    def _process_death_drops(self, user: User) -> List[Dict]:
         """Process item and currency drops on death"""
+        dropped_items = []
+        
         # Drop 10% of crystals
         crystal_drop = int(user.crystals * 0.1)
-        user.crystals -= crystal_drop
+        if crystal_drop > 0:
+            user.crystals -= crystal_drop
+            dropped_items.append({
+                'type': 'currency',
+                'currency': 'crystals',
+                'amount': crystal_drop
+            })
         
         # Drop random inventory items (20% chance per item)
         for item in user.inventory_items:
@@ -327,18 +390,61 @@ class GameHandler:
                 if item.quantity > 1:
                     drop_amount = random.randint(1, item.quantity)
                     item.quantity -= drop_amount
+                    dropped_items.append({
+                        'type': 'item',
+                        'item_id': item.id,
+                        'name': item.name,
+                        'quantity': drop_amount
+                    })
                 else:
                     db.session.delete(item)
+                    dropped_items.append({
+                        'type': 'item',
+                        'item_id': item.id,
+                        'name': item.name,
+                        'quantity': 1
+                    })
                     
         db.session.commit()
+        
+        # Emit inventory update event
+        self.event_system.emit_event(GameEvent(
+            type=EventType.INVENTORY_UPDATE,
+            user_id=user.id,
+            data={
+                'type': 'death_drops',
+                'dropped_items': dropped_items
+            }
+        ))
+        
+        return dropped_items
 
     def _generate_drops(self, session: Dict) -> List[Dict]:
         """Generate drops from cleared gate"""
         drops = []
         gate_rank = session['gate'].rank
+        user = session['user']
         
-        # Generate items
-        num_items = random.randint(1, 3 + gate_rank.value.index)
+        # Calculate drop modifiers
+        drop_modifier = 1.0
+        
+        # Apply active pet bonus
+        active_pet = next((p for p in user.pets if p.is_active), None)
+        if active_pet and active_pet.can_use_ability('Item Finder'):
+            pet_effect = active_pet.get_ability_effects('Item Finder')
+            drop_modifier *= pet_effect['value']
+            active_pet.use_ability('Item Finder')
+        
+        # Apply mount carrying capacity bonus
+        equipped_mount = next((m for m in user.mounts if m.is_equipped), None)
+        if equipped_mount:
+            capacity_bonus = equipped_mount.stats.get('carrying_capacity', 0) * 0.001  # 0.1% per point
+            drop_modifier *= (1 + capacity_bonus)
+        
+        # Generate items with modified rates
+        base_items = random.randint(1, 3 + gate_rank.value.index)
+        num_items = int(base_items * drop_modifier)
+        
         for _ in range(num_items):
             rarity = self._determine_drop_rarity(gate_rank)
             item = self._generate_random_item(rarity, session['user'].level)
@@ -347,11 +453,13 @@ class GameHandler:
                 'item': item
             })
             
-        # Generate crystals
-        crystal_amount = random.randint(
+        # Generate crystals with modified amount
+        base_crystal_amount = random.randint(
             session['gate'].crystal_reward_min,
             session['gate'].crystal_reward_max
         )
+        crystal_amount = int(base_crystal_amount * drop_modifier)
+        
         drops.append({
             'type': 'crystal',
             'amount': crystal_amount
@@ -410,22 +518,23 @@ class GameHandler:
         db.session.add(item)
         return item
 
-    def _distribute_party_drops(self, drops: List[Dict], party) -> List[Dict]:
+    def _distribute_party_drops(self, drops: List[Dict], party) -> Dict[int, List[Dict]]:
         """Distribute drops among party members"""
         member_drops = {member.id: [] for member in party.members if member.hp > 0}
-        
-        # Distribute items randomly among living members
-        item_drops = [d for d in drops if d['type'] == 'item']
         living_members = [m for m in party.members if m.hp > 0]
         
+        if not living_members:
+            return member_drops
+            
+        # Distribute items randomly among living members
+        item_drops = [d for d in drops if d['type'] == 'item']
         for drop in item_drops:
-            if living_members:
-                recipient = random.choice(living_members)
-                member_drops[recipient.id].append(drop)
+            recipient = random.choice(living_members)
+            member_drops[recipient.id].append(drop)
                 
         # Distribute crystals evenly among living members
         crystal_drops = [d for d in drops if d['type'] == 'crystal']
-        if crystal_drops and living_members:
+        if crystal_drops:
             total_crystals = sum(d['amount'] for d in crystal_drops)
             per_member = total_crystals // len(living_members)
             
@@ -434,6 +543,23 @@ class GameHandler:
                     'type': 'crystal',
                     'amount': per_member
                 })
+        
+        # Emit loot distribution event
+        self.event_system.emit_event(GameEvent(
+            type=EventType.COMBAT_UPDATE,
+            guild_id=party.guild_id if party.guild_id else None,
+            data={
+                'type': 'loot_distribution',
+                'party_id': party.id,
+                'distributions': {
+                    str(member_id): {
+                        'items': [d for d in drops if d['type'] == 'item'],
+                        'crystals': per_member if crystal_drops else 0
+                    }
+                    for member_id, drops in member_drops.items()
+                }
+            }
+        ))
                 
         return member_drops
 
@@ -543,13 +669,30 @@ class GameHandler:
             
             # Update user status
             user = session['user']
-            user.is_in_gate = False
+            gate = session['gate']
+            party = session['party']
             
+            user.is_in_gate = False
             if user.party_id:
                 user.is_in_party = False
                 user.party_id = None
                 
             db.session.commit()
+            
+            # Emit session end event
+            self.event_system.emit_event(GameEvent(
+                type=EventType.COMBAT_UPDATE,
+                user_id=user.id,
+                gate_id=gate.id,
+                guild_id=user.guild_id,
+                data={
+                    'type': 'session_end',
+                    'gate_name': gate.name,
+                    'duration': (datetime.utcnow() - session['start_time']).total_seconds(),
+                    'party_size': len(party.members) if party else 1,
+                    'success': session.get('cleared', False)
+                }
+            ))
             
             # Remove session
             del self.combat_sessions[session_id]

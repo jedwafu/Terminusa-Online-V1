@@ -1,0 +1,299 @@
+/* Leaderboard Container */
+.leaderboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Roboto', sans-serif;
+    color: #e0e0e0;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
+}
+
+/* Navigation */
+.leaderboard-nav {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.nav-btn {
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 5px;
+    color: #e0e0e0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.nav-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.nav-btn.active {
+    background: #007bff;
+}
+
+/* Filters */
+.filters {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 5px;
+}
+
+.filters select {
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    color: #e0e0e0;
+}
+
+/* Leaderboard Sections */
+.leaderboard-section {
+    display: none;
+    margin-top: 20px;
+}
+
+.leaderboard-section.active {
+    display: block;
+}
+
+/* Stats Summary */
+.stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.stat-card h3 {
+    margin: 0 0 10px 0;
+    font-size: 0.9em;
+    color: #aaa;
+}
+
+.stat-value {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #fff;
+}
+
+/* Leaderboard Table */
+.leaderboard-table {
+    width: 100%;
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+th {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 12px;
+    text-align: left;
+    font-weight: bold;
+    color: #fff;
+}
+
+td {
+    padding: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Rank Styles */
+.rank {
+    font-weight: bold;
+    font-size: 1.2em;
+    color: #ffd700;
+    text-align: center;
+    width: 50px;
+}
+
+/* Player/Guild Info */
+.hunter-info,
+.guild-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hunter-info img,
+.guild-info img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.guild-tag {
+    color: #aaa;
+    font-size: 0.9em;
+}
+
+/* Class Colors */
+.class-fighter { color: #f44336; }
+.class-mage { color: #2196f3; }
+.class-assassin { color: #9c27b0; }
+.class-archer { color: #4caf50; }
+.class-healer { color: #ff9800; }
+
+/* Rank Colors */
+.rank-f { color: #78909c; }
+.rank-e { color: #8bc34a; }
+.rank-d { color: #03a9f4; }
+.rank-c { color: #9c27b0; }
+.rank-b { color: #ff9800; }
+.rank-a { color: #f44336; }
+.rank-s { color: #ffd700; }
+
+/* Current User Highlight */
+.current-user,
+.current-guild {
+    background: rgba(0, 123, 255, 0.1);
+}
+
+/* Gate Info */
+.gate-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.gate-rank {
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+/* Clear Info */
+.player-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.player-info img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+}
+
+.clear-date,
+.clear-time,
+.efficiency {
+    font-size: 0.8em;
+    color: #aaa;
+}
+
+.unclaimed {
+    color: #666;
+    font-style: italic;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.leaderboard-section {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes highlight {
+    0% { background-color: rgba(255, 215, 0, 0.2); }
+    100% { background-color: transparent; }
+}
+
+.updated {
+    animation: highlight 1s ease;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .leaderboard-nav {
+        flex-wrap: wrap;
+    }
+
+    .filters {
+        flex-direction: column;
+    }
+
+    .stats-summary {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .player-info {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .clear-date,
+    .clear-time,
+    .efficiency {
+        display: block;
+    }
+}
+
+/* Loading State */
+.loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+}
+
+/* Tooltips */
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 5px 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+}

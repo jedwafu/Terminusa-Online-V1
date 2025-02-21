@@ -1,0 +1,269 @@
+/* Territory Map Container */
+.territory-map-container {
+    position: relative;
+    width: 900px;
+    height: 600px;
+    margin: 0 auto;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* SVG Map */
+.territory-map {
+    width: 100%;
+    height: 100%;
+}
+
+/* Grid Lines */
+.grid-line {
+    stroke: rgba(255, 255, 255, 0.05);
+    stroke-width: 1;
+}
+
+/* Territory Connections */
+.connection {
+    stroke: rgba(255, 255, 255, 0.1);
+    stroke-width: 2;
+    stroke-dasharray: 4;
+    pointer-events: none;
+}
+
+/* Territory Circles */
+.territory-circle {
+    fill: rgba(255, 255, 255, 0.1);
+    stroke: rgba(255, 255, 255, 0.3);
+    stroke-width: 2;
+    transition: all 0.3s ease;
+}
+
+.territory-circle.neutral {
+    fill: rgba(158, 158, 158, 0.2);
+    stroke: rgba(158, 158, 158, 0.5);
+}
+
+.territory-circle.friendly {
+    fill: rgba(76, 175, 80, 0.2);
+    stroke: rgba(76, 175, 80, 0.5);
+}
+
+.territory-circle.enemy {
+    fill: rgba(244, 67, 54, 0.2);
+    stroke: rgba(244, 67, 54, 0.5);
+}
+
+.territory-circle.contested {
+    fill: rgba(255, 152, 0, 0.2);
+    stroke: rgba(255, 152, 0, 0.5);
+    animation: pulse 2s infinite;
+}
+
+/* Territory Icons */
+.territory-icon {
+    font-size: 20px;
+    fill: #fff;
+    pointer-events: none;
+}
+
+/* Territory Selection */
+.territory.selected .territory-circle {
+    stroke-width: 3;
+    filter: brightness(1.5);
+    transform: scale(1.1);
+}
+
+/* Territory Hover Effects */
+.territory:hover .territory-circle {
+    filter: brightness(1.2);
+    cursor: pointer;
+}
+
+/* Territory Tooltip */
+.territory-tooltip {
+    position: absolute;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    color: #fff;
+    font-size: 14px;
+    pointer-events: none;
+    z-index: 1000;
+    min-width: 200px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.tooltip-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+}
+
+.tooltip-header h4 {
+    margin: 0;
+    color: #fff;
+}
+
+.territory-type {
+    font-size: 12px;
+    color: #aaa;
+    text-transform: capitalize;
+}
+
+.tooltip-body p {
+    margin: 5px 0;
+    color: #e0e0e0;
+}
+
+.tooltip-bonuses {
+    margin-top: 5px;
+    padding-top: 5px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tooltip-bonuses ul {
+    margin: 5px 0;
+    padding-left: 20px;
+    color: #aaa;
+}
+
+/* Territory Action Panel */
+#territory-actions {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+    padding: 15px;
+    min-width: 300px;
+    text-align: center;
+    display: none;
+}
+
+#territory-actions h3 {
+    margin: 0 0 10px 0;
+    color: #fff;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.action-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: bold;
+}
+
+.action-btn.attack {
+    background: #f44336;
+}
+
+.action-btn.attack:hover {
+    background: #d32f2f;
+}
+
+.action-btn.reinforce {
+    background: #4CAF50;
+}
+
+.action-btn.reinforce:hover {
+    background: #388E3C;
+}
+
+/* Territory Status Indicators */
+.status-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.status-indicator.neutral {
+    background: #9e9e9e;
+}
+
+.status-indicator.friendly {
+    background: #4CAF50;
+}
+
+.status-indicator.enemy {
+    background: #f44336;
+}
+
+.status-indicator.contested {
+    background: #ff9800;
+}
+
+/* Animations */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Force Display */
+.force-display {
+    position: absolute;
+    font-size: 12px;
+    color: #fff;
+    text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+    pointer-events: none;
+}
+
+/* Territory Type Icons */
+.territory-icon[data-type="gate"] {
+    font-size: 24px;
+}
+
+.territory-icon[data-type="stronghold"] {
+    font-size: 22px;
+}
+
+.territory-icon[data-type="resource"] {
+    font-size: 20px;
+}
+
+.territory-icon[data-type="outpost"] {
+    font-size: 18px;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .territory-map-container {
+        width: 100%;
+        height: 500px;
+    }
+}
+
+@media (max-width: 768px) {
+    .territory-map-container {
+        height: 400px;
+    }
+
+    .territory-icon {
+        font-size: 16px;
+    }
+
+    #territory-actions {
+        width: 90%;
+    }
+}

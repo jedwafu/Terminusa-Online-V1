@@ -1,273 +1,256 @@
 from typing import Dict, List, Optional
-from datetime import datetime
+from decimal import Decimal
 import random
-import logging
-from .currency_system import CurrencySystem
-
-logger = logging.getLogger(__name__)
-
-class GachaPool:
-    def __init__(self, id: str, name: str, description: str,
-                 rates: Dict[str, float], price: float,
-                 currency: str, items: Dict[str, Dict]):
-        self.id = id
-        self.name = name
-        self.description = description
-        self.rates = rates  # grade -> rate
-        self.price = price
-        self.currency = currency
-        self.items = items  # grade -> list of possible items
+from datetime import datetime
+from models import db, User, Mount, Pet, Transaction
+from game_config import (
+    MOUNT_PET_RARITIES,
+    MOUNT_PET_GACHA_RATES,
+    ADMIN_USERNAME
+)
+from ai_agent import AIAgent
 
 class GachaSystem:
-    def __init__(self, currency_system: CurrencySystem):
-        self.logger = logger
-        self.logger.info("Initializing Gacha System")
-        self.currency_system = currency_system
-        self.pools: Dict[str, GachaPool] = self._initialize_pools()
-        self.pull_history: List[Dict] = []
-        self.pity_counters: Dict[str, Dict[int, int]] = {}  # pool_id -> user_id -> counter
+    def __init__(self):
+        self.admin_user = User.query.filter_by(username=ADMIN_USERNAME).first()
+        self.ai_agent = AIAgent()
 
-    def _initialize_pools(self) -> Dict[str, GachaPool]:
-        """Initialize default gacha pools"""
-        return {
-            'standard': GachaPool(
-                id='standard',
-                name='Standard Pool',
-                description='Regular gacha pool with standard rates',
-                rates={
-                    'common': 0.60,
-                    'uncommon': 0.30,
-                    'rare': 0.08,
-                    'epic': 0.015,
-                    'legendary': 0.005
-                },
-                price=100,
-                currency='CRYSTAL',
-                items=self._get_standard_items()
-            ),
-            'premium': GachaPool(
-                id='premium',
-                name='Premium Pool',
-                description='Premium pool with better rates',
-                rates={
-                    'uncommon': 0.45,
-                    'rare': 0.35,
-                    'epic': 0.15,
-                    'legendary': 0.05
-                },
-                price=1000,
-                currency='EXON',
-                items=self._get_premium_items()
-            )
-        }
+    def roll_mount(self, user: User, amount: int = 1) -> Dict:
+        """Roll for mounts using Exons"""
+        MOUNT_COST = Decimal("10")  # 10 Exons per roll
+        total_cost = MOUNT_COST * amount
 
-    def _get_standard_items(self) -> Dict[str, List[Dict]]:
-        """Get standard pool items"""
-        return {
-            'common': [
-                {'id': 'item1', 'name': 'Common Sword', 'type': 'weapon'},
-                {'id': 'item2', 'name': 'Common Shield', 'type': 'armor'}
-            ],
-            'uncommon': [
-                {'id': 'item3', 'name': 'Uncommon Sword', 'type': 'weapon'},
-                {'id': 'item4', 'name': 'Uncommon Shield', 'type': 'armor'}
-            ],
-            'rare': [
-                {'id': 'item5', 'name': 'Rare Sword', 'type': 'weapon'},
-                {'id': 'item6', 'name': 'Rare Shield', 'type': 'armor'}
-            ],
-            'epic': [
-                {'id': 'item7', 'name': 'Epic Sword', 'type': 'weapon'},
-                {'id': 'item8', 'name': 'Epic Shield', 'type': 'armor'}
-            ],
-            'legendary': [
-                {'id': 'item9', 'name': 'Legendary Sword', 'type': 'weapon'},
-                {'id': 'item10', 'name': 'Legendary Shield', 'type': 'armor'}
-            ]
-        }
+        if user.exons_balance < total_cost:
+            return {
+                "success": False,
+                "message": "Insufficient Exons balance"
+            }
 
-    def _get_premium_items(self) -> Dict[str, List[Dict]]:
-        """Get premium pool items"""
-        return {
-            'uncommon': [
-                {'id': 'item11', 'name': 'Premium Uncommon Sword', 'type': 'weapon'},
-                {'id': 'item12', 'name': 'Premium Uncommon Shield', 'type': 'armor'}
-            ],
-            'rare': [
-                {'id': 'item13', 'name': 'Premium Rare Sword', 'type': 'weapon'},
-                {'id': 'item14', 'name': 'Premium Rare Shield', 'type': 'armor'}
-            ],
-            'epic': [
-                {'id': 'item15', 'name': 'Premium Epic Sword', 'type': 'weapon'},
-                {'id': 'item16', 'name': 'Premium Epic Shield', 'type': 'armor'}
-            ],
-            'legendary': [
-                {'id': 'item17', 'name': 'Premium Legendary Sword', 'type': 'weapon'},
-                {'id': 'item18', 'name': 'Premium Legendary Shield', 'type': 'armor'}
-            ]
-        }
-
-    def get_available_pools(self) -> List[Dict]:
-        """Get list of available gacha pools"""
-        return [{
-            'id': pool.id,
-            'name': pool.name,
-            'description': pool.description,
-            'price': pool.price,
-            'currency': pool.currency,
-            'rates': pool.rates
-        } for pool in self.pools.values()]
-
-    def pull_gacha(self, user, pool_id: str, pulls: int = 1) -> Dict:
-        """Perform gacha pulls"""
         try:
-            # Validate pool exists
-            pool = self.pools.get(pool_id)
-            if not pool:
-                return {'status': 'error', 'message': 'Pool not found'}
+            # Get player profile for AI-adjusted rates
+            profile = self.ai_agent.analyze_player(user)
+            adjusted_rates = self.ai_agent.calculate_gacha_odds(user, "mount")
 
-            # Calculate total cost
-            total_cost = pool.price * pulls
-
-            # Validate currency and amount
-            valid, message = self.currency_system.validate_amount(
-                pool.currency,
-                total_cost
-            )
-            if not valid:
-                return {'status': 'error', 'message': message}
-
-            # Check if user can afford
-            if not self._can_afford(user, pool.currency, total_cost):
-                return {
-                    'status': 'error',
-                    'message': f'Insufficient funds ({total_cost} {pool.currency})'
-                }
-
-            # Process pulls
             results = []
-            for _ in range(pulls):
-                pull_result = self._process_single_pull(user, pool)
-                results.append(pull_result)
-
-            # Process transaction
-            transaction_result = self._process_transaction(
-                user,
-                pool.currency,
-                total_cost
-            )
-            if transaction_result['status'] != 'success':
-                return transaction_result
-
-            # Record pulls
-            for result in results:
-                self.pull_history.append({
-                    'user_id': user.id,
-                    'pool_id': pool_id,
-                    'item_id': result['item']['id'],
-                    'grade': result['grade'],
-                    'timestamp': datetime.utcnow()
+            for _ in range(amount):
+                rarity = self._determine_rarity(adjusted_rates)
+                mount = self._generate_mount(rarity, user.level)
+                results.append({
+                    'mount_id': mount.id,
+                    'name': mount.name,
+                    'rarity': mount.rarity,
+                    'stats': mount.stats
                 })
 
+            # Process payment
+            user.exons_balance -= total_cost
+
+            # Record transaction
+            transaction = Transaction(
+                user_id=user.id,
+                type="mount_gacha",
+                currency="exons",
+                amount=total_cost,
+                tax_amount=Decimal("0")  # No tax on gacha
+            )
+            db.session.add(transaction)
+            db.session.commit()
+
             return {
-                'status': 'success',
-                'results': results,
-                'transaction_id': transaction_result['transaction_id']
+                "success": True,
+                "message": f"Successfully rolled {amount} mount(s)",
+                "results": results,
+                "cost": str(total_cost)
             }
 
         except Exception as e:
-            self.logger.error(f"Error processing gacha pulls: {str(e)}", exc_info=True)
-            return {'status': 'error', 'message': 'Internal error'}
+            db.session.rollback()
+            return {
+                "success": False,
+                "message": f"Failed to process mount roll: {str(e)}"
+            }
 
-    def _process_single_pull(self, user, pool: GachaPool) -> Dict:
-        """Process a single gacha pull"""
-        # Initialize pity counter if needed
-        if pool.id not in self.pity_counters:
-            self.pity_counters[pool.id] = {}
-        if user.id not in self.pity_counters[pool.id]:
-            self.pity_counters[pool.id][user.id] = 0
+    def roll_pet(self, user: User, amount: int = 1) -> Dict:
+        """Roll for pets using Exons"""
+        PET_COST = Decimal("8")  # 8 Exons per roll
+        total_cost = PET_COST * amount
 
-        # Get adjusted rates based on pity
-        rates = self._adjust_rates_for_pity(pool.rates, self.pity_counters[pool.id][user.id])
+        if user.exons_balance < total_cost:
+            return {
+                "success": False,
+                "message": "Insufficient Exons balance"
+            }
 
-        # Determine grade
-        grade = self._determine_grade(rates)
+        try:
+            # Get player profile for AI-adjusted rates
+            profile = self.ai_agent.analyze_player(user)
+            adjusted_rates = self.ai_agent.calculate_gacha_odds(user, "pet")
 
-        # Reset or increment pity counter
-        if grade in ['epic', 'legendary']:
-            self.pity_counters[pool.id][user.id] = 0
-        else:
-            self.pity_counters[pool.id][user.id] += 1
+            results = []
+            for _ in range(amount):
+                rarity = self._determine_rarity(adjusted_rates)
+                pet = self._generate_pet(rarity, user.level)
+                results.append({
+                    'pet_id': pet.id,
+                    'name': pet.name,
+                    'rarity': pet.rarity,
+                    'abilities': pet.abilities
+                })
 
-        # Select random item of determined grade
-        items = pool.items[grade]
-        item = random.choice(items)
+            # Process payment
+            user.exons_balance -= total_cost
 
-        return {
-            'grade': grade,
-            'item': item
-        }
+            # Record transaction
+            transaction = Transaction(
+                user_id=user.id,
+                type="pet_gacha",
+                currency="exons",
+                amount=total_cost,
+                tax_amount=Decimal("0")  # No tax on gacha
+            )
+            db.session.add(transaction)
+            db.session.commit()
 
-    def _adjust_rates_for_pity(self, base_rates: Dict[str, float],
-                              pity_counter: int) -> Dict[str, float]:
-        """Adjust rates based on pity counter"""
-        adjusted_rates = base_rates.copy()
+            return {
+                "success": True,
+                "message": f"Successfully rolled {amount} pet(s)",
+                "results": results,
+                "cost": str(total_cost)
+            }
 
-        # Every 10 pulls without epic/legendary increases their rates
-        pity_bonus = min(0.1, (pity_counter // 10) * 0.02)  # Max 10% bonus
-        if pity_bonus > 0:
-            # Increase epic and legendary rates
-            for grade in ['epic', 'legendary']:
-                if grade in adjusted_rates:
-                    adjusted_rates[grade] += pity_bonus
+        except Exception as e:
+            db.session.rollback()
+            return {
+                "success": False,
+                "message": f"Failed to process pet roll: {str(e)}"
+            }
 
-            # Decrease common rate to compensate
-            if 'common' in adjusted_rates:
-                adjusted_rates['common'] = max(0.1, adjusted_rates['common'] - pity_bonus * 2)
-
-        # Normalize rates
-        total = sum(adjusted_rates.values())
-        return {grade: rate/total for grade, rate in adjusted_rates.items()}
-
-    def _determine_grade(self, rates: Dict[str, float]) -> str:
-        """Determine pull grade based on rates"""
+    def _determine_rarity(self, adjusted_rates: Dict[str, float]) -> str:
+        """Determine rarity based on adjusted rates"""
         roll = random.random()
         cumulative = 0
-        for grade, rate in rates.items():
+        for rarity, rate in adjusted_rates.items():
             cumulative += rate
             if roll <= cumulative:
-                return grade
-        return list(rates.keys())[0]  # Fallback to first grade
+                return rarity
+        return "Basic"  # Fallback to basic if something goes wrong
 
-    def get_pull_history(self, user_id: int, limit: int = 10) -> List[Dict]:
-        """Get user's pull history"""
-        try:
-            user_history = [
-                pull for pull in self.pull_history
-                if pull['user_id'] == user_id
+    def _generate_mount(self, rarity: str, level: int) -> Mount:
+        """Generate a mount with the given rarity"""
+        # Base stats based on rarity
+        rarity_multiplier = {
+            'Basic': 1,
+            'Intermediate': 1.5,
+            'Excellent': 2,
+            'Legendary': 3,
+            'Immortal': 5
+        }[rarity]
+
+        # Generate mount name
+        mount_types = ['Horse', 'Dragon', 'Griffin', 'Phoenix', 'Wyvern']
+        mount_prefixes = {
+            'Basic': ['Sturdy', 'Reliable', 'Common'],
+            'Intermediate': ['Swift', 'Strong', 'Agile'],
+            'Excellent': ['Majestic', 'Powerful', 'Noble'],
+            'Legendary': ['Ancient', 'Mythical', 'Divine'],
+            'Immortal': ['Eternal', 'Celestial', 'Godly']
+        }
+
+        name = f"{random.choice(mount_prefixes[rarity])} {random.choice(mount_types)}"
+
+        # Calculate stats
+        base_stats = {
+            'speed': 10,
+            'stamina': 100,
+            'carrying_capacity': 50
+        }
+        stats = {k: int(v * rarity_multiplier * (level/10)) for k, v in base_stats.items()}
+
+        mount = Mount(
+            name=name,
+            rarity=rarity,
+            level_requirement=max(1, level - 10),
+            stats=stats,
+            is_tradeable=(rarity != 'Immortal')  # Immortal mounts cannot be traded
+        )
+        db.session.add(mount)
+        return mount
+
+    def _generate_pet(self, rarity: str, level: int) -> Pet:
+        """Generate a pet with the given rarity"""
+        # Base abilities based on rarity
+        rarity_abilities = {
+            'Basic': ['Item Finder'],
+            'Intermediate': ['Item Finder', 'Combat Support'],
+            'Excellent': ['Item Finder', 'Combat Support', 'Stat Boost'],
+            'Legendary': ['Item Finder', 'Combat Support', 'Stat Boost', 'Special Skill'],
+            'Immortal': ['Item Finder', 'Combat Support', 'Stat Boost', 'Special Skill', 'Unique Ability']
+        }
+
+        # Generate pet name
+        pet_types = ['Fox', 'Wolf', 'Cat', 'Bird', 'Dragon']
+        pet_prefixes = {
+            'Basic': ['Little', 'Young', 'Small'],
+            'Intermediate': ['Clever', 'Quick', 'Sharp'],
+            'Excellent': ['Wise', 'Mighty', 'Grand'],
+            'Legendary': ['Ancient', 'Mystic', 'Divine'],
+            'Immortal': ['Eternal', 'Celestial', 'Godly']
+        }
+
+        name = f"{random.choice(pet_prefixes[rarity])} {random.choice(pet_types)}"
+
+        # Generate abilities
+        abilities = rarity_abilities[rarity]
+        if rarity == 'Immortal':
+            unique_abilities = [
+                'Time Manipulation',
+                'Reality Bending',
+                'Soul Link',
+                'Dimensional Travel',
+                'Fate Weaving'
             ]
-            return sorted(
-                user_history,
-                key=lambda x: x['timestamp'],
-                reverse=True
-            )[:limit]
-        except Exception as e:
-            self.logger.error(f"Error getting pull history: {str(e)}", exc_info=True)
-            return []
+            abilities[-1] = random.choice(unique_abilities)
 
-    def _can_afford(self, user, currency: str, amount: float) -> bool:
-        """Check if user can afford pulls"""
-        # TODO: Implement actual balance check
-        return True
+        pet = Pet(
+            name=name,
+            rarity=rarity,
+            level_requirement=max(1, level - 10),
+            abilities=abilities,
+            is_tradeable=(rarity != 'Immortal')  # Immortal pets cannot be traded
+        )
+        db.session.add(pet)
+        return pet
 
-    def _process_transaction(self, user, currency: str, amount: float) -> Dict:
-        """Process the gacha transaction"""
-        try:
-            # TODO: Implement actual transaction processing
-            return {
-                'status': 'success',
-                'transaction_id': f"tx_{datetime.utcnow().timestamp()}"
+    def get_rates(self, user: User, gacha_type: str) -> Dict[str, float]:
+        """Get current gacha rates for the user"""
+        profile = self.ai_agent.analyze_player(user)
+        return self.ai_agent.calculate_gacha_odds(user, gacha_type)
+
+    def get_pity_info(self, user: User) -> Dict:
+        """Get pity system information for the user"""
+        # Pity system guarantees a higher rarity after X unsuccessful rolls
+        PITY_THRESHOLDS = {
+            'Legendary': 50,  # Guaranteed Legendary within 50 rolls
+            'Immortal': 100   # Guaranteed Immortal within 100 rolls
+        }
+
+        # Get user's roll history
+        mount_rolls = Transaction.query.filter_by(
+            user_id=user.id,
+            type="mount_gacha"
+        ).count()
+        pet_rolls = Transaction.query.filter_by(
+            user_id=user.id,
+            type="pet_gacha"
+        ).count()
+
+        return {
+            'mount_pity': {
+                'rolls_until_legendary': max(0, PITY_THRESHOLDS['Legendary'] - (mount_rolls % PITY_THRESHOLDS['Legendary'])),
+                'rolls_until_immortal': max(0, PITY_THRESHOLDS['Immortal'] - (mount_rolls % PITY_THRESHOLDS['Immortal']))
+            },
+            'pet_pity': {
+                'rolls_until_legendary': max(0, PITY_THRESHOLDS['Legendary'] - (pet_rolls % PITY_THRESHOLDS['Legendary'])),
+                'rolls_until_immortal': max(0, PITY_THRESHOLDS['Immortal'] - (pet_rolls % PITY_THRESHOLDS['Immortal']))
             }
-        except Exception as e:
-            self.logger.error(f"Error processing transaction: {str(e)}", exc_info=True)
-            return {'status': 'error', 'message': 'Transaction failed'}
+        }

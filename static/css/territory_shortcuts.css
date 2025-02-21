@@ -1,0 +1,242 @@
+/* Shortcut Overlay */
+.shortcut-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 2000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(5px);
+}
+
+.shortcut-content {
+    background: rgba(30, 30, 30, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 30px;
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    color: #fff;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+}
+
+.shortcut-content h2 {
+    margin: 0 0 20px 0;
+    text-align: center;
+    color: #2196F3;
+    font-size: 1.8em;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 15px;
+}
+
+/* Shortcut Sections */
+.shortcut-section {
+    margin-bottom: 30px;
+}
+
+.shortcut-section h3 {
+    color: #aaa;
+    margin: 0 0 15px 0;
+    font-size: 1.2em;
+}
+
+.shortcut-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+/* Shortcut Items */
+.shortcut-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 5px;
+    transition: background 0.3s ease;
+}
+
+.shortcut-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Keyboard Keys */
+kbd {
+    display: inline-block;
+    padding: 4px 8px;
+    font-family: monospace;
+    font-size: 0.9em;
+    color: #fff;
+    background: #333;
+    border: 1px solid #666;
+    border-radius: 4px;
+    box-shadow: 0 2px 0 #000;
+    min-width: 20px;
+    text-align: center;
+    margin: 0 2px;
+}
+
+/* Special Key Styles */
+kbd.arrow {
+    background: #2196F3;
+    border-color: #1976D2;
+}
+
+kbd.action {
+    background: #4CAF50;
+    border-color: #388E3C;
+}
+
+kbd.modifier {
+    background: #9C27B0;
+    border-color: #7B1FA2;
+}
+
+/* Shortcut Description */
+.shortcut-item span {
+    color: #e0e0e0;
+    flex: 1;
+}
+
+/* Shortcut Categories */
+.shortcut-item.navigation kbd {
+    background: #2196F3;
+    border-color: #1976D2;
+}
+
+.shortcut-item.action kbd {
+    background: #4CAF50;
+    border-color: #388E3C;
+}
+
+.shortcut-item.view kbd {
+    background: #FF9800;
+    border-color: #F57C00;
+}
+
+/* Shortcut Groups */
+.shortcut-group {
+    display: flex;
+    gap: 5px;
+}
+
+.shortcut-group kbd {
+    margin: 0;
+}
+
+/* Shortcut Animations */
+@keyframes shortcutFadeIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.shortcut-overlay.visible {
+    animation: shortcutFadeIn 0.3s ease;
+}
+
+/* Hover Effects */
+.shortcut-item:hover kbd {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 0 #000;
+}
+
+/* Active Key Indicator */
+.key-active kbd {
+    background: #4CAF50;
+    transform: translateY(2px);
+    box-shadow: 0 0 0 #000;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .shortcut-content {
+        padding: 20px;
+    }
+
+    .shortcut-grid {
+        grid-template-columns: 1fr;
+    }
+
+    kbd {
+        padding: 6px 12px;
+        font-size: 1em;
+    }
+
+    .shortcut-item {
+        flex-direction: column;
+        text-align: center;
+        padding: 15px;
+    }
+
+    .shortcut-item span {
+        margin-top: 10px;
+    }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) {
+    .shortcut-item {
+        padding: 15px;
+    }
+
+    kbd {
+        padding: 8px 16px;
+        font-size: 1.1em;
+    }
+}
+
+/* Scrollbar Styling */
+.shortcut-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.shortcut-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.shortcut-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.shortcut-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Close Button */
+.shortcut-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 24px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.shortcut-close:hover {
+    color: #fff;
+}
+
+/* Help Text */
+.shortcut-help {
+    text-align: center;
+    color: #aaa;
+    margin-top: 20px;
+    font-size: 0.9em;
+}
+
+.shortcut-help kbd {
+    font-size: 0.8em;
+    padding: 2px 6px;
+}

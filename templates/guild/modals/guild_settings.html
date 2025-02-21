@@ -1,0 +1,147 @@
+<div id="guild-settings" class="modal">
+    <div class="modal-content">
+        <h2>Guild Settings</h2>
+        <form id="guild-settings-form" onsubmit="saveGuildSettings(event)">
+            <!-- General Settings -->
+            <div class="settings-section">
+                <h3>General Settings</h3>
+                <div class="form-group">
+                    <label for="max-members">Maximum Members</label>
+                    <input type="number" id="max-members" name="max_members" 
+                           value="{{ guild.max_members }}" min="10" max="100"
+                           {% if not current_user.id == guild.leader_id %}disabled{% endif %}>
+                    <span class="help-text">Requires guild level upgrades to increase</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="recruitment-status">Recruitment Status</label>
+                    <select id="recruitment-status" name="recruitment_status"
+                            {% if not current_user.can_manage_recruitment %}disabled{% endif %}>
+                        <option value="open" {% if guild.recruitment_status == 'open' %}selected{% endif %}>Open</option>
+                        <option value="invite_only" {% if guild.recruitment_status == 'invite_only' %}selected{% endif %}>Invite Only</option>
+                        <option value="closed" {% if guild.recruitment_status == 'closed' %}selected{% endif %}>Closed</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="min-level">Minimum Level Requirement</label>
+                    <input type="number" id="min-level" name="min_level_requirement" 
+                           value="{{ guild.min_level_requirement }}" min="1"
+                           {% if not current_user.can_manage_recruitment %}disabled{% endif %}>
+                </div>
+            </div>
+
+            <!-- Permissions -->
+            <div class="settings-section">
+                <h3>Rank Permissions</h3>
+                <div class="permission-group">
+                    <h4>Officer Permissions</h4>
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" name="officer_permissions[]" value="invite"
+                                   {% if 'invite' in guild.officer_permissions %}checked{% endif %}
+                                   {% if not current_user.id == guild.leader_id %}disabled{% endif %}>
+                            Can invite members
+                        </label>
+                        <label>
+                            <input type="checkbox" name="officer_permissions[]" value="kick"
+                                   {% if 'kick' in guild.officer_permissions %}checked{% endif %}
+                                   {% if not current_user.id == guild.leader_id %}disabled{% endif %}>
+                            Can kick members
+                        </label>
+                        <label>
+                            <input type="checkbox" name="officer_permissions[]" value="manage_quests"
+                                   {% if 'manage_quests' in guild.officer_permissions %}checked{% endif %}
+                                   {% if not current_user.id == guild.leader_id %}disabled{% endif %}>
+                            Can manage guild quests
+                        </label>
+                    </div>
+                </div>
+
+                <div class="permission-group">
+                    <h4>Veteran Permissions</h4>
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" name="veteran_permissions[]" value="invite"
+                                   {% if 'invite' in guild.veteran_permissions %}checked{% endif %}
+                                   {% if not current_user.id == guild.leader_id %}disabled{% endif %}>
+                            Can invite members
+                        </label>
+                        <label>
+                            <input type="checkbox" name="veteran_permissions[]" value="start_quests"
+                                   {% if 'start_quests' in guild.veteran_permissions %}checked{% endif %}
+                                   {% if not current_user.id == guild.leader_id %}disabled{% endif %}>
+                            Can start guild quests
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Treasury Settings -->
+            <div class="settings-section">
+                <h3>Treasury Settings</h3>
+                <div class="form-group">
+                    <label for="crystal-tax">Crystal Tax Rate (%)</label>
+                    <input type="number" id="crystal-tax" name="crystal_tax_rate" 
+                           value="{{ guild.crystal_tax_rate }}" min="0" max="30" step="1"
+                           {% if not current_user.id == guild.leader_id %}disabled{% endif %}>
+                    <span class="help-text">Percentage of crystal rewards contributed to guild treasury</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="exon-tax">Exon Tax Rate (%)</label>
+                    <input type="number" id="exon-tax" name="exon_tax_rate" 
+                           value="{{ guild.exon_tax_rate }}" min="0" max="30" step="1"
+                           {% if not current_user.id == guild.leader_id %}disabled{% endif %}>
+                    <span class="help-text">Percentage of exon transactions contributed to guild treasury</span>
+                </div>
+
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" name="treasury_settings[]" value="officers_withdraw"
+                               {% if 'officers_withdraw' in guild.treasury_settings %}checked{% endif %}
+                               {% if not current_user.id == guild.leader_id %}disabled{% endif %}>
+                        Officers can withdraw from treasury
+                    </label>
+                </div>
+            </div>
+
+            <!-- Quest Settings -->
+            <div class="settings-section">
+                <h3>Quest Settings</h3>
+                <div class="form-group">
+                    <label for="quest-difficulty">Default Quest Difficulty</label>
+                    <select id="quest-difficulty" name="default_quest_difficulty"
+                            {% if not current_user.can_manage_quests %}disabled{% endif %}>
+                        <option value="normal" {% if guild.default_quest_difficulty == 'normal' %}selected{% endif %}>Normal</option>
+                        <option value="hard" {% if guild.default_quest_difficulty == 'hard' %}selected{% endif %}>Hard</option>
+                        <option value="extreme" {% if guild.default_quest_difficulty == 'extreme' %}selected{% endif %}>Extreme</option>
+                    </select>
+                </div>
+
+                <div class="checkbox-group">
+                    <label>
+                        <input type="checkbox" name="quest_settings[]" value="auto_accept"
+                               {% if 'auto_accept' in guild.quest_settings %}checked{% endif %}
+                               {% if not current_user.can_manage_quests %}disabled{% endif %}>
+                        Automatically accept daily guild quests
+                    </label>
+                    <label>
+                        <input type="checkbox" name="quest_settings[]" value="require_approval"
+                               {% if 'require_approval' in guild.quest_settings %}checked{% endif %}
+                               {% if not current_user.can_manage_quests %}disabled{% endif %}>
+                        Require officer approval for quest completion
+                    </label>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="submit" class="action-btn" 
+                        {% if not current_user.can_manage_settings %}disabled{% endif %}>
+                    Save Settings
+                </button>
+                <button type="button" onclick="closeModal('guild-settings')" class="cancel-btn">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>

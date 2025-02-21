@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Guild - {{ guild.name }} - Terminusa Online{% endblock %}
+
+{% block content %}
+<div class="guild-container">
+    <!-- Guild Header -->
+    <div class="guild-header">
+        <div class="guild-emblem">
+            <img src="{{ url_for('static', filename='images/guilds/' + guild.emblem) if guild.emblem else url_for('static', filename='images/default_guild.png') }}" alt="{{ guild.name }}">
+        </div>
+        <div class="guild-info">
+            <h1>{{ guild.name }}</h1>
+            <div class="guild-stats">
+                <div class="stat">
+                    <span class="label">Level</span>
+                    <span class="value">{{ guild.level }}</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Members</span>
+                    <span class="value">{{ guild.members|length }}/{{ guild.max_members }}</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Gates Cleared</span>
+                    <span class="value">{{ guild.total_gates_cleared }}</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Average Level</span>
+                    <span class="value">{{ "%.1f"|format(guild.average_level) }}</span>
+                </div>
+            </div>
+            {% if current_user.id == guild.leader_id %}
+            <div class="guild-actions">
+                <button onclick="openModal('edit-guild')" class="action-btn">Edit Guild</button>
+                <button onclick="openModal('manage-members')" class="action-btn">Manage Members</button>
+                <button onclick="openModal('guild-settings')" class="action-btn">Settings</button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Guild Navigation -->
+    <div class="guild-nav">
+        <button class="nav-btn active" data-target="members">Members</button>
+        <button class="nav-btn" data-target="quests">Guild Quests</button>
+        <button class="nav-btn" data-target="achievements">Achievements</button>
+        <button class="nav-btn" data-target="treasury">Treasury</button>
+    </div>
+
+    <!-- Members Section -->
+    <div class="guild-section active" id="members-section">
+        <div class="filters">
+            <select id="member-class-filter">
+                <option value="">All Classes</option>
+                <option value="fighter">Fighter</option>
+                <option value="mage">Mage</option>
+                <option value="assassin">Assassin</option>
+                <option value="archer">Archer</option>
+                <option value="healer">Healer</option>
+            </select>
+            <select id="member-rank-filter">
+                <option value="">All Ranks</option>
+                <option value="leader">Leader</option>
+                <option value="officer">Officer</option>
+                <option value="veteran">Veteran</option>
+                <option value="member">Member</option>
+                <option value="recruit">Recruit</option>
+            </select>
+            <select id="member-status-filter">
+                <option value="">All Status</option>
+                <option value="online">Online</option>
+                <option value="in_gate">In Gate</option>
+                <option value="offline">Offline</option>
+            </select>
+        </div>
+
+        <div class="members-grid">
+            {% for member in guild.members %}
+            <div class="member-card {{ member.guild_rank.lower() }}">
+                <div class="member-avatar">
+                    <img src="{{ url_for('static', filename='images/avatars/' + member.avatar) if member.avatar else url_for('static', filename='images/default_avatar.png') }}" alt="{{ member.username }}">
+                    <div class="status-indicator {{ member.status.lower() }}"></div>
+                </div>
+                <div class="member-info">
+                    <h3>{{ member.username }}</h3>
+                    <p class="guild-rank">{{ member.guild_rank }}</p>
+                    <p class="class-{{ member.job_class.value.lower() }}">{{ member.job_class.value }}</p>
+                    <p>Level {{ member.level }}</p>
+                    {% if member.status == 'in_gate' %}
+                    <p class="gate-info">{{ member.current_gate.name }}</p>
+                    {% endif %}
+                </div>
+                {% if current_user.can_manage_members %}
+                <div class="member-actions">
+                    <button onclick="promoteMember({{ member.id }})" {% if not current_user.can_promote(member) %}disabled{% endif %}>Promote</button>
+                    <button onclick="demoteMember({{ member.id }})" {% if not current_user.can_demote(member) %}disabled{% endif %}>Demote</button>
+                    <button onclick="kickMember({{ member.id }})" {% if not current_user.can_kick(member) %}disabled{% endif %} class="danger">Kick</button>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Guild Quests Section -->
+    <div class="guild-section" id="quests-section">
+        <div class="active-quests">
+            <h2>Active Quests</h2>
+            {% for quest in guild.active_quests %}
+            <div class="quest-card">
+                <div class="quest-info">
+                    <h3>{{ quest.title }}</h3>
+                    <p>{{ quest.description }}</p>
+                    <div class="quest-progress">
+                        <div class="progress-bar">
+                            <div class="progress" style="width: {{ (quest.progress / quest.target) * 100 }}%"></div>
+                        </div>
+                        <span>{{ quest.progress }}/{{ quest.target }}</span>
+                    </div>
+                    <div class="quest-rewards">
+                        {% if quest.crystal_reward %}
+                        <span class="crystal-reward">{{ quest.crystal_reward }} Crystals</span>
+                        {% endif %}
+                        {% if quest.exon_reward %}
+                        <span class="exon-reward">{{ quest.exon_reward }} Exons</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="quest-participants">
+                    {% for participant in quest.participants %}
+                    <div class="participant" data-tooltip="{{ participant.username }}">
+                        <img src="{{ url_for('static', filename='images/avatars/' + participant.avatar) }}" alt="{{ participant.username }}">
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="completed-quests">
+            <h2>Completed Quests</h2>
+            <div class="quest-history">
+                {% for quest in guild.completed_quests %}
+                <div class="quest-entry">
+                    <span class="quest-name">{{ quest.title }}</span>
+                    <span class="completion-date">{{ format_timestamp(quest.completed_at) }}</span>
+                    <span class="rewards">
+                        {% if quest.crystal_reward %}
+                        <span class="crystal-reward">{{ quest.crystal_reward }} Crystals</span>
+                        {% endif %}
+                        {% if quest.exon_reward %}
+                        <span class="exon-reward">{{ quest.exon_reward }} Exons</span>
+                        {% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Achievements Section -->
+    <div class="guild-section" id="achievements-section">
+        <div class="achievements-grid">
+            {% for achievement in guild.achievements %}
+            <div class="achievement-card {{ 'completed' if achievement.completed else '' }}">
+                <div class="achievement-icon">
+                    <img src="{{ url_for('static', filename='images/achievements/' + achievement.icon) }}" alt="{{ achievement.name }}">
+                </div>
+                <div class="achievement-info">
+                    <h4>{{ achievement.name }}</h4>
+                    <p>{{ achievement.description }}</p>
+                    {% if achievement.completed %}
+                    <div class="completion-date">
+                        Completed: {{ format_timestamp(achievement.completed_at) }}
+                    </div>
+                    {% else %}
+                    <div class="progress-bar">
+                        <div class="progress" style="width: {{ (achievement.progress / achievement.target) * 100 }}%"></div>
+                        <span>{{ achievement.progress }}/{{ achievement.target }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Treasury Section -->
+    <div class="guild-section" id="treasury-section">
+        <div class="treasury-stats">
+            <div class="currency-box">
+                <h3>Guild Treasury</h3>
+                <div class="currency crystals">
+                    <img src="{{ url_for('static', filename='images/crystal.png') }}" alt="Crystals">
+                    <span>{{ format_currency(guild.crystal_balance) }}</span>
+                </div>
+                <div class="currency exons">
+                    <img src="{{ url_for('static', filename='images/exon.png') }}" alt="Exons">
+                    <span>{{ format_currency(guild.exon_balance) }}</span>
+                </div>
+            </div>
+            {% if current_user.can_manage_treasury %}
+            <div class="treasury-actions">
+                <button onclick="openModal('deposit-funds')" class="action-btn">Deposit</button>
+                <button onclick="openModal('withdraw-funds')" class="action-btn">Withdraw</button>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="transaction-history">
+            <h3>Recent Transactions</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Member</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Balance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in guild.recent_transactions %}
+                    <tr>
+                        <td>{{ format_timestamp(transaction.timestamp) }}</td>
+                        <td>{{ transaction.member.username }}</td>
+                        <td>{{ transaction.type }}</td>
+                        <td class="{{ 'positive' if transaction.is_deposit else 'negative' }}">
+                            {{ format_currency(transaction.amount) }} {{ transaction.currency }}
+                        </td>
+                        <td>{{ format_currency(transaction.balance_after) }} {{ transaction.currency }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+{% include 'guild/modals/edit_guild.html' %}
+{% include 'guild/modals/manage_members.html' %}
+{% include 'guild/modals/guild_settings.html' %}
+{% include 'guild/modals/deposit_funds.html' %}
+{% include 'guild/modals/withdraw_funds.html' %}
+
+<!-- WebSocket Updates -->
+<script>
+    const socket = io();
+    
+    socket.on('guild_update', function(data) {
+        if (data.guild_id === {{ guild.id }}) {
+            switch (data.type) {
+                case 'member_update':
+                    updateMember(data.member);
+                    break;
+                case 'quest_update':
+                    updateQuest(data.quest);
+                    break;
+                case 'achievement_update':
+                    updateAchievement(data.achievement);
+                    break;
+                case 'treasury_update':
+                    updateTreasury(data.treasury);
+                    break;
+            }
+        }
+    });
+</script>
+
+{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/guild.css') }}">
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/guild.js') }}"></script>
+{% endblock %}

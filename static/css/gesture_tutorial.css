@@ -1,0 +1,341 @@
+/* Tutorial Container */
+.gesture-tutorial {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+    backdrop-filter: blur(5px);
+}
+
+.tutorial-content {
+    background: rgba(30, 30, 30, 0.95);
+    border-radius: 15px;
+    padding: 30px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    animation: slideIn 0.3s ease;
+}
+
+/* Tutorial Header */
+.tutorial-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tutorial-header h2 {
+    margin: 0;
+    color: #2196F3;
+    font-size: 1.8em;
+}
+
+.close-tutorial {
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 5px;
+    transition: color 0.3s ease;
+}
+
+.close-tutorial:hover {
+    color: #fff;
+}
+
+/* Tutorial Steps */
+.tutorial-steps {
+    position: relative;
+    min-height: 300px;
+}
+
+.tutorial-step {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.tutorial-step.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Gesture Demonstrations */
+.gesture-demo {
+    width: 200px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.gesture-icon {
+    width: 100px;
+    height: 100px;
+    position: relative;
+}
+
+/* Gesture Animations */
+.gesture-icon.tap::after {
+    content: '';
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    background: #2196F3;
+    border-radius: 50%;
+    animation: tapAnimation 2s infinite;
+}
+
+.gesture-icon.double-tap::after {
+    content: '';
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    background: #4CAF50;
+    border-radius: 50%;
+    animation: doubleTapAnimation 2s infinite;
+}
+
+.gesture-icon.pan::after {
+    content: '';
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background: #FF9800;
+    border-radius: 50%;
+    animation: panAnimation 3s infinite;
+}
+
+.gesture-icon.pinch::after {
+    content: '';
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    border: 2px solid #E91E63;
+    border-radius: 50%;
+    animation: pinchAnimation 2s infinite;
+}
+
+.gesture-icon.press::after {
+    content: '';
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background: #9C27B0;
+    border-radius: 50%;
+    animation: pressAnimation 2s infinite;
+}
+
+.gesture-icon.swipe::after {
+    content: '';
+    position: absolute;
+    width: 40px;
+    height: 10px;
+    background: #00BCD4;
+    border-radius: 5px;
+    animation: swipeAnimation 2s infinite;
+}
+
+/* Step Content */
+.step-content {
+    text-align: center;
+    color: #fff;
+}
+
+.step-content h3 {
+    margin: 0 0 10px 0;
+    font-size: 1.4em;
+}
+
+.step-content p {
+    color: #aaa;
+    margin: 0;
+    font-size: 1.1em;
+}
+
+/* Navigation */
+.tutorial-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-btn {
+    padding: 10px 20px;
+    background: #2196F3;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.nav-btn:disabled {
+    background: #666;
+    cursor: not-allowed;
+}
+
+.nav-btn:not(:disabled):hover {
+    background: #1976D2;
+}
+
+/* Step Indicators */
+.step-indicators {
+    display: flex;
+    gap: 8px;
+}
+
+.indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.indicator.active {
+    background: #2196F3;
+    transform: scale(1.2);
+}
+
+/* Tutorial Footer */
+.tutorial-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dont-show-again {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #aaa;
+    cursor: pointer;
+}
+
+.start-playing {
+    padding: 12px 24px;
+    background: #4CAF50;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.start-playing:hover {
+    background: #388E3C;
+}
+
+/* Animations */
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes tapAnimation {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0; }
+}
+
+@keyframes doubleTapAnimation {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    25% { transform: scale(1.5); opacity: 0; }
+    50% { transform: scale(1); opacity: 1; }
+    75% { transform: scale(1.5); opacity: 0; }
+}
+
+@keyframes panAnimation {
+    0% { transform: translate(0, 0); }
+    25% { transform: translate(30px, 30px); }
+    50% { transform: translate(0, 0); }
+    75% { transform: translate(-30px, -30px); }
+    100% { transform: translate(0, 0); }
+}
+
+@keyframes pinchAnimation {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(0.5); }
+}
+
+@keyframes pressAnimation {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(0.8); opacity: 0.5; }
+}
+
+@keyframes swipeAnimation {
+    0% { transform: translateX(-50px); opacity: 0; }
+    50% { opacity: 1; }
+    100% { transform: translateX(50px); opacity: 0; }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .tutorial-content {
+        padding: 20px;
+    }
+
+    .gesture-demo {
+        width: 150px;
+        height: 150px;
+    }
+
+    .gesture-icon {
+        width: 80px;
+        height: 80px;
+    }
+
+    .tutorial-footer {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .start-playing {
+        width: 100%;
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .tutorial-step,
+    .gesture-icon::after {
+        animation: none;
+        transition: none;
+    }
+}

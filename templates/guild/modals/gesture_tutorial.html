@@ -1,0 +1,158 @@
+<div id="gesture-tutorial" class="gesture-tutorial">
+    <div class="tutorial-content">
+        <div class="tutorial-header">
+            <h2>Touch Controls Tutorial</h2>
+            <button class="close-tutorial" onclick="closeTutorial()">&times;</button>
+        </div>
+
+        <div class="tutorial-steps">
+            <!-- Basic Interactions -->
+            <div class="tutorial-step" data-step="1">
+                <div class="gesture-demo">
+                    <div class="gesture-icon tap"></div>
+                </div>
+                <div class="step-content">
+                    <h3>Basic Selection</h3>
+                    <p>Tap a territory to select it</p>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="tutorial-step" data-step="2">
+                <div class="gesture-demo">
+                    <div class="gesture-icon double-tap"></div>
+                </div>
+                <div class="step-content">
+                    <h3>Quick Actions</h3>
+                    <p>Double tap to quickly attack or reinforce</p>
+                </div>
+            </div>
+
+            <!-- Map Navigation -->
+            <div class="tutorial-step" data-step="3">
+                <div class="gesture-demo">
+                    <div class="gesture-icon pan"></div>
+                </div>
+                <div class="step-content">
+                    <h3>Map Navigation</h3>
+                    <p>Drag to pan around the map</p>
+                </div>
+            </div>
+
+            <!-- Zoom Control -->
+            <div class="tutorial-step" data-step="4">
+                <div class="gesture-demo">
+                    <div class="gesture-icon pinch"></div>
+                </div>
+                <div class="step-content">
+                    <h3>Zoom Control</h3>
+                    <p>Pinch to zoom in and out</p>
+                </div>
+            </div>
+
+            <!-- Context Menu -->
+            <div class="tutorial-step" data-step="5">
+                <div class="gesture-demo">
+                    <div class="gesture-icon press"></div>
+                </div>
+                <div class="step-content">
+                    <h3>Context Menu</h3>
+                    <p>Press and hold for more options</p>
+                </div>
+            </div>
+
+            <!-- Quick Navigation -->
+            <div class="tutorial-step" data-step="6">
+                <div class="gesture-demo">
+                    <div class="gesture-icon swipe"></div>
+                </div>
+                <div class="step-content">
+                    <h3>Quick Navigation</h3>
+                    <p>Swipe to quickly move between territories</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="tutorial-navigation">
+            <button class="nav-btn prev" onclick="previousStep()" disabled>Previous</button>
+            <div class="step-indicators">
+                <span class="indicator active"></span>
+                <span class="indicator"></span>
+                <span class="indicator"></span>
+                <span class="indicator"></span>
+                <span class="indicator"></span>
+                <span class="indicator"></span>
+            </div>
+            <button class="nav-btn next" onclick="nextStep()">Next</button>
+        </div>
+
+        <div class="tutorial-footer">
+            <label class="dont-show-again">
+                <input type="checkbox" id="dontShowAgain">
+                Don't show this again
+            </label>
+            <button class="start-playing" onclick="startPlaying()">Start Playing</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentStep = 1;
+    const totalSteps = 6;
+
+    function updateStep(step) {
+        // Update step visibility
+        document.querySelectorAll('.tutorial-step').forEach(el => {
+            el.classList.remove('active');
+        });
+        document.querySelector(`[data-step="${step}"]`).classList.add('active');
+
+        // Update indicators
+        document.querySelectorAll('.indicator').forEach((el, index) => {
+            el.classList.toggle('active', index + 1 === step);
+        });
+
+        // Update navigation buttons
+        document.querySelector('.nav-btn.prev').disabled = step === 1;
+        document.querySelector('.nav-btn.next').textContent = step === totalSteps ? 'Finish' : 'Next';
+    }
+
+    function nextStep() {
+        if (currentStep < totalSteps) {
+            currentStep++;
+            updateStep(currentStep);
+        } else {
+            startPlaying();
+        }
+    }
+
+    function previousStep() {
+        if (currentStep > 1) {
+            currentStep--;
+            updateStep(currentStep);
+        }
+    }
+
+    function closeTutorial() {
+        const dontShowAgain = document.getElementById('dontShowAgain').checked;
+        if (dontShowAgain) {
+            localStorage.setItem('gestureTutorialSeen', 'true');
+        }
+        document.getElementById('gesture-tutorial').style.display = 'none';
+    }
+
+    function startPlaying() {
+        closeTutorial();
+        // Initialize territory interactions
+        if (window.territoryInteractions) {
+            window.territoryInteractions.init();
+        }
+    }
+
+    // Show tutorial only if not seen before
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!localStorage.getItem('gestureTutorialSeen') && 'ontouchstart' in window) {
+            document.getElementById('gesture-tutorial').style.display = 'flex';
+        }
+    });
+</script>

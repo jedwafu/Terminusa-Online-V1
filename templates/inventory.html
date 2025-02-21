@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory - Terminusa Online{% endblock %}
+
+{% block content %}
+<div class="inventory-container">
+    <!-- Inventory Stats -->
+    <div class="inventory-stats">
+        <div class="stats-box">
+            <h3>Inventory Space</h3>
+            <div class="progress-bar">
+                <div class="progress" id="inventory-progress"></div>
+                <span id="slots-info"></span>
+            </div>
+            <button onclick="expandInventory()" class="expand-btn">
+                Expand (+10 slots)
+            </button>
+        </div>
+    </div>
+
+    <!-- Equipped/Active Section -->
+    <div class="equipped-section">
+        <div class="mount-section">
+            <h3>Equipped Mount</h3>
+            <div id="equipped-mount" class="equipped-card">
+                <!-- Populated by JavaScript -->
+            </div>
+            <div class="mount-stats" id="mount-stats">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+
+        <div class="pet-section">
+            <h3>Active Pet</h3>
+            <div id="active-pet" class="equipped-card">
+                <!-- Populated by JavaScript -->
+            </div>
+            <div class="pet-abilities" id="pet-abilities">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Navigation -->
+    <div class="inventory-nav">
+        <button class="nav-btn active" data-target="items">Items</button>
+        <button class="nav-btn" data-target="mounts">Mounts</button>
+        <button class="nav-btn" data-target="pets">Pets</button>
+    </div>
+
+    <!-- Items Section -->
+    <div class="inventory-section active" id="items-section">
+        <div class="filters">
+            <select id="item-type-filter">
+                <option value="">All Types</option>
+                <option value="weapon">Weapons</option>
+                <option value="armor">Armor</option>
+                <option value="accessory">Accessories</option>
+            </select>
+            <select id="item-rarity-filter">
+                <option value="">All Rarities</option>
+                <option value="common">Common</option>
+                <option value="uncommon">Uncommon</option>
+                <option value="rare">Rare</option>
+                <option value="epic">Epic</option>
+                <option value="legendary">Legendary</option>
+                <option value="immortal">Immortal</option>
+            </select>
+        </div>
+
+        <div class="items-grid" id="items-grid">
+            <!-- Populated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Mounts Section -->
+    <div class="inventory-section" id="mounts-section">
+        <div class="filters">
+            <select id="mount-rarity-filter">
+                <option value="">All Rarities</option>
+                <option value="basic">Basic</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="excellent">Excellent</option>
+                <option value="legendary">Legendary</option>
+                <option value="immortal">Immortal</option>
+            </select>
+        </div>
+
+        <div class="mounts-grid" id="mounts-grid">
+            <!-- Populated by JavaScript -->
+        </div>
+    </div>
+
+    <!-- Pets Section -->
+    <div class="inventory-section" id="pets-section">
+        <div class="filters">
+            <select id="pet-rarity-filter">
+                <option value="">All Rarities</option>
+                <option value="basic">Basic</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="excellent">Excellent</option>
+                <option value="legendary">Legendary</option>
+                <option value="immortal">Immortal</option>
+            </select>
+        </div>
+
+        <div class="pets-grid" id="pets-grid">
+            <!-- Populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<!-- Item Details Modal -->
+<div id="item-details-modal" class="modal">
+    <div class="modal-content">
+        <h3>Item Details</h3>
+        <div id="item-details">
+            <!-- Populated by JavaScript -->
+        </div>
+        <div class="modal-actions">
+            <button onclick="repairItem()" id="repair-btn" class="action-btn">Repair</button>
+            <button onclick="sellItem()" id="sell-btn" class="action-btn">Sell</button>
+            <button onclick="closeModal('item-details-modal')" class="cancel-btn">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Mount Details Modal -->
+<div id="mount-details-modal" class="modal">
+    <div class="modal-content">
+        <h3>Mount Details</h3>
+        <div id="mount-details">
+            <!-- Populated by JavaScript -->
+        </div>
+        <div class="modal-actions">
+            <button onclick="equipMount()" id="equip-btn" class="action-btn">Equip</button>
+            <button onclick="sellMount()" id="sell-mount-btn" class="action-btn">Sell</button>
+            <button onclick="closeModal('mount-details-modal')" class="cancel-btn">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Pet Details Modal -->
+<div id="pet-details-modal" class="modal">
+    <div class="modal-content">
+        <h3>Pet Details</h3>
+        <div id="pet-details">
+            <!-- Populated by JavaScript -->
+        </div>
+        <div class="modal-actions">
+            <button onclick="activatePet()" id="activate-btn" class="action-btn">Activate</button>
+            <button onclick="sellPet()" id="sell-pet-btn" class="action-btn">Sell</button>
+            <button onclick="closeModal('pet-details-modal')" class="cancel-btn">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirm-modal" class="modal">
+    <div class="modal-content">
+        <h3>Confirm Action</h3>
+        <p id="confirm-message"></p>
+        <div class="modal-actions">
+            <button onclick="confirmAction()" class="action-btn">Confirm</button>
+            <button onclick="closeModal('confirm-modal')" class="cancel-btn">Cancel</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/inventory.css') }}">
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/inventory.js') }}"></script>
+{% endblock %}

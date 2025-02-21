@@ -1,0 +1,190 @@
+<!-- Attack Territory Modal -->
+<div id="attack-territory-modal" class="modal">
+    <div class="modal-content">
+        <h2>Attack Territory</h2>
+        <div class="territory-info">
+            <div class="territory-header">
+                <div class="territory-icon" data-type="{{ territory.type }}">
+                    {{ territory_icons[territory.type] }}
+                </div>
+                <div class="territory-details">
+                    <h3>{{ territory.name }}</h3>
+                    <p class="territory-status">
+                        <span class="status-indicator {{ territory.status }}"></span>
+                        {{ territory.status|title }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="territory-stats">
+                <div class="stat">
+                    <span class="label">Controller</span>
+                    <span class="value">{{ territory.controller_name or 'None' }}</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Defense Force</span>
+                    <span class="value">{{ territory.defense_data.reinforcements }}</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Defense Bonus</span>
+                    <span class="value">{{ "%.1fx"|format(territory.defense_data.base_defense) }}</span>
+                </div>
+            </div>
+
+            <form id="attack-form" onsubmit="territoryMap.executeAttack(event)">
+                <input type="hidden" name="territory_id" value="{{ territory.id }}">
+                
+                <div class="form-group">
+                    <label for="attack-force">Attack Force</label>
+                    <div class="force-selector">
+                        <input type="range" id="attack-force" name="attacking_force"
+                               min="50" max="{{ max_attack_force }}" step="10"
+                               value="100" oninput="updateForceDisplay(this.value)">
+                        <div class="force-display">
+                            <span id="force-value">100</span> units
+                        </div>
+                    </div>
+                </div>
+
+                <div class="attack-preview">
+                    <h4>Attack Preview</h4>
+                    <div class="preview-stats">
+                        <div class="stat">
+                            <span class="label">Success Chance</span>
+                            <span id="success-chance" class="value">--</span>
+                        </div>
+                        <div class="stat">
+                            <span class="label">Potential Rewards</span>
+                            <span id="potential-rewards" class="value">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="action-btn attack">Launch Attack</button>
+                    <button type="button" onclick="closeModal('attack-territory-modal')" class="cancel-btn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Reinforce Territory Modal -->
+<div id="reinforce-territory-modal" class="modal">
+    <div class="modal-content">
+        <h2>Reinforce Territory</h2>
+        <div class="territory-info">
+            <div class="territory-header">
+                <div class="territory-icon" data-type="{{ territory.type }}">
+                    {{ territory_icons[territory.type] }}
+                </div>
+                <div class="territory-details">
+                    <h3>{{ territory.name }}</h3>
+                    <p class="territory-status">
+                        <span class="status-indicator {{ territory.status }}"></span>
+                        {{ territory.status|title }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="territory-stats">
+                <div class="stat">
+                    <span class="label">Current Defense</span>
+                    <span class="value">{{ territory.defense_data.reinforcements }}</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Defense Bonus</span>
+                    <span class="value">{{ "%.1fx"|format(territory.defense_data.base_defense) }}</span>
+                </div>
+                <div class="stat">
+                    <span class="label">Last Reinforced</span>
+                    <span class="value">{{ format_timestamp(territory.defense_data.last_reinforced) }}</span>
+                </div>
+            </div>
+
+            <form id="reinforce-form" onsubmit="territoryMap.executeReinforce(event)">
+                <input type="hidden" name="territory_id" value="{{ territory.id }}">
+                
+                <div class="form-group">
+                    <label for="reinforce-amount">Reinforcement Amount</label>
+                    <div class="force-selector">
+                        <input type="range" id="reinforce-amount" name="reinforcement_amount"
+                               min="10" max="{{ max_reinforce_amount }}" step="10"
+                               value="50" oninput="updateReinforceDisplay(this.value)">
+                        <div class="force-display">
+                            <span id="reinforce-value">50</span> units
+                        </div>
+                    </div>
+                </div>
+
+                <div class="defense-preview">
+                    <h4>Defense Preview</h4>
+                    <div class="preview-stats">
+                        <div class="stat">
+                            <span class="label">New Defense Total</span>
+                            <span id="new-defense" class="value">--</span>
+                        </div>
+                        <div class="stat">
+                            <span class="label">Effective Defense</span>
+                            <span id="effective-defense" class="value">--</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="action-btn reinforce">Send Reinforcements</button>
+                    <button type="button" onclick="closeModal('reinforce-territory-modal')" class="cancel-btn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Territory Status Modal -->
+<div id="territory-status-modal" class="modal">
+    <div class="modal-content">
+        <h2>Territory Status</h2>
+        <div class="territory-info">
+            <div class="territory-header">
+                <div class="territory-icon" data-type="{{ territory.type }}">
+                    {{ territory_icons[territory.type] }}
+                </div>
+                <div class="territory-details">
+                    <h3>{{ territory.name }}</h3>
+                    <p class="territory-status">
+                        <span class="status-indicator {{ territory.status }}"></span>
+                        {{ territory.status|title }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="territory-bonuses">
+                <h4>Territory Bonuses</h4>
+                <div class="bonus-grid">
+                    {% for bonus_type, value in territory.bonuses.items() %}
+                    <div class="bonus-item">
+                        <span class="bonus-label">{{ bonus_type|replace('_', ' ')|title }}</span>
+                        <span class="bonus-value">{{ value }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="recent-activity">
+                <h4>Recent Activity</h4>
+                <div class="activity-list">
+                    {% for event in territory.recent_events %}
+                    <div class="activity-item">
+                        <span class="activity-time">{{ format_timestamp(event.created_at) }}</span>
+                        <span class="activity-details">{{ format_event(event) }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" onclick="closeModal('territory-status-modal')" class="cancel-btn">Close</button>
+            </div>
+        </div>
+    </div>
+</div>

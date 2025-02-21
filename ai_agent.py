@@ -26,11 +26,59 @@ class AIAgent:
             'risk_level': self._calculate_risk_level(user, activity_history),
             'progression_rate': self._calculate_progression_rate(user),
             'social_tendency': self._analyze_social_behavior(user, activity_history),
-            'market_engagement': self._analyze_market_behavior(user, activity_history)
+            'market_engagement': self._analyze_market_behavior(user, activity_history),
+            'currency_balance': self._analyze_currency_balance(user),  # New metric for currency balance
+            'gambling_tendency': self._analyze_gambling_behavior(user, activity_history)  # New metric for gambling
         }
         
         self.behavior_cache[user.id] = profile
         return profile
+
+    def _analyze_currency_balance(self, user):
+        """Analyze player's currency management"""
+        # Calculate ratio of each currency to total wealth
+        total_wealth = (
+            user.solana_balance * 1000 +  # Convert to common scale
+            user.exons_balance * 100 +
+            user.crystals
+        )
+        
+        if total_wealth == 0:
+            return 0.5  # Default middle ground
+            
+        # Calculate diversity score (0 = single currency, 1 = balanced)
+        currency_ratios = [
+            (user.solana_balance * 1000) / total_wealth,
+            (user.exons_balance * 100) / total_wealth,
+            user.crystals / total_wealth
+        ]
+        
+        diversity = 1 - np.std(currency_ratios)
+        return min(max(diversity, 0), 1)
+
+    def _analyze_gambling_behavior(self, user, activity_history):
+        """Analyze player's gambling tendencies"""
+        if not activity_history:
+            return 0.5
+            
+        gambling_activities = sum(1 for a in activity_history if a['type'] == 'gambling')
+        total_activities = len(activity_history)
+        
+        if total_activities == 0:
+            return 0.5
+            
+        # Calculate gambling frequency
+        gambling_ratio = gambling_activities / total_activities
+        
+        # Analyze win/loss ratio if available
+        wins = sum(1 for a in activity_history if a['type'] == 'gambling' and a.get('result') == 'win')
+        if gambling_activities > 0:
+            win_ratio = wins / gambling_activities
+        else:
+            win_ratio = 0.5
+            
+        # Combine frequency and success rate
+        return (gambling_ratio + win_ratio) / 2
 
     def generate_quest(self, user, activity_history=None):
         """Generate an AI-powered quest based on player behavior"""
@@ -41,7 +89,9 @@ class AIAgent:
             'gathering': 0.0,
             'exploration': 0.0,
             'social': 0.0,
-            'market': 0.0
+            'market': 0.0,
+            'currency': 0.0,  # Currency management quests
+            'gambling': 0.0   # Gambling-related quests
         }
         
         # Adjust quest type weights based on profile
@@ -50,6 +100,8 @@ class AIAgent:
         quest_types['exploration'] += profile['risk_level'] * 0.2
         quest_types['social'] += profile['social_tendency'] * 0.15
         quest_types['market'] += profile['market_engagement'] * 0.15
+        quest_types['currency'] += profile['currency_balance'] * 0.1
+        quest_types['gambling'] += profile['gambling_tendency'] * 0.1
         
         # Normalize weights
         total = sum(quest_types.values())
@@ -59,191 +111,6 @@ class AIAgent:
         quest_type = self._weighted_choice(quest_types)
         
         return self._create_quest(user, quest_type, profile)
-
-    def orchestrate_gate(self, user, party=None):
-        """Generate an appropriate gate encounter"""
-        profile = self.get_or_analyze_player(user)
-        
-        # Determine appropriate gate rank
-        available_ranks = self._get_available_ranks(user)
-        rank_weights = self._calculate_rank_weights(user, profile, available_ranks)
-        selected_rank = self._weighted_choice(rank_weights)
-        
-        # Generate gate content
-        gate_data = {
-            'rank': selected_rank,
-            'magic_beasts': self._generate_magic_beasts(selected_rank, party),
-            'crystal_rewards': self._calculate_rewards(selected_rank, profile, party),
-            'difficulty_multiplier': self._calculate_difficulty(user, profile, party)
-        }
-        
-        return gate_data
-
-    def calculate_gacha_odds(self, user, gacha_type):
-        """Calculate personalized gacha rates based on player behavior"""
-        profile = self.get_or_analyze_player(user)
-        
-        base_rates = (
-            MOUNT_PET_GACHA_RATES if gacha_type in ['mount', 'pet']
-            else ITEM_RARITY_DROP_RATES
-        )
-        
-        # Adjust rates based on profile
-        adjusted_rates = {}
-        for rarity, base_rate in base_rates.items():
-            modifier = 1.0
-            
-            # Loyalty bonus (based on progression)
-            modifier += profile['progression_rate'] * 0.1
-            
-            # Activity focus bonus
-            if profile['activity_focus'] > 0.7:  # Highly focused player
-                modifier += 0.05
-                
-            # Risk/reward adjustment
-            if profile['risk_level'] > 0.8:  # High-risk player
-                modifier += 0.03
-                
-            adjusted_rates[rarity] = base_rate * modifier
-            
-        # Normalize rates
-        total = sum(adjusted_rates.values())
-        adjusted_rates = {k: v/total for k, v in adjusted_rates.items()}
-        
-        return adjusted_rates
-
-    def evaluate_class_upgrade(self, user):
-        """Evaluate if a player should be allowed to upgrade their hunter class"""
-        profile = self.get_or_analyze_player(user)
-        current_class = user.hunter_class
-        
-        # Get requirements for next class
-        if current_class.value not in CLASS_UPGRADE_REQUIREMENTS:
-            return False, "Maximum class reached"
-            
-        requirements = CLASS_UPGRADE_REQUIREMENTS[current_class.value]
-        
-        # Basic requirement check
-        if user.level < requirements['level']:
-            return False, f"Level requirement not met. Need level {requirements['level']}"
-            
-        if user.gates_cleared < requirements['gates_cleared']:
-            return False, f"Need to clear {requirements['gates_cleared']} gates"
-        
-        # Calculate confidence score
-        confidence = self._calculate_upgrade_confidence(user, profile)
-        
-        # Decision threshold varies by class
-        threshold = {
-            'F': 0.5,  # Easier to upgrade from F
-            'E': 0.6,
-            'D': 0.65,
-            'C': 0.7,
-            'B': 0.75,
-            'A': 0.8,  # Hardest to reach S class
-        }
-        
-        current_threshold = threshold.get(current_class.value, 0.8)
-        
-        if confidence >= current_threshold:
-            return True, f"Upgrade approved with {confidence:.2%} confidence"
-        else:
-            return False, f"Upgrade denied. Current confidence: {confidence:.2%}"
-
-    def _analyze_activity_focus(self, activity_history):
-        """Analyze player's focus on different activities"""
-        if not activity_history:
-            return 0.5
-            
-        activities = defaultdict(int)
-        for activity in activity_history:
-            activities[activity['type']] += 1
-            
-        # Calculate focus ratio
-        total = sum(activities.values())
-        max_activity = max(activities.values())
-        
-        return max_activity / total if total > 0 else 0.5
-
-    def _analyze_combat_style(self, user):
-        """Analyze player's combat behavior"""
-        stats = {
-            'strength': user.strength,
-            'agility': user.agility,
-            'intelligence': user.intelligence,
-            'vitality': user.vitality
-        }
-        
-        # Calculate combat style score (0 = defensive, 1 = aggressive)
-        offensive_stats = stats['strength'] + stats['agility']
-        defensive_stats = stats['vitality'] + stats['intelligence']
-        total_stats = sum(stats.values())
-        
-        return offensive_stats / total_stats if total_stats > 0 else 0.5
-
-    def _calculate_risk_level(self, user, activity_history):
-        """Calculate player's risk-taking tendency"""
-        risk_score = 0.5  # Default middle ground
-        
-        if activity_history:
-            # Analyze gate choices
-            gate_choices = [a for a in activity_history if a['type'] == 'gate_entry']
-            if gate_choices:
-                above_level = sum(1 for g in gate_choices if g['gate_level'] > user.level)
-                risk_score = above_level / len(gate_choices)
-                
-        # Adjust based on current stats distribution
-        stat_variance = np.std([
-            user.strength,
-            user.agility,
-            user.intelligence,
-            user.vitality
-        ])
-        risk_score += (stat_variance / 100) * 0.3  # Max 30% influence
-        
-        return min(max(risk_score, 0), 1)  # Ensure between 0 and 1
-
-    def _calculate_progression_rate(self, user):
-        """Calculate player's progression rate"""
-        if not user.created_at:
-            return 0.5
-            
-        days_active = (datetime.utcnow() - user.created_at).days + 1
-        level_per_day = user.level / days_active
-        
-        # Normalize to 0-1 range (assuming average of 1 level per day)
-        return min(level_per_day, 1)
-
-    def _analyze_social_behavior(self, user, activity_history):
-        """Analyze player's social interaction patterns"""
-        social_score = 0.5
-        
-        if activity_history:
-            social_activities = sum(1 for a in activity_history 
-                                 if a['type'] in ['party_join', 'guild_activity', 'trade'])
-            total_activities = len(activity_history)
-            
-            if total_activities > 0:
-                social_score = social_activities / total_activities
-                
-        # Adjust based on current status
-        if user.guild_id:
-            social_score += 0.2
-        if user.party_id:
-            social_score += 0.1
-            
-        return min(social_score, 1)
-
-    def _analyze_market_behavior(self, user, activity_history):
-        """Analyze player's market participation"""
-        if not activity_history:
-            return 0.5
-            
-        market_activities = sum(1 for a in activity_history 
-                              if a['type'] in ['market_buy', 'market_sell', 'trade'])
-        total_activities = len(activity_history)
-        
-        return market_activities / total_activities if total_activities > 0 else 0.5
 
     def _create_quest(self, user, quest_type, profile):
         """Create a specific quest based on type and profile"""
@@ -264,7 +131,22 @@ class AIAgent:
                     'rewards': {'crystals': {'min': 50, 'max': 500}}
                 }
             ],
-            # Add more templates for other quest types
+            'currency': [
+                {
+                    'title': 'Currency Trader',
+                    'description': 'Complete currency swaps between Solana, Exons, and Crystals',
+                    'requirements': {'swaps': {'min': 1, 'max': 5}},
+                    'rewards': {'exons': {'min': 10, 'max': 100}}
+                }
+            ],
+            'gambling': [
+                {
+                    'title': 'Lucky Streak',
+                    'description': 'Win consecutive flip coin games',
+                    'requirements': {'wins': {'min': 3, 'max': 7}},
+                    'rewards': {'crystals': {'min': 500, 'max': 2000}}
+                }
+            ]
         }
         
         # Select template
@@ -296,6 +178,73 @@ class AIAgent:
             'expires_at': datetime.utcnow() + timedelta(days=1)
         }
 
+    def adjust_gambling_odds(self, user, base_chance, profile):
+        """Adjust gambling odds based on player behavior"""
+        modifier = 1.0
+        
+        # Adjust based on gambling history
+        if profile['gambling_tendency'] > 0.7:  # Frequent gambler
+            modifier *= 0.95  # Slightly reduce chances
+        elif profile['gambling_tendency'] < 0.3:  # Rare gambler
+            modifier *= 1.05  # Slightly increase chances
+            
+        # Adjust based on currency balance
+        if profile['currency_balance'] < 0.3:  # Low on currency
+            modifier *= 1.1  # Increase chances to help recovery
+        elif profile['currency_balance'] > 0.7:  # High on currency
+            modifier *= 0.9  # Reduce chances
+            
+        # Apply modifier
+        adjusted_chance = base_chance * modifier
+        
+        # Ensure chance stays within reasonable bounds
+        return min(max(adjusted_chance, 0.4), 0.6)
+
+    def calculate_gate_confidence(self, user, gate, profile):
+        """Calculate confidence score for entering a gate"""
+        confidence = 0.0
+        weights = {
+            'level': 0.3,
+            'class': 0.2,
+            'combat_style': 0.15,
+            'risk_level': 0.15,
+            'equipment': 0.1,
+            'party': 0.1
+        }
+        
+        # Level factor
+        level_diff = user.level - gate.min_level
+        level_confidence = min(max((level_diff + 5) / 10, 0), 1)
+        confidence += level_confidence * weights['level']
+        
+        # Class factor
+        class_confidence = min(user.hunter_class.value / gate.min_hunter_class.value, 1)
+        confidence += class_confidence * weights['class']
+        
+        # Combat style factor
+        if profile['combat_style'] > 0.7:  # Aggressive
+            confidence += weights['combat_style']  # Full confidence for aggressive players
+        else:
+            confidence += profile['combat_style'] * weights['combat_style']
+            
+        # Risk level factor
+        risk_confidence = 1 - abs(profile['risk_level'] - 0.7)  # 0.7 is ideal risk level
+        confidence += risk_confidence * weights['risk_level']
+        
+        # Equipment factor
+        equipment_condition = min(
+            sum(item.durability for item in user.inventory_items if item.is_equipped) / 
+            (len([item for item in user.inventory_items if item.is_equipped]) * 100),
+            1
+        )
+        confidence += equipment_condition * weights['equipment']
+        
+        # Party factor
+        if user.party_id:
+            confidence += weights['party']  # Full confidence boost for party play
+            
+        return min(confidence, 1.0)  # Ensure between 0 and 1
+
     def _weighted_choice(self, weights):
         """Make a weighted random choice"""
         items = list(weights.keys())
@@ -307,36 +256,3 @@ class AIAgent:
         if user.id in self.behavior_cache:
             return self.behavior_cache[user.id]
         return self.analyze_player(user, activity_history)
-
-    def _calculate_upgrade_confidence(self, user, profile):
-        """Calculate confidence score for class upgrade"""
-        confidence = 0.0
-        weights = {
-            'level_ratio': 0.3,
-            'gates_ratio': 0.3,
-            'activity_focus': 0.15,
-            'risk_level': 0.15,
-            'social_tendency': 0.1
-        }
-        
-        # Level ratio
-        req_level = CLASS_UPGRADE_REQUIREMENTS[user.hunter_class.value]['level']
-        level_ratio = min(user.level / req_level, 1.5)  # Cap at 150%
-        confidence += level_ratio * weights['level_ratio']
-        
-        # Gates cleared ratio
-        req_gates = CLASS_UPGRADE_REQUIREMENTS[user.hunter_class.value]['gates_cleared']
-        gates_ratio = min(user.gates_cleared / req_gates, 1.5)  # Cap at 150%
-        confidence += gates_ratio * weights['gates_ratio']
-        
-        # Activity focus
-        confidence += profile['activity_focus'] * weights['activity_focus']
-        
-        # Risk level (moderate risk is good)
-        risk_modifier = 1 - abs(0.7 - profile['risk_level'])  # 0.7 is ideal risk level
-        confidence += risk_modifier * weights['risk_level']
-        
-        # Social tendency
-        confidence += profile['social_tendency'] * weights['social_tendency']
-        
-        return min(confidence, 1.0)  # Ensure between 0 and 1

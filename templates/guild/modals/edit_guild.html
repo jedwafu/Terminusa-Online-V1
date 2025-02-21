@@ -1,0 +1,43 @@
+<div id="edit-guild" class="modal">
+    <div class="modal-content">
+        <h2>Edit Guild</h2>
+        <form id="edit-guild-form">
+            <div class="form-group">
+                <label for="guild-name">Guild Name</label>
+                <input type="text" id="guild-name" name="name" value="{{ guild.name }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="guild-description">Description</label>
+                <textarea id="guild-description" name="description" rows="4">{{ guild.description }}</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="guild-emblem">Guild Emblem</label>
+                <input type="file" id="guild-emblem" name="emblem" accept="image/*">
+                <div class="current-emblem">
+                    <img src="{{ url_for('static', filename='images/guilds/' + guild.emblem) if guild.emblem else url_for('static', filename='images/default_guild.png') }}" alt="Current Emblem">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="recruitment-status">Recruitment Status</label>
+                <select id="recruitment-status" name="recruitment_status">
+                    <option value="open" {% if guild.recruitment_status == 'open' %}selected{% endif %}>Open</option>
+                    <option value="invite_only" {% if guild.recruitment_status == 'invite_only' %}selected{% endif %}>Invite Only</option>
+                    <option value="closed" {% if guild.recruitment_status == 'closed' %}selected{% endif %}>Closed</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="min-level">Minimum Level Requirement</label>
+                <input type="number" id="min-level" name="min_level" value="{{ guild.min_level_requirement }}" min="1">
+            </div>
+            
+            <div class="modal-actions">
+                <button type="submit" class="action-btn">Save Changes</button>
+                <button type="button" onclick="closeModal('edit-guild')" class="cancel-btn">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>

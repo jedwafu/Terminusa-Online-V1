@@ -9,10 +9,15 @@ ADMIN_WALLET = "FNEdD3PWMLwbNKxtaHy3W2NVfRJ7wqDNx4M9je8Xc6Mw"
 # Currency Settings
 CRYSTAL_MAX_SUPPLY = 100_000_000
 CRYSTAL_INITIAL_AMOUNT = 100  # Given to new players
+EXON_MAX_SUPPLY = 100_000_000  # Define max supply for Exons
+EXON_INITIAL_AMOUNT = 100  # Given to new players
+SOLANA_MAX_SUPPLY = 100_000_000  # Define max supply for Solana
+SOLANA_INITIAL_AMOUNT = 100  # Given to new players
 
 # Tax Settings
 CRYSTAL_TAX_RATE = 0.13  # 13%
 EXON_TAX_RATE = 0.13    # 13%
+SOLANA_TAX_RATE = 0.13  # 13% for Solana
 GUILD_CRYSTAL_TAX_RATE = 0.02  # Additional 2%
 GUILD_EXON_TAX_RATE = 0.02     # Additional 2%
 
@@ -236,3 +241,7 @@ AI_CONSIDERATION_FACTORS = [
     'gambling_frequency',
     'market_activity'
 ]
+"""
+</edit_file>
+
+Next, I will proceed with updating the `game_handler.py` file to implement the necessary changes for the new currency system and mechanics.

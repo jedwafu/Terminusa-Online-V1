@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: #2196F3;
+            color: white;
+            padding: 20px;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background: #f9f9f9;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+        }
+        .severity {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .severity.critical { background: #F44336; color: white; }
+        .severity.warning { background: #FFC107; color: black; }
+        .severity.info { background: #2196F3; color: white; }
+        .details {
+            background: white;
+            padding: 15px;
+            border-radius: 3px;
+            margin: 10px 0;
+        }
+        .metric {
+            margin: 5px 0;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .actions {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #2196F3;
+            color: white;
+            text-decoration: none;
+            border-radius: 3px;
+        }
+        .footer {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            font-size: 0.9em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <!-- Critical Alert Template -->
+    <script type="text/template" id="critical-alert">
+        <div class="header" style="background: #F44336;">
+            <h2>🚨 Critical Alert: {{title}}</h2>
+        </div>
+        <div class="content">
+            <div class="severity critical">CRITICAL</div>
+            <p><strong>Time:</strong> {{timestamp}}</p>
+            <p><strong>Component:</strong> {{component}}</p>
+            <p><strong>Message:</strong> {{message}}</p>
+            
+            <div class="details">
+                <h3>Alert Details</h3>
+                {{#each metrics}}
+                <div class="metric">
+                    <strong>{{@key}}:</strong> {{this}}
+                </div>
+                {{/each}}
+            </div>
+
+            <div class="actions">
+                <h3>Required Actions</h3>
+                <p>{{actions}}</p>
+                <a href="{{dashboard_url}}" class="button">View Dashboard</a>
+            </div>
+
+            <div class="footer">
+                <p>This is a critical alert that requires immediate attention.</p>
+                <p>Alert ID: {{alert_id}}</p>
+            </div>
+        </div>
+    </script>
+
+    <!-- Warning Alert Template -->
+    <script type="text/template" id="warning-alert">
+        <div class="header" style="background: #FFC107;">
+            <h2>⚠️ Warning Alert: {{title}}</h2>
+        </div>
+        <div class="content">
+            <div class="severity warning">WARNING</div>
+            <p><strong>Time:</strong> {{timestamp}}</p>
+            <p><strong>Component:</strong> {{component}}</p>
+            <p><strong>Message:</strong> {{message}}</p>
+            
+            <div class="details">
+                <h3>Alert Details</h3>
+                {{#each metrics}}
+                <div class="metric">
+                    <strong>{{@key}}:</strong> {{this}}
+                </div>
+                {{/each}}
+            </div>
+
+            <div class="actions">
+                <h3>Recommended Actions</h3>
+                <p>{{actions}}</p>
+                <a href="{{dashboard_url}}" class="button">View Dashboard</a>
+            </div>
+
+            <div class="footer">
+                <p>This warning alert may require attention soon.</p>
+                <p>Alert ID: {{alert_id}}</p>
+            </div>
+        </div>
+    </script>
+
+    <!-- Info Alert Template -->
+    <script type="text/template" id="info-alert">
+        <div class="header">
+            <h2>ℹ️ Info Alert: {{title}}</h2>
+        </div>
+        <div class="content">
+            <div class="severity info">INFO</div>
+            <p><strong>Time:</strong> {{timestamp}}</p>
+            <p><strong>Component:</strong> {{component}}</p>
+            <p><strong>Message:</strong> {{message}}</p>
+            
+            <div class="details">
+                <h3>Alert Details</h3>
+                {{#each metrics}}
+                <div class="metric">
+                    <strong>{{@key}}:</strong> {{this}}
+                </div>
+                {{/each}}
+            </div>
+
+            <div class="footer">
+                <p>This is an informational alert for your awareness.</p>
+                <p>Alert ID: {{alert_id}}</p>
+            </div>
+        </div>
+    </script>
+</body>
+</html>

@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}Guild War - {{ guild.name }} - Terminusa Online{% endblock %}
+
+{% block content %}
+<div class="war-container">
+    <!-- War Status Overview -->
+    {% if active_war %}
+    <div class="war-status">
+        <div class="war-header">
+            <div class="guild-vs">
+                <div class="challenger">
+                    <img src="{{ url_for('static', filename='images/guilds/' + challenger.emblem) }}" alt="{{ challenger.name }}">
+                    <h2>{{ challenger.name }}</h2>
+                    <div class="score">{{ active_war.scores[challenger.id] }}</div>
+                </div>
+                <div class="vs">VS</div>
+                <div class="defender">
+                    <img src="{{ url_for('static', filename='images/guilds/' + defender.emblem) }}" alt="{{ defender.name }}">
+                    <h2>{{ defender.name }}</h2>
+                    <div class="score">{{ active_war.scores[defender.id] }}</div>
+                </div>
+            </div>
+            <div class="war-timer">
+                <div class="timer-label">Time Remaining:</div>
+                <div class="countdown" data-end-time="{{ active_war.end_time.isoformat() }}">
+                    <span class="hours">00</span>:<span class="minutes">00</span>:<span class="seconds">00</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- War Statistics -->
+        <div class="war-stats">
+            <div class="stat-card territories">
+                <h3>Territories Controlled</h3>
+                <div class="stat-value">{{ war_stats.territories_controlled }}/{{ war_stats.total_territories }}</div>
+            </div>
+            <div class="stat-card kills">
+                <h3>Enemy Kills</h3>
+                <div class="stat-value">{{ war_stats.kills }}</div>
+            </div>
+            <div class="stat-card gates">
+                <h3>Gates Captured</h3>
+                <div class="stat-value">{{ war_stats.gates_captured }}</div>
+            </div>
+            <div class="stat-card contribution">
+                <h3>Your Contribution</h3>
+                <div class="stat-value">{{ war_stats.player_contribution }} points</div>
+            </div>
+        </div>
+
+        <!-- War Map -->
+        <div class="war-map">
+            <div class="map-container">
+                {% for territory in territories %}
+                <div class="territory {{ territory.status }}" 
+                     data-id="{{ territory.id }}"
+                     data-name="{{ territory.name }}"
+                     data-controller="{{ territory.controller_name }}"
+                     style="left: {{ territory.x }}%; top: {{ territory.y }}%">
+                    <div class="territory-icon">
+                        {% if territory.type == 'gate' %}
+                        <i class="fas fa-door-open"></i>
+                        {% elif territory.type == 'resource' %}
+                        <i class="fas fa-gem"></i>
+                        {% elif territory.type == 'stronghold' %}
+                        <i class="fas fa-castle"></i>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- War Events Log -->
+        <div class="war-log">
+            <h3>Recent Events</h3>
+            <div class="event-list">
+                {% for event in war_events %}
+                <div class="event-item {{ event.type }}">
+                    <div class="event-time">{{ format_timestamp(event.timestamp) }}</div>
+                    <div class="event-details">
+                        {% if event.type == 'kill' %}
+                        <span class="player">{{ event.killer }}</span> defeated <span class="player">{{ event.victim }}</span>
+                        {% elif event.type == 'capture' %}
+                        <span class="guild">{{ event.guild }}</span> captured {{ event.territory }}
+                        {% elif event.type == 'boss' %}
+                        <span class="guild">{{ event.guild }}</span> defeated boss at {{ event.location }}
+                        {% endif %}
+                    </div>
+                    <div class="event-points">+{{ event.points }} points</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- War Declaration/Preparation -->
+    <div class="war-preparation">
+        {% if can_declare_war %}
+        <div class="declare-war">
+            <h2>Declare War</h2>
+            <form id="declare-war-form" onsubmit="declareWar(event)">
+                <div class="form-group">
+                    <label for="target-guild">Target Guild</label>
+                    <select id="target-guild" name="target_guild" required>
+                        <option value="">Select a guild...</option>
+                        {% for guild in available_targets %}
+                        <option value="{{ guild.id }}">{{ guild.name }} (Level {{ guild.level }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="action-btn">Declare War</button>
+            </form>
+        </div>
+        {% endif %}
+
+        {% if pending_war %}
+        <div class="war-preparation-status">
+            <h2>War Preparation</h2>
+            <div class="preparation-timer">
+                <div class="timer-label">Preparation Time Remaining:</div>
+                <div class="countdown" data-end-time="{{ pending_war.start_time.isoformat() }}">
+                    <span class="hours">00</span>:<span class="minutes">00</span>:<span class="seconds">00</span>
+                </div>
+            </div>
+
+            <!-- Participant Registration -->
+            <div class="participant-registration">
+                <h3>Register Participants</h3>
+                <div class="registered-count">
+                    {{ pending_war.participants[guild.id]|length }}/{{ max_participants }} Members Registered
+                </div>
+                <div class="member-list">
+                    {% for member in guild.active_members %}
+                    <div class="member-row">
+                        <div class="member-info">
+                            <img src="{{ url_for('static', filename='images/avatars/' + member.avatar) }}" alt="{{ member.username }}">
+                            <span class="member-name">{{ member.username }}</span>
+                            <span class="member-level">Level {{ member.level }}</span>
+                        </div>
+                        <label class="checkbox-container">
+                            <input type="checkbox" 
+                                   name="war_participant" 
+                                   value="{{ member.id }}"
+                                   {% if member.id in pending_war.participants[guild.id] %}checked{% endif %}
+                                   {% if member.level < 30 %}disabled{% endif %}
+                                   onchange="updateParticipants(this)">
+                            <span class="checkmark"></span>
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- War History -->
+    <div class="war-history">
+        <h2>War History</h2>
+        <div class="history-list">
+            {% for war in war_history %}
+            <div class="history-item {{ 'victory' if war.winner_id == guild.id else 'defeat' }}">
+                <div class="war-participants">
+                    <span class="guild">{{ war.challenger_name }}</span>
+                    <span class="vs">vs</span>
+                    <span class="guild">{{ war.defender_name }}</span>
+                </div>
+                <div class="war-result">
+                    {% if war.winner_id == guild.id %}
+                    <span class="victory">Victory</span>
+                    {% else %}
+                    <span class="defeat">Defeat</span>
+                    {% endif %}
+                </div>
+                <div class="war-date">
+                    {{ format_timestamp(war.end_time) }}
+                </div>
+                <div class="war-stats">
+                    <span class="score">{{ war.scores[guild.id] }}</span>
+                    <span class="separator">-</span>
+                    <span class="score">{{ war.scores[war.opponent_id] }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/guild_war.css') }}">
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/guild_war.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,347 @@
+/* War Container */
+.war-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Roboto', sans-serif;
+    color: #e0e0e0;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
+}
+
+/* War Status */
+.war-status {
+    margin-bottom: 30px;
+}
+
+.war-header {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.guild-vs {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.challenger,
+.defender {
+    flex: 1;
+    text-align: center;
+}
+
+.challenger img,
+.defender img {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    margin-bottom: 10px;
+}
+
+.vs {
+    font-size: 2em;
+    font-weight: bold;
+    color: #ff4444;
+    margin: 0 20px;
+}
+
+.score {
+    font-size: 2.5em;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+/* War Timer */
+.war-timer {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.timer-label {
+    font-size: 1.2em;
+    margin-bottom: 5px;
+}
+
+.countdown {
+    font-size: 2em;
+    font-weight: bold;
+    color: #fff;
+}
+
+/* War Statistics */
+.war-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.stat-card h3 {
+    margin: 0 0 10px 0;
+    font-size: 1em;
+    color: #aaa;
+}
+
+.stat-value {
+    font-size: 1.8em;
+    font-weight: bold;
+    color: #fff;
+}
+
+/* War Map */
+.war-map {
+    position: relative;
+    width: 100%;
+    height: 400px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    margin-bottom: 30px;
+    overflow: hidden;
+}
+
+.map-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.territory {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.territory-icon {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5em;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.territory.friendly .territory-icon {
+    background: rgba(76, 175, 80, 0.5);
+}
+
+.territory.enemy .territory-icon {
+    background: rgba(244, 67, 54, 0.5);
+}
+
+.territory.neutral .territory-icon {
+    background: rgba(158, 158, 158, 0.5);
+}
+
+.territory:hover .territory-icon {
+    transform: scale(1.1);
+}
+
+/* War Events Log */
+.war-log {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.war-log h3 {
+    margin: 0 0 15px 0;
+    color: #fff;
+}
+
+.event-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.event-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.event-time {
+    font-size: 0.8em;
+    color: #aaa;
+    width: 100px;
+}
+
+.event-details {
+    flex: 1;
+    padding: 0 15px;
+}
+
+.event-points {
+    color: #4CAF50;
+    font-weight: bold;
+}
+
+/* War Preparation */
+.war-preparation {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.declare-war form {
+    max-width: 500px;
+    margin: 20px auto;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.form-group select {
+    width: 100%;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    color: #fff;
+}
+
+/* Participant Registration */
+.participant-registration {
+    margin-top: 20px;
+}
+
+.registered-count {
+    text-align: center;
+    font-size: 1.2em;
+    margin-bottom: 15px;
+}
+
+.member-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.member-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.member-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.member-info img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+.member-level {
+    color: #aaa;
+    font-size: 0.9em;
+}
+
+/* War History */
+.war-history {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.history-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.war-participants {
+    flex: 1;
+}
+
+.war-result {
+    width: 100px;
+    text-align: center;
+}
+
+.victory {
+    color: #4CAF50;
+}
+
+.defeat {
+    color: #f44336;
+}
+
+.war-date {
+    width: 150px;
+    text-align: right;
+    color: #aaa;
+    font-size: 0.9em;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .guild-vs {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .vs {
+        margin: 10px 0;
+    }
+
+    .war-stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .war-map {
+        height: 300px;
+    }
+
+    .history-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 10px;
+    }
+
+    .war-date {
+        width: auto;
+        text-align: center;
+    }
+}
+
+/* Animations */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.territory.active .territory-icon {
+    animation: pulse 1s infinite;
+}

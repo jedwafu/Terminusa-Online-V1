@@ -1,14 +1,16 @@
-from typing import Dict, List, Optional, Tuple
-from datetime import datetime, timedelta
-import logging
-from .currency_system import CurrencySystem
-
-logger = logging.getLogger(__name__)
+from typing import Dict, List, Optional
+from decimal import Decimal
+from datetime import datetime
+from models import db, User, Item, Transaction
+from game_config import (
+    CRYSTAL_TAX_RATE, EXON_TAX_RATE,
+    GUILD_CRYSTAL_TAX_RATE, GUILD_EXON_TAX_RATE,
+    ADMIN_USERNAME
+)
 
 class MarketplaceListing:
     def __init__(self, id: int, seller_id: int, item_id: int, quantity: int,
-                 price: float, currency: str, created_at: datetime,
-                 expires_at: datetime, status: str = 'active'):
+                 price: Decimal, currency: str, created_at: datetime):
         self.id = id
         self.seller_id = seller_id
         self.item_id = item_id
@@ -16,215 +18,245 @@ class MarketplaceListing:
         self.price = price
         self.currency = currency
         self.created_at = created_at
-        self.expires_at = expires_at
-        self.status = status
 
 class MarketplaceSystem:
-    def __init__(self, currency_system: CurrencySystem):
-        self.logger = logger
-        self.logger.info("Initializing Marketplace System")
-        self.currency_system = currency_system
-        self.listings: Dict[int, MarketplaceListing] = {}
+    def __init__(self):
+        self.admin_user = User.query.filter_by(username=ADMIN_USERNAME).first()
+        self.listings = {}  # In-memory storage for active listings
         self.next_listing_id = 1
-        self.default_duration_days = 7
-        self.min_listing_fee = {
-            'SOLANA': 0.01,
-            'EXON': 10,
-            'CRYSTAL': 100
+
+    def create_listing(self, seller: User, item: Item, quantity: int,
+                      price: Decimal, currency: str) -> Dict:
+        """Create a new marketplace listing"""
+        if quantity <= 0:
+            return {
+                "success": False,
+                "message": "Quantity must be greater than 0"
+            }
+
+        # Verify seller has the item
+        inventory_item = next(
+            (inv for inv in seller.inventory_items 
+             if inv.item_id == item.id and inv.quantity >= quantity),
+            None
+        )
+        if not inventory_item:
+            return {
+                "success": False,
+                "message": "Insufficient item quantity"
+            }
+
+        # Create listing
+        listing = MarketplaceListing(
+            id=self.next_listing_id,
+            seller_id=seller.id,
+            item_id=item.id,
+            quantity=quantity,
+            price=price,
+            currency=currency,
+            created_at=datetime.utcnow()
+        )
+        self.listings[listing.id] = listing
+        self.next_listing_id += 1
+
+        # Remove items from seller's inventory
+        inventory_item.quantity -= quantity
+        if inventory_item.quantity == 0:
+            db.session.delete(inventory_item)
+        db.session.commit()
+
+        return {
+            "success": True,
+            "message": "Listing created successfully",
+            "listing_id": listing.id
         }
 
-    def create_listing(self, seller, item_id: int, quantity: int,
-                      price: float, currency: str,
-                      duration_days: int = None) -> Dict:
-        """Create a new marketplace listing"""
+    def purchase_listing(self, buyer: User, listing_id: int) -> Dict:
+        """Purchase an item from the marketplace"""
+        listing = self.listings.get(listing_id)
+        if not listing:
+            return {
+                "success": False,
+                "message": "Listing not found"
+            }
+
+        seller = User.query.get(listing.seller_id)
+        if not seller:
+            return {
+                "success": False,
+                "message": "Seller not found"
+            }
+
+        # Check buyer's balance
+        if not self._check_balance(buyer, listing.currency, listing.price):
+            return {
+                "success": False,
+                "message": f"Insufficient {listing.currency} balance"
+            }
+
+        # Calculate tax
+        tax_rate = self._get_tax_rate(listing.currency, seller)
+        tax_amount = listing.price * tax_rate
+        net_amount = listing.price - tax_amount
+
         try:
-            # Validate currency and amount
-            valid, message = self.currency_system.validate_amount(currency, price)
-            if not valid:
-                return {'status': 'error', 'message': message}
+            # Process payment
+            if listing.currency == "crystals":
+                buyer.crystals -= int(listing.price)
+                seller.crystals += int(net_amount)
+                if self.admin_user:
+                    self.admin_user.crystals += int(tax_amount)
+            elif listing.currency == "exons":
+                buyer.exons_balance -= listing.price
+                seller.exons_balance += net_amount
+                # Tax handled by blockchain
 
-            # Calculate listing fee
-            fee = max(self.min_listing_fee[currency],
-                     self.currency_system.calculate_fee(currency, price))
-
-            # Validate seller has enough currency for fee
-            if not self._can_pay_fee(seller, currency, fee):
-                return {
-                    'status': 'error',
-                    'message': f'Insufficient funds for listing fee ({fee} {currency})'
-                }
-
-            # Create listing
-            duration = duration_days or self.default_duration_days
-            listing = MarketplaceListing(
-                id=self.next_listing_id,
-                seller_id=seller.id,
-                item_id=item_id,
-                quantity=quantity,
-                price=price,
-                currency=currency,
-                created_at=datetime.utcnow(),
-                expires_at=datetime.utcnow() + timedelta(days=duration)
+            # Transfer item to buyer
+            item = Item.query.get(listing.item_id)
+            buyer_inventory = next(
+                (inv for inv in buyer.inventory_items if inv.item_id == item.id),
+                None
             )
+            if buyer_inventory:
+                buyer_inventory.quantity += listing.quantity
+            else:
+                buyer_inventory = Item(
+                    user_id=buyer.id,
+                    item_id=item.id,
+                    quantity=listing.quantity
+                )
+                db.session.add(buyer_inventory)
 
-            # Store listing
-            self.listings[listing.id] = listing
-            self.next_listing_id += 1
+            # Record transaction
+            transaction = Transaction(
+                user_id=buyer.id,
+                recipient_id=seller.id,
+                type="market_purchase",
+                currency=listing.currency,
+                amount=listing.price,
+                tax_amount=tax_amount
+            )
+            db.session.add(transaction)
 
-            # Deduct listing fee
-            self._deduct_fee(seller, currency, fee)
+            # Remove listing
+            del self.listings[listing_id]
+
+            db.session.commit()
 
             return {
-                'status': 'success',
-                'listing_id': listing.id,
-                'fee_paid': fee,
-                'message': 'Listing created successfully'
+                "success": True,
+                "message": "Purchase successful",
+                "tax_paid": str(tax_amount),
+                "net_amount": str(net_amount)
             }
 
         except Exception as e:
-            self.logger.error(f"Error creating listing: {str(e)}", exc_info=True)
-            return {'status': 'error', 'message': 'Internal error'}
+            db.session.rollback()
+            return {
+                "success": False,
+                "message": f"Transaction failed: {str(e)}"
+            }
 
-    def purchase_listing(self, buyer, listing_id: int) -> Dict:
-        """Purchase an item from a marketplace listing"""
+    def cancel_listing(self, seller: User, listing_id: int) -> Dict:
+        """Cancel a marketplace listing"""
+        listing = self.listings.get(listing_id)
+        if not listing:
+            return {
+                "success": False,
+                "message": "Listing not found"
+            }
+
+        if listing.seller_id != seller.id:
+            return {
+                "success": False,
+                "message": "Not authorized to cancel this listing"
+            }
+
         try:
-            # Get listing
-            listing = self.listings.get(listing_id)
-            if not listing:
-                return {'status': 'error', 'message': 'Listing not found'}
+            # Return items to seller's inventory
+            item = Item.query.get(listing.item_id)
+            seller_inventory = next(
+                (inv for inv in seller.inventory_items if inv.item_id == item.id),
+                None
+            )
+            if seller_inventory:
+                seller_inventory.quantity += listing.quantity
+            else:
+                seller_inventory = Item(
+                    user_id=seller.id,
+                    item_id=item.id,
+                    quantity=listing.quantity
+                )
+                db.session.add(seller_inventory)
 
-            if listing.status != 'active':
-                return {'status': 'error', 'message': 'Listing is not active'}
+            # Remove listing
+            del self.listings[listing_id]
 
-            if listing.expires_at < datetime.utcnow():
-                return {'status': 'error', 'message': 'Listing has expired'}
-
-            # Validate buyer has enough currency
-            if not self._can_afford_purchase(buyer, listing):
-                return {
-                    'status': 'error',
-                    'message': f'Insufficient funds ({listing.price} {listing.currency})'
-                }
-
-            # Process transaction
-            transaction_result = self._process_transaction(buyer, listing)
-            if transaction_result['status'] != 'success':
-                return transaction_result
-
-            # Update listing status
-            listing.status = 'completed'
+            db.session.commit()
 
             return {
-                'status': 'success',
-                'transaction_id': transaction_result['transaction_id'],
-                'message': 'Purchase successful'
+                "success": True,
+                "message": "Listing cancelled successfully"
             }
 
         except Exception as e:
-            self.logger.error(f"Error processing purchase: {str(e)}", exc_info=True)
-            return {'status': 'error', 'message': 'Internal error'}
-
-    def get_active_listings(self, currency: Optional[str] = None,
-                          item_type: Optional[str] = None,
-                          max_price: Optional[float] = None) -> List[Dict]:
-        """Get active marketplace listings with optional filters"""
-        try:
-            current_time = datetime.utcnow()
-            active_listings = []
-
-            for listing in self.listings.values():
-                if listing.status != 'active' or listing.expires_at < current_time:
-                    continue
-
-                if currency and listing.currency != currency:
-                    continue
-
-                if max_price and listing.price > max_price:
-                    continue
-
-                # TODO: Add item type filtering when item system is implemented
-
-                active_listings.append({
-                    'id': listing.id,
-                    'seller_id': listing.seller_id,
-                    'item_id': listing.item_id,
-                    'quantity': listing.quantity,
-                    'price': listing.price,
-                    'currency': listing.currency,
-                    'created_at': listing.created_at.isoformat(),
-                    'expires_at': listing.expires_at.isoformat()
-                })
-
-            return active_listings
-
-        except Exception as e:
-            self.logger.error(f"Error getting listings: {str(e)}", exc_info=True)
-            return []
-
-    def cancel_listing(self, seller_id: int, listing_id: int) -> Dict:
-        """Cancel an active marketplace listing"""
-        try:
-            listing = self.listings.get(listing_id)
-            if not listing:
-                return {'status': 'error', 'message': 'Listing not found'}
-
-            if listing.seller_id != seller_id:
-                return {'status': 'error', 'message': 'Not authorized to cancel listing'}
-
-            if listing.status != 'active':
-                return {'status': 'error', 'message': 'Listing is not active'}
-
-            listing.status = 'cancelled'
-
+            db.session.rollback()
             return {
-                'status': 'success',
-                'message': 'Listing cancelled successfully'
+                "success": False,
+                "message": f"Failed to cancel listing: {str(e)}"
             }
 
-        except Exception as e:
-            self.logger.error(f"Error cancelling listing: {str(e)}", exc_info=True)
-            return {'status': 'error', 'message': 'Internal error'}
+    def get_listings(self, currency: Optional[str] = None,
+                    item_type: Optional[str] = None,
+                    min_price: Optional[Decimal] = None,
+                    max_price: Optional[Decimal] = None) -> List[Dict]:
+        """Get filtered marketplace listings"""
+        listings = self.listings.values()
 
-    def _can_pay_fee(self, user, currency: str, fee: float) -> bool:
-        """Check if user can pay listing fee"""
-        # TODO: Implement actual wallet balance check
-        return True
+        # Apply filters
+        if currency:
+            listings = [l for l in listings if l.currency == currency]
+        if item_type:
+            listings = [l for l in listings if Item.query.get(l.item_id).type == item_type]
+        if min_price is not None:
+            listings = [l for l in listings if l.price >= min_price]
+        if max_price is not None:
+            listings = [l for l in listings if l.price <= max_price]
 
-    def _deduct_fee(self, user, currency: str, fee: float) -> None:
-        """Deduct listing fee from user's wallet"""
-        # TODO: Implement actual fee deduction
-        pass
+        # Convert to dictionary format
+        return [{
+            'id': l.id,
+            'seller_id': l.seller_id,
+            'seller_name': User.query.get(l.seller_id).username,
+            'item_id': l.item_id,
+            'item_name': Item.query.get(l.item_id).name,
+            'quantity': l.quantity,
+            'price': str(l.price),
+            'currency': l.currency,
+            'created_at': l.created_at.isoformat()
+        } for l in listings]
 
-    def _can_afford_purchase(self, buyer, listing: MarketplaceListing) -> bool:
-        """Check if buyer can afford the purchase"""
-        # TODO: Implement actual balance check
-        return True
+    def _check_balance(self, user: User, currency: str, amount: Decimal) -> bool:
+        """Check if user has sufficient balance"""
+        if currency == "crystals":
+            return user.crystals >= amount
+        elif currency == "exons":
+            return user.exons_balance >= amount
+        return False
 
-    def _process_transaction(self, buyer, listing: MarketplaceListing) -> Dict:
-        """Process the marketplace transaction"""
-        try:
-            # TODO: Implement actual transaction processing
-            return {
-                'status': 'success',
-                'transaction_id': f"tx_{datetime.utcnow().timestamp()}"
-            }
-        except Exception as e:
-            self.logger.error(f"Error processing transaction: {str(e)}", exc_info=True)
-            return {'status': 'error', 'message': 'Transaction failed'}
+    def _get_tax_rate(self, currency: str, user: User) -> Decimal:
+        """Get tax rate for marketplace transaction"""
+        base_rate = {
+            "crystals": CRYSTAL_TAX_RATE,
+            "exons": EXON_TAX_RATE
+        }.get(currency, Decimal("0"))
 
-    def cleanup_expired_listings(self) -> int:
-        """Clean up expired listings and return count of cleaned listings"""
-        try:
-            current_time = datetime.utcnow()
-            expired_count = 0
+        # Add guild tax if applicable
+        if user.guild_id:
+            guild_rate = {
+                "crystals": GUILD_CRYSTAL_TAX_RATE,
+                "exons": GUILD_EXON_TAX_RATE
+            }.get(currency, Decimal("0"))
+            base_rate += guild_rate
 
-            for listing in self.listings.values():
-                if listing.status == 'active' and listing.expires_at < current_time:
-                    listing.status = 'expired'
-                    expired_count += 1
-
-            return expired_count
-
-        except Exception as e:
-            self.logger.error(f"Error cleaning up listings: {str(e)}", exc_info=True)
-            return 0
+        return base_rate

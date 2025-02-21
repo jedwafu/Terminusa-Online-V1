@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}System Monitoring - Terminusa Online{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/monitoring.css') }}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="monitoring-dashboard">
+    <!-- Header -->
+    <div class="dashboard-header">
+        <h1>System Monitoring</h1>
+        <div class="header-actions">
+            <button id="refreshBtn" class="btn btn-primary">
+                <i class="fas fa-sync"></i> Refresh
+            </button>
+            <select id="updateInterval" class="form-select">
+                <option value="10">10s</option>
+                <option value="30" selected>30s</option>
+                <option value="60">1m</option>
+                <option value="300">5m</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- System Overview -->
+    <div class="overview-section">
+        <div class="status-cards">
+            <div class="status-card" id="systemStatus">
+                <h3>System Status</h3>
+                <div class="status-indicator"></div>
+                <div class="metrics">
+                    <div class="metric">
+                        <span class="label">CPU</span>
+                        <span class="value" id="cpuUsage">--</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">Memory</span>
+                        <span class="value" id="memoryUsage">--</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">Disk</span>
+                        <span class="value" id="diskUsage">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="status-card" id="databaseStatus">
+                <h3>Database Status</h3>
+                <div class="status-indicator"></div>
+                <div class="metrics">
+                    <div class="metric">
+                        <span class="label">Connections</span>
+                        <span class="value" id="dbConnections">--</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">Slow Queries</span>
+                        <span class="value" id="slowQueries">--</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">Cache Hit Ratio</span>
+                        <span class="value" id="cacheHitRatio">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="status-card" id="cacheStatus">
+                <h3>Cache Status</h3>
+                <div class="status-indicator"></div>
+                <div class="metrics">
+                    <div class="metric">
+                        <span class="label">Memory Usage</span>
+                        <span class="value" id="cacheMemory">--</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">Keys</span>
+                        <span class="value" id="cacheKeys">--</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">Hit Rate</span>
+                        <span class="value" id="cacheHitRate">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="status-card" id="gameStatus">
+                <h3>Game Status</h3>
+                <div class="status-indicator"></div>
+                <div class="metrics">
+                    <div class="metric">
+                        <span class="label">Active Players</span>
+                        <span class="value" id="activePlayers">--</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">Active Wars</span>
+                        <span class="value" id="activeWars">--</span>
+                    </div>
+                    <div class="metric">
+                        <span class="label">Transactions</span>
+                        <span class="value" id="transactions">--</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-section">
+        <div class="chart-container">
+            <h3>System Resources</h3>
+            <canvas id="resourcesChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>Network Traffic</h3>
+            <canvas id="networkChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>Database Performance</h3>
+            <canvas id="dbChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3>Game Metrics</h3>
+            <canvas id="gameMetricsChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Services Status -->
+    <div class="services-section">
+        <h3>Services Status</h3>
+        <div class="services-grid" id="servicesGrid">
+            <!-- Services will be populated dynamically -->
+        </div>
+    </div>
+
+    <!-- Recent Alerts -->
+    <div class="alerts-section">
+        <h3>Recent Alerts</h3>
+        <div class="alerts-list" id="alertsList">
+            <!-- Alerts will be populated dynamically -->
+        </div>
+    </div>
+
+    <!-- System Logs -->
+    <div class="logs-section">
+        <h3>System Logs</h3>
+        <div class="logs-controls">
+            <select id="logLevel" class="form-select">
+                <option value="all">All Levels</option>
+                <option value="error">Error</option>
+                <option value="warning">Warning</option>
+                <option value="info">Info</option>
+            </select>
+            <input type="text" id="logSearch" class="form-control" placeholder="Search logs...">
+        </div>
+        <div class="logs-container" id="logsContainer">
+            <!-- Logs will be populated dynamically -->
+        </div>
+    </div>
+</div>
+
+<!-- Alert Modal -->
+<div class="modal fade" id="alertModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Alert Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Alert details will be populated dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="acknowledgeAlert">Acknowledge</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+<script src="{{ url_for('static', filename='js/monitoring.js') }}"></script>
+{% endblock %}
