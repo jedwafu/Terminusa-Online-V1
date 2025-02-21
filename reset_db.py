@@ -9,9 +9,6 @@ def reset_database():
     """Drop all tables and reset migrations"""
     app = create_app()
     with app.app_context():
-        # Initialize SQLAlchemy with app
-        db.init_app(app)
-        
         # Drop all tables
         db.drop_all()
         
