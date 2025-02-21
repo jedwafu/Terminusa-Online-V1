@@ -5,7 +5,7 @@ import numpy as np
 
 from models import (
     db, User, Gate, MagicBeast, InventoryItem, Item, Mount, Pet,
-    Skill, Quest, GuildQuest, Achievement, Transaction,
+    Skill, Quest, GuildQuest, Achievement, Transaction, Currency,
     HunterClass, JobClass, GateRank, ItemRarity, HealthStatus
 )
 from game_config import (
@@ -20,8 +20,12 @@ from ai_agent import AIAgent
 
 class GameHandler:
     def __init__(self, websocket):
+        """Initialize game handler with websocket connection."""
         self.ai_agent = AIAgent()
+        
+        # Initialize handlers
         self.combat_sessions = {}
+        
         self.party_sessions = {}
         self.event_system = EventSystem(websocket)
 
@@ -696,3 +700,29 @@ class GameHandler:
             
             # Remove session
             del self.combat_sessions[session_id]
+
+    def handle_currency_transaction(self, user_id: int, transaction_type: str, currency: str, amount: float) -> Dict:
+        """Handle currency transactions for users."""
+        # Fetch the currency object
+        currency_obj = Currency.get_by_symbol(currency)
+        if not currency_obj:
+            return {"success": False, "message": "Invalid currency."}
+
+        # Create a new transaction
+        transaction = Transaction(
+            user_id=user_id,
+            type=transaction_type,
+            currency=currency,
+            amount=amount
+        )
+        
+        # Add transaction to the session
+        db.session.add(transaction)
+        
+        # Commit the transaction
+        try:
+            db.session.commit()
+            return {"success": True, "transaction_id": transaction.id}
+        except Exception as e:
+            db.session.rollback()
+            return {"success": False, "message": str(e)}
