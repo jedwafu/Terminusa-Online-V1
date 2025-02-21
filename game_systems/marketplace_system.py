@@ -21,9 +21,18 @@ class MarketplaceListing:
 
 class MarketplaceSystem:
     def __init__(self):
-        self.admin_user = User.query.filter_by(username=ADMIN_USERNAME).first()
+        self._admin_user = None
         self.listings = {}  # In-memory storage for active listings
         self.next_listing_id = 1
+
+    @property
+    def admin_user(self):
+        """Lazy load admin user when needed"""
+        if self._admin_user is None:
+            from flask import current_app
+            with current_app.app_context():
+                self._admin_user = User.query.filter_by(username=ADMIN_USERNAME).first()
+        return self._admin_user
 
     def create_listing(self, seller: User, item: Item, quantity: int,
                       price: Decimal, currency: str) -> Dict:
