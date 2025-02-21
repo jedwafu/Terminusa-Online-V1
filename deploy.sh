@@ -14,23 +14,18 @@ PROD_USER="root"
 APP_DIR="/var/www/terminusa"
 BACKUP_DIR="/var/www/backups"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+WEB_ROOT="/var/www/terminusa"
+STATIC_DIR="$WEB_ROOT/static"
 
 # Debug mode flag
 DEBUG=false
 
-# Error handling for production deployment
+# Error handling
 set -e
 trap 'echo -e "${RED}Deployment failed${NC}"; exit 1' ERR
 
-# Service status tracking
-declare -A SERVICE_STATUS
-declare -A SERVICE_PIDS
-declare -A SERVICE_PORTS
-declare -A SERVICE_LOGS
-declare -A SERVICE_SCREENS
-
-# Initialize service configurations
-SERVICE_PORTS=(
+# Service configurations
+declare -A SERVICE_PORTS=(
     ["postgresql"]="5432"
     ["nginx"]="80,443"
     ["flask"]="5000"
@@ -40,7 +35,7 @@ SERVICE_PORTS=(
     ["game"]="5001"
 )
 
-SERVICE_LOGS=(
+declare -A SERVICE_LOGS=(
     ["postgresql"]="/var/log/postgresql/postgresql-main.log"
     ["nginx"]="/var/log/nginx/error.log"
     ["flask"]="logs/flask.log"
@@ -55,7 +50,7 @@ SERVICE_LOGS=(
     ["game_mechanics"]="logs/game_mechanics.log"
 )
 
-SERVICE_SCREENS=(
+declare -A SERVICE_SCREENS=(
     ["flask"]="terminusa-flask"
     ["terminal"]="terminusa-terminal"
     ["game"]="terminusa-game"
@@ -66,58 +61,59 @@ SERVICE_SCREENS=(
     ["game_mechanics"]="terminusa-mechanics"
 )
 
-# Debug logging function
+# Logging functions
 debug_log() {
     if [ "$DEBUG" = true ]; then
         echo -e "${BLUE}[DEBUG] $(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
     fi
 }
 
-# Error logging function
 error_log() {
     echo -e "${RED}[ERROR] $(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
     echo "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> logs/deploy.log
 }
 
-# Success logging function
 success_log() {
     echo -e "${GREEN}[SUCCESS] $(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
     echo "[SUCCESS] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> logs/deploy.log
 }
 
-# Info logging function
 info_log() {
     echo -e "${YELLOW}[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
     echo "[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> logs/deploy.log
 }
 
-# Setup static files with enhanced error handling
+# Enhanced setup_static_files with better error handling
 setup_static_files() {
     info_log "Setting up static files..."
     
     # Create required directories
-    mkdir -p /var/www/terminusa/static/{css,js,images}
+    sudo mkdir -p $STATIC_DIR/{css,js,images}
     
-    # Copy static files
+    # Copy static files with error checking
     info_log "Copying static files..."
-    cp -r static/* /var/www/terminusa/static/
-    
-    # Set permissions
-    info_log "Setting permissions..."
-    chown -R www-data:www-data /var/www/terminusa
-    chmod -R 755 /var/www/terminusa
-    
-    # Verify files exist
-    if [ ! -f "/var/www/terminusa/static/css/style.css" ] || \
-       [ ! -f "/var/www/terminusa/static/css/buttons.css" ] || \
-       [ ! -f "/var/www/terminusa/static/css/alerts.css" ]; then
-        error_log "Static files not copied correctly!"
+    if [ -d "static" ]; then
+        sudo cp -r static/* $STATIC_DIR/ 2>/dev/null || {
+            error_log "Failed to copy static files"
+            return 1
+        }
+    else
+        error_log "Static directory not found!"
         return 1
     fi
     
+    # Set permissions
+    info_log "Setting permissions..."
+    sudo chown -R www-data:www-data $WEB_ROOT
+    sudo chmod -R 755 $WEB_ROOT
+    
+    # Create symbolic links
+    info_log "Creating symbolic links..."
+    sudo ln -sf $STATIC_DIR /root/Terminusa/static
+    
     # Verify nginx configuration
     info_log "Verifying nginx configuration..."
-    if ! nginx -t; then
+    if ! sudo nginx -t; then
         error_log "Nginx configuration test failed!"
         return 1
     fi
@@ -126,142 +122,88 @@ setup_static_files() {
     return 0
 }
 
-# Check Python version
-check_python() {
-    info_log "Checking Python version..."
-    if ! command -v python3 &> /dev/null; then
-        error_log "Python 3 is not installed!"
-        return 1
-    fi
+# Enhanced database setup
+setup_database() {
+    info_log "Setting up database..."
     
-    python3_version=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
-    if (( $(echo "$python3_version < 3.10" | bc -l) )); then
-        error_log "Python 3.10 or later is required!"
-        return 1
-    fi
-    
-    success_log "Python $python3_version found"
-    return 0
-}
-
-# Check PostgreSQL installation
-check_postgresql() {
-    info_log "Checking PostgreSQL installation..."
-    if ! command -v psql &> /dev/null; then
-        error_log "PostgreSQL is not installed!"
-        echo -e "${YELLOW}Please install PostgreSQL:${NC}"
-        echo "1. sudo apt update"
-        echo "2. sudo apt install postgresql postgresql-contrib"
-        echo "3. sudo systemctl enable postgresql"
-        echo "4. sudo systemctl start postgresql"
-        return 1
-    fi
-    
+    # Check if PostgreSQL is running
     if ! systemctl is-active --quiet postgresql; then
         error_log "PostgreSQL is not running!"
         return 1
     fi
     
-    success_log "PostgreSQL is installed and running"
-    return 0
-}
-
-# Check if screen is installed
-check_screen() {
-    if ! command -v screen &> /dev/null; then
-        info_log "Installing screen..."
-        apt-get update && apt-get install -y screen
-    fi
-}
-
-# Start a screen session
-start_screen() {
-    local name=$1
-    local command=$2
-    screen -dmS $name bash -c "$command"
-}
-
-# Check if a screen session exists
-check_screen_session() {
-    local name=$1
-    screen -list | grep -q "$name"
-}
-
-# Kill a screen session
-kill_screen() {
-    local name=$1
-    screen -X -S $name quit >/dev/null 2>&1
-}
-
-# Initialize deployment with enhanced checks
-initialize_deployment() {
-    info_log "Initializing deployment..."
-    
-    # Check Python version
-    check_python || return 1
-    
-    # Check PostgreSQL
-    check_postgresql || return 1
-    
-    # Create required directories
-    mkdir -p logs
-    mkdir -p instance
-    mkdir -p static/downloads
-    
-    # Set proper permissions
-    chmod -R 755 static
-    chmod +x *.py
-    chmod +x *.sh
-    
-    # Check .env file
-    if [ ! -f ".env" ]; then
-        info_log "Creating .env file from example..."
-        cp .env.example .env
-        echo -e "${YELLOW}Please update .env file with your configuration${NC}"
-        read -p "Press Enter after updating .env file..."
-    fi
-    
-    # Install screen if not present
-    check_screen
-    
-    # Create virtual environment if not exists
-    if [ ! -d "venv" ]; then
-        info_log "Creating virtual environment..."
-        python3 -m venv venv
-        source venv/bin/activate
-        pip install --upgrade pip
-        pip install -r requirements.txt
-    fi
-    
-    # Setup static files
-    setup_static_files || return 1
-    
-    # Run database migrations
-    info_log "Running database migrations..."
+    # Activate virtual environment
     source venv/bin/activate
-    flask db upgrade heads || {
-        error_log "Database migration failed!"
+    
+    # Set environment variables
+    export FLASK_APP=init_db.py
+    export PYTHONPATH=$PWD
+    
+    # Initialize database
+    info_log "Initializing database..."
+    python init_db.py || {
+        error_log "Database initialization failed!"
         return 1
     }
     
-    success_log "Initialization complete"
+    # Run migrations
+    info_log "Running database migrations..."
+    if [ ! -d "migrations" ]; then
+        flask db init || {
+            error_log "Migration initialization failed!"
+            return 1
+        }
+    fi
+    
+    flask db migrate -m "Initial database setup" || {
+        error_log "Migration creation failed!"
+        return 1
+    }
+    
+    flask db upgrade || {
+        error_log "Migration upgrade failed!"
+        return 1
+    }
+    
+    success_log "Database setup completed"
+    return 0
 }
 
-# Start services
+# Enhanced nginx setup
+setup_nginx() {
+    info_log "Setting up nginx..."
+    
+    # Update nginx user
+    sudo sed -i 's/user root/user www-data/' /etc/nginx/nginx.conf
+    
+    # Copy nginx configuration
+    sudo cp nginx/terminusa.conf /etc/nginx/sites-available/
+    
+    # Enable site
+    sudo ln -sf /etc/nginx/sites-available/terminusa.conf /etc/nginx/sites-enabled/
+    sudo rm -f /etc/nginx/sites-enabled/default
+    
+    # Test configuration
+    if ! sudo nginx -t; then
+        error_log "Nginx configuration test failed!"
+        return 1
+    fi
+    
+    # Restart nginx
+    sudo systemctl restart nginx
+    
+    success_log "Nginx setup completed"
+    return 0
+}
+
+# Enhanced service management
 start_services() {
     info_log "Starting services..."
     
     # Create logs directory
     mkdir -p logs
     
-    # Setup static files first
-    setup_static_files || {
-        error_log "Static files setup failed!"
-        return 1
-    }
-    
     # Start system services
-    info_log "Starting system services..."
     systemctl start postgresql
     systemctl start redis-server
     systemctl start nginx
@@ -270,160 +212,88 @@ start_services() {
     # Activate virtual environment
     source venv/bin/activate
     
-    # Start Flask application
-    info_log "Starting Flask application..."
-    if ! check_screen_session ${SERVICE_SCREENS["flask"]}; then
-        start_screen ${SERVICE_SCREENS["flask"]} "cd $(pwd) && source venv/bin/activate && FLASK_APP=app.py FLASK_ENV=production python app.py > logs/flask.log 2>&1"
-    fi
-    
-    # Start Terminal server
-    info_log "Starting Terminal server..."
-    if ! check_screen_session ${SERVICE_SCREENS["terminal"]}; then
-        start_screen ${SERVICE_SCREENS["terminal"]} "cd $(pwd) && source venv/bin/activate && python terminal_server.py > logs/terminal.log 2>&1"
-    fi
-    
-    # Start Game server
-    info_log "Starting Game server..."
-    if ! check_screen_session ${SERVICE_SCREENS["game"]}; then
-        start_screen ${SERVICE_SCREENS["game"]} "cd $(pwd) && source venv/bin/activate && python game_server.py > logs/game.log 2>&1"
-    fi
-    
-    # Start Email monitor
-    info_log "Starting Email monitor..."
-    if ! check_screen_session ${SERVICE_SCREENS["email_monitor"]}; then
-        start_screen ${SERVICE_SCREENS["email_monitor"]} "cd $(pwd) && source venv/bin/activate && python email_monitor.py > logs/email_monitor.log 2>&1"
-    fi
-    
-    # Start AI manager
-    info_log "Starting AI manager..."
-    if ! check_screen_session ${SERVICE_SCREENS["ai_manager"]}; then
-        start_screen ${SERVICE_SCREENS["ai_manager"]} "cd $(pwd) && source venv/bin/activate && python ai_manager.py > logs/ai_manager.log 2>&1"
-    fi
-    
-    # Start Combat manager
-    info_log "Starting Combat manager..."
-    if ! check_screen_session ${SERVICE_SCREENS["combat_manager"]}; then
-        start_screen ${SERVICE_SCREENS["combat_manager"]} "cd $(pwd) && source venv/bin/activate && python combat_manager.py > logs/combat_manager.log 2>&1"
-    fi
-    
-    # Start Economy systems
-    info_log "Starting Economy systems..."
-    if ! check_screen_session ${SERVICE_SCREENS["economy_systems"]}; then
-        start_screen ${SERVICE_SCREENS["economy_systems"]} "cd $(pwd) && source venv/bin/activate && python economy_systems.py > logs/economy_systems.log 2>&1"
-    fi
-    
-    # Start Game mechanics
-    info_log "Starting Game mechanics..."
-    if ! check_screen_session ${SERVICE_SCREENS["game_mechanics"]}; then
-        start_screen ${SERVICE_SCREENS["game_mechanics"]} "cd $(pwd) && source venv/bin/activate && python game_mechanics.py > logs/game_mechanics.log 2>&1"
-    fi
+    # Start application services in screen sessions
+    for service in "${!SERVICE_SCREENS[@]}"; do
+        screen_name=${SERVICE_SCREENS[$service]}
+        if ! screen -list | grep -q "$screen_name"; then
+            case $service in
+                "flask")
+                    start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python app.py > logs/flask.log 2>&1"
+                    ;;
+                "terminal")
+                    start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python terminal_server.py > logs/terminal.log 2>&1"
+                    ;;
+                "game")
+                    start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python game_server.py > logs/game.log 2>&1"
+                    ;;
+                *)
+                    start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python ${service}.py > logs/${service}.log 2>&1"
+                    ;;
+            esac
+        fi
+    done
     
     # Wait for services to start
     sleep 5
     
     # Check service status
-    bash status_monitor.sh
+    show_system_status
     
     success_log "All services started"
 }
 
-# Stop services function with enhanced screen session handling
-stop_services() {
-    info_log "Stopping services..."
+# Enhanced system status monitoring
+show_system_status() {
+    clear
+    echo -e "${CYAN}=== System Status ===${NC}\n"
     
-    # Kill all screen sessions first
-    info_log "Stopping screen sessions..."
+    # System Resources
+    echo -e "${YELLOW}System Resources:${NC}"
+    echo "CPU Usage: $(top -bn1 | grep "Cpu(s)" | awk '{print $2}')%"
+    echo "Memory Usage: $(free -m | awk 'NR==2{printf "%.2f%%", $3*100/$2}')"
+    echo "Disk Usage: $(df -h / | awk 'NR==2{print $5}')"
+    echo
     
-    # Get all screen sessions and process each one
-    screen -ls | grep 'terminusa' | while read -r session; do
-        # Extract just the session ID (number before the dot)
-        session_id=$(echo "$session" | awk '{print $1}' | cut -d'.' -f1)
-        if [ ! -z "$session_id" ]; then
-            info_log "Killing screen session with ID: $session_id"
-            screen -S "$session_id" -X quit
-            # Double check and force kill if needed
-            if ps -p "$session_id" > /dev/null 2>&1; then
-                kill -9 "$session_id" 2>/dev/null
-            fi
+    # Service Status
+    echo -e "${YELLOW}Service Status:${NC}"
+    printf "%-20s %-10s %-20s\n" "Service" "Status" "Port"
+    echo "----------------------------------------------------"
+    
+    # Check system services
+    for service in postgresql redis-server nginx postfix; do
+        if systemctl is-active --quiet $service; then
+            printf "%-20s ${GREEN}%-10s${NC} %-20s\n" "$service" "Running" "${SERVICE_PORTS[$service]}"
+        else
+            printf "%-20s ${RED}%-10s${NC} %-20s\n" "$service" "Stopped" "-"
         fi
     done
     
-    # Stop system services
-    info_log "Stopping system services..."
-    systemctl stop nginx
-    systemctl stop redis-server
-    systemctl stop postgresql
-    systemctl stop postfix
-    
-    # Kill any processes on our ports
-    for service in "${!SERVICE_PORTS[@]}"; do
-        IFS=',' read -ra PORTS <<< "${SERVICE_PORTS[$service]}"
-        for port in "${PORTS[@]}"; do
-            if check_port $port; then
-                info_log "Killing process on port $port..."
-                kill_port_process $port
-            fi
-        done
+    # Check screen services
+    for service in "${!SERVICE_SCREENS[@]}"; do
+        screen_name=${SERVICE_SCREENS[$service]}
+        if screen -list | grep -q "$screen_name"; then
+            printf "%-20s ${GREEN}%-10s${NC} %-20s\n" "$service" "Running" "${SERVICE_PORTS[$service]:-"-"}"
+        else
+            printf "%-20s ${RED}%-10s${NC} %-20s\n" "$service" "Stopped" "-"
+        fi
     done
     
-    # Final verification that all screen sessions are gone
-    if screen -ls | grep -q 'terminusa'; then
-        info_log "Force killing any remaining screen sessions..."
-        screen -ls | grep 'terminusa' | awk '{print $1}' | while read -r session; do
-            session_id=$(echo "$session" | cut -d'.' -f1)
-            if [ ! -z "$session_id" ]; then
-                screen -S "$session_id" -X quit
-                kill -9 "$session_id" 2>/dev/null
-            fi
-        done
-    fi
+    echo
+    echo -e "${YELLOW}Screen Sessions:${NC}"
+    screen -list | grep -v "There are screens" || echo "No active screens"
     
-    success_log "All services stopped"
+    # Save status to JSON
+    save_status_json
 }
 
-# Function to check if a port is in use
-check_port() {
-    local port=$1
-    netstat -tuln | grep -q ":$port "
-    return $?
-}
-
-# Function to kill process on a port
-kill_port_process() {
-    local port=$1
-    local pid=$(lsof -t -i:$port)
-    if [ ! -z "$pid" ]; then
-        kill -9 $pid 2>/dev/null
-    fi
-}
-
-# Enhanced monitoring with automatic restart
-enhanced_monitor_services() {
-    info_log "Starting enhanced service monitoring..."
-    
-    while [ "$MONITOR_RUNNING" = true ]; do
-        bash status_monitor.sh
-        sleep $MONITOR_INTERVAL
-    done
-}
-
-# Function to deploy to production
+# Enhanced production deployment
 deploy_production() {
     info_log "Preparing for production deployment..."
-
-    # Create backup directory if it doesn't exist
+    
+    # Create backup
     ssh $PROD_USER@$PROD_SERVER "mkdir -p $BACKUP_DIR"
-
-    # Backup current version
-    info_log "Creating backup of current version..."
     ssh $PROD_USER@$PROD_SERVER "if [ -d $APP_DIR ]; then tar -czf $BACKUP_DIR/terminusa_$TIMESTAMP.tar.gz -C $APP_DIR .; fi"
-
-    # Build and optimize static assets
-    info_log "Building and optimizing static assets..."
-    npm run build
-    python manage.py collectstatic --noinput
-    python manage.py compress --force
-
+    
     # Create deployment package
     info_log "Creating deployment package..."
     tar -czf deploy.tar.gz \
@@ -435,168 +305,63 @@ deploy_production() {
         --exclude='tests' \
         --exclude='*.log' \
         .
-
-    # Upload deployment package
-    info_log "Uploading deployment package..."
+    
+    # Upload and deploy
     scp deploy.tar.gz $PROD_USER@$PROD_SERVER:/tmp/
-
-    # Deploy on production server
-    info_log "Deploying on production server..."
-    ssh $PROD_USER@$PROD_SERVER << 'EOF'
-        # Stop services
-        systemctl stop terminusa
-        systemctl stop terminusa-terminal
-
-        # Clear application directory
+    ssh $PROD_USER@$PROD_SERVER "
+        systemctl stop terminusa terminusa-terminal
         rm -rf $APP_DIR/*
-
-        # Extract new version
         mkdir -p $APP_DIR
         tar -xzf /tmp/deploy.tar.gz -C $APP_DIR
-
-        # Set permissions
         chown -R www-data:www-data $APP_DIR
         chmod -R 755 $APP_DIR
-
-        # Install/update dependencies
         cd $APP_DIR
         python3 -m venv venv
         source venv/bin/activate
         pip install -r requirements.txt
-
-        # Run database migrations
-        python manage.py migrate --noinput
-
-        # Clear cache
-        python manage.py clear_cache
-
-        # Update static files
-        python manage.py collectstatic --noinput
-
-        # Reload Nginx configuration
-        nginx -t && systemctl reload nginx
-
-        # Start services
-        systemctl start terminusa
-        systemctl start terminusa-terminal
-
-        # Clean up
+        flask db upgrade
+        systemctl start terminusa terminusa-terminal
         rm /tmp/deploy.tar.gz
-
-        # Verify services
-        systemctl status terminusa
-        systemctl status terminusa-terminal
-EOF
-
-    success_log "Production deployment completed successfully!"
-
+    "
+    
     # Verify deployment
     info_log "Verifying deployment..."
     curl -s https://terminusa.online/health | grep -q "ok" && \
         success_log "Main website is up" || \
         error_log "Main website verification failed"
-
+    
     curl -s https://play.terminusa.online/health | grep -q "ok" && \
         success_log "Game server is up" || \
         error_log "Game server verification failed"
-
-    # Cleanup local deployment files
+    
+    # Cleanup
     rm deploy.tar.gz
+    
+    success_log "Production deployment completed"
 }
 
-# Function to rollback production
-rollback_production() {
-    info_log "Available backups:"
-    ssh $PROD_USER@$PROD_SERVER "ls -lt $BACKUP_DIR"
-
-    read -p "Enter backup timestamp to restore (YYYYMMDD_HHMMSS): " BACKUP_TIMESTAMP
-
-    # Verify backup exists
-    ssh $PROD_USER@$PROD_SERVER "test -f $BACKUP_DIR/terminusa_$BACKUP_TIMESTAMP.tar.gz" || {
-        error_log "Backup not found"
-        return 1
-    }
-
-    info_log "Rolling back to backup from $BACKUP_TIMESTAMP..."
-
-    ssh $PROD_USER@$PROD_SERVER << EOF
-        # Stop services
-        systemctl stop terminusa
-        systemctl stop terminusa-terminal
-
-        # Clear application directory
-        rm -rf $APP_DIR/*
-
-        # Restore from backup
-        tar -xzf $BACKUP_DIR/terminusa_$BACKUP_TIMESTAMP.tar.gz -C $APP_DIR
-
-        # Set permissions
-        chown -R www-data:www-data $APP_DIR
-        chmod -R 755 $APP_DIR
-
-        # Activate virtual environment
-        cd $APP_DIR
-        source venv/bin/activate
-
-        # Run database migrations
-        python manage.py migrate --noinput
-
-        # Clear cache
-        python manage.py clear_cache
-
-        # Reload Nginx configuration
-        nginx -t && systemctl reload nginx
-
-        # Start services
-        systemctl start terminusa
-        systemctl start terminusa-terminal
-EOF
-
-    success_log "Rollback completed successfully!"
-}
-
-# Function to deploy locally
-deploy_local() {
-    info_log "Starting local deployment..."
-
-    # Install dependencies
-    pip install -r requirements.txt
-
-    # Run migrations
-    python manage.py migrate
-
-    # Collect static files
-    python manage.py collectstatic --noinput
-
-    # Start development server
-    python manage.py runserver
-}
-
-# Show menu
+# Main menu
 show_menu() {
     while true; do
         clear
         echo -e "${CYAN}=== Terminusa Online Management ===${NC}"
         echo
-        echo "1) Deploy/Update System"
+        echo "1) Initialize/Update System"
         echo "2) Start All Services"
         echo "3) Stop All Services"
         echo "4) Restart All Services"
-        echo "5) Enhanced Monitoring (with auto-restart)"
+        echo "5) View System Status"
         echo "6) View Logs"
         echo "7) Database Operations"
-        echo "8) Nginx Operations"
-        echo "9) System Status"
-        echo "10) Debug Mode"
-        echo "11) Production Deployment"
-        echo "12) Local Deployment"
+        echo "8) Deploy to Production"
+        echo "9) Debug Mode"
         echo "0) Exit"
         echo
         read -p "Select an option: " choice
         
         case $choice in
             1)
-                initialize_deployment
+                setup_static_files && setup_database && setup_nginx
                 ;;
             2)
                 start_services
@@ -605,160 +370,23 @@ show_menu() {
                 stop_services
                 ;;
             4)
-                stop_services
-                sleep 2
-                start_services
+                stop_services && sleep 2 && start_services
                 ;;
             5)
-                enhanced_monitor_services
+                show_system_status
                 ;;
             6)
-                echo -e "\n${YELLOW}Available Logs:${NC}"
-                echo "1) Flask App Log"
-                echo "2) Terminal Server Log"
-                echo "3) Game Server Log"
-                echo "4) Email Monitor Log"
-                echo "5) AI Manager Log"
-                echo "6) Combat Manager Log"
-                echo "7) Economy Systems Log"
-                echo "8) Game Mechanics Log"
-                echo "9) Nginx Error Log"
-                echo "10) Nginx Access Log"
-                echo "11) PostgreSQL Log"
-                echo "12) Redis Log"
-                echo "13) Service Status Log"
-                echo "0) Back to main menu"
-                read -p "Select log to view: " log_choice
-                case $log_choice in
-                    1) tail -f logs/flask.log ;;
-                    2) tail -f logs/terminal.log ;;
-                    3) tail -f logs/game.log ;;
-                    4) tail -f logs/email_monitor.log ;;
-                    5) tail -f logs/ai_manager.log ;;
-                    6) tail -f logs/combat_manager.log ;;
-                    7) tail -f logs/economy_systems.log ;;
-                    8) tail -f logs/game_mechanics.log ;;
-                    9) tail -f /var/log/nginx/error.log ;;
-                    10) tail -f /var/log/nginx/access.log ;;
-                    11) tail -f /var/log/postgresql/postgresql-main.log ;;
-                    12) tail -f /var/log/redis/redis-server.log ;;
-                    13) cat logs/service_status.json | python3 -m json.tool ;;
-                    0) continue ;;
-                    *) error_log "Invalid option" ;;
-                esac
+                show_logs_menu
                 ;;
             7)
-                echo -e "\n${YELLOW}Database Operations:${NC}"
-                echo "1) Backup Database"
-                echo "2) Restore Database"
-                echo "3) Run Migrations"
-                echo "4) Initialize Database"
-                echo "0) Back to main menu"
-                read -p "Select operation: " db_choice
-                case $db_choice in
-                    1) 
-                        backup_file="backup_$(date +%Y%m%d_%H%M%S).sql"
-                        PGPASSWORD=${POSTGRES_PASSWORD} pg_dump -h localhost -U ${POSTGRES_USER} ${POSTGRES_DB} > $backup_file
-                        if [ $? -eq 0 ]; then
-                            success_log "Database backed up to $backup_file"
-                        else
-                            error_log "Database backup failed"
-                        fi
-                        ;;
-                    2)
-                        read -p "Enter backup file path: " restore_file
-                        if [ -f "$restore_file" ]; then
-                            PGPASSWORD=${POSTGRES_PASSWORD} psql -h localhost -U ${POSTGRES_USER} ${POSTGRES_DB} < $restore_file
-                            if [ $? -eq 0 ]; then
-                                success_log "Database restored from $restore_file"
-                            else
-                                error_log "Database restore failed"
-                            fi
-                        else
-                            error_log "Backup file not found"
-                        fi
-                        ;;
-                    3)
-                        source venv/bin/activate
-                        flask db stamp head  # Reset migration head
-                        flask db migrate     # Generate new migrations
-                        flask db upgrade     # Apply migrations
-                        success_log "Database migrations completed"
-                        ;;
-                    4)
-                        source venv/bin/activate
-                        # Create database if it doesn't exist
-                        PGPASSWORD=${POSTGRES_PASSWORD} psql -h localhost -U ${POSTGRES_USER} -d postgres -c "CREATE DATABASE ${POSTGRES_DB};" 2>/dev/null || true
-                        # Initialize database schema
-                        if flask db init; then
-                            info_log "Database migrations initialized"
-                            if flask db migrate; then
-                                info_log "Migration script created"
-                                if flask db upgrade; then
-                                    info_log "Migration applied successfully"
-                                    # Create initial tables
-                                    python -c "from app import app, db; from models import init_models; app.app_context().push(); db.create_all(); init_models()"
-                                    if [ $? -eq 0 ]; then
-                                        success_log "Database initialized successfully"
-                                    else
-                                        error_log "Failed to initialize database models"
-                                    fi
-                                else
-                                    error_log "Failed to apply migration"
-                                fi
-                            else
-                                error_log "Failed to create migration script"
-                            fi
-                        else
-                            error_log "Failed to initialize database migrations"
-                        fi
-                        ;;
-                    0) continue ;;
-                    *) error_log "Invalid option" ;;
-                esac
+                show_database_menu
                 ;;
             8)
-                echo -e "\n${YELLOW}Nginx Operations:${NC}"
-                echo "1) Test Configuration"
-                echo "2) Reload Configuration"
-                echo "3) View Active Sites"
-                echo "0) Back to main menu"
-                read -p "Select operation: " nginx_choice
-                case $nginx_choice in
-                    1) nginx -t ;;
-                    2) systemctl reload nginx ;;
-                    3) ls -l /etc/nginx/sites-enabled/ ;;
-                    0) continue ;;
-                    *) error_log "Invalid option" ;;
-                esac
+                deploy_production
                 ;;
             9)
-                bash status_monitor.sh
-                ;;
-            10)
-                if [ "$DEBUG" = true ]; then
-                    DEBUG=false
-                    info_log "Debug mode disabled"
-                else
-                    DEBUG=true
-                    info_log "Debug mode enabled"
-                fi
-                ;;
-            11)
-                echo -e "\n${YELLOW}Production Deployment Options:${NC}"
-                echo "1) Deploy to Production"
-                echo "2) Rollback Production"
-                echo "0) Back to main menu"
-                read -p "Select operation: " prod_choice
-                case $prod_choice in
-                    1) deploy_production ;;
-                    2) rollback_production ;;
-                    0) continue ;;
-                    *) error_log "Invalid option" ;;
-                esac
-                ;;
-            12)
-                deploy_local
+                DEBUG=$([[ "$DEBUG" == "true" ]] && echo "false" || echo "true")
+                info_log "Debug mode: $DEBUG"
                 ;;
             0)
                 info_log "Exiting..."
@@ -774,9 +402,6 @@ show_menu() {
     done
 }
 
-# Trap signals for graceful shutdown
-trap 'MONITOR_RUNNING=false; stop_services; exit 0' SIGINT SIGTERM
-
-# Main execution
+# Initialize
 mkdir -p logs
 show_menu
