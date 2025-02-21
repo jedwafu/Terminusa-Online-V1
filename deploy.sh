@@ -333,16 +333,19 @@ stop_services() {
     
     # Kill all screen sessions first
     info_log "Stopping screen sessions..."
-    screen -ls | grep -o '[0-9]*\.terminusa-[^ ]*' | while read -r session; do
-        info_log "Killing screen session: $session"
-        screen -S "$session" -X quit
-    done
     
-    # Double check and force kill any remaining screen sessions
-    screen -ls | grep -o '[0-9]*\.terminusa-[^ ]*' | while read -r session; do
-        info_log "Force killing screen session: $session"
-        screen -S "$session" -X quit
-        kill $(echo "$session" | cut -d. -f1) 2>/dev/null
+    # Get all screen sessions and process each one
+    screen -ls | grep 'terminusa' | while read -r session; do
+        # Extract just the session ID (number before the dot)
+        session_id=$(echo "$session" | awk '{print $1}' | cut -d'.' -f1)
+        if [ ! -z "$session_id" ]; then
+            info_log "Killing screen session with ID: $session_id"
+            screen -S "$session_id" -X quit
+            # Double check and force kill if needed
+            if ps -p "$session_id" > /dev/null 2>&1; then
+                kill -9 "$session_id" 2>/dev/null
+            fi
+        fi
     done
     
     # Stop system services
@@ -362,6 +365,18 @@ stop_services() {
             fi
         done
     done
+    
+    # Final verification that all screen sessions are gone
+    if screen -ls | grep -q 'terminusa'; then
+        info_log "Force killing any remaining screen sessions..."
+        screen -ls | grep 'terminusa' | awk '{print $1}' | while read -r session; do
+            session_id=$(echo "$session" | cut -d'.' -f1)
+            if [ ! -z "$session_id" ]; then
+                screen -S "$session_id" -X quit
+                kill -9 "$session_id" 2>/dev/null
+            fi
+        done
+    fi
     
     success_log "All services stopped"
 }
