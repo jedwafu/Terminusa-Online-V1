@@ -1,7 +1,8 @@
 """
 Reset database script for fresh migration
 """
-from app import app, db
+from app import app
+from models import db
 from sqlalchemy import text
 
 def reset_database():
