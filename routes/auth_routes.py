@@ -12,7 +12,7 @@ from models import User, Announcement
 from datetime import datetime, timedelta
 import bcrypt
 
-auth = Blueprint('auth', __name__)
+auth_bp = Blueprint('auth_bp', __name__)
 
 def get_latest_announcements(limit=5):
     """Get latest active announcements"""
@@ -25,7 +25,7 @@ def get_latest_announcements(limit=5):
         current_app.logger.error(f"Error fetching announcements: {str(e)}")
         return []
 
-@auth.route('/login', methods=['GET', 'POST'])
+@auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """Handle login page and form submission"""
     if request.method == 'GET':
@@ -56,7 +56,7 @@ def login():
                     'message': 'Username and password are required'
                 }), 400
             flash('Username and password are required', 'error')
-            return redirect(url_for('auth.login'))
+            return redirect(url_for('auth_bp.login'))
 
         # Try to find user by username or email
         user = User.query.filter(
@@ -71,7 +71,7 @@ def login():
                     'message': 'Invalid credentials'
                 }), 401
             flash('Invalid credentials', 'error')
-            return redirect(url_for('auth.login'))
+            return redirect(url_for('auth_bp.login'))
 
         # Verify password
         if not bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
@@ -82,7 +82,7 @@ def login():
                     'message': 'Invalid credentials'
                 }), 401
             flash('Invalid credentials', 'error')
-            return redirect(url_for('auth.login'))
+            return redirect(url_for('auth_bp.login'))
 
         # Update last login
         user.last_login = datetime.utcnow()
@@ -137,9 +137,9 @@ def login():
                 'message': 'Login failed'
             }), 500
         flash('Login failed', 'error')
-        return redirect(url_for('auth.login'))
+        return redirect(url_for('auth_bp.login'))
 
-@auth.route('/logout')
+@auth_bp.route('/logout')
 def logout():
     """Handle user logout"""
     try:
@@ -153,7 +153,7 @@ def logout():
         flash('Logout failed', 'error')
         return redirect(url_for('main.index'))
 
-@auth.route('/register', methods=['GET', 'POST'])
+@auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
     """Handle registration page and form submission"""
     if request.method == 'GET':
@@ -184,7 +184,7 @@ def register():
                     'message': 'Missing required fields'
                 }), 400
             flash('All fields are required', 'error')
-            return redirect(url_for('auth.register'))
+            return redirect(url_for('auth_bp.register'))
 
         # Check if user already exists
         if User.query.filter_by(username=username).first():
@@ -194,7 +194,7 @@ def register():
                     'message': 'Username already exists'
                 }), 400
             flash('Username already exists', 'error')
-            return redirect(url_for('auth.register'))
+            return redirect(url_for('auth_bp.register'))
 
         if User.query.filter_by(email=email).first():
             if request.is_json:
@@ -203,7 +203,7 @@ def register():
                     'message': 'Email already registered'
                 }), 400
             flash('Email already registered', 'error')
-            return redirect(url_for('auth.register'))
+            return redirect(url_for('auth_bp.register'))
 
         # Create user
         salt = bcrypt.gensalt()
@@ -232,7 +232,7 @@ def register():
             }), 201
         
         flash('Registration successful! You can now log in.', 'success')
-        return redirect(url_for('auth.login'))
+        return redirect(url_for('auth_bp.login'))
 
     except Exception as e:
         current_app.logger.error(f"Registration error: {str(e)}")
@@ -243,9 +243,9 @@ def register():
                 'message': 'Registration failed'
             }), 500
         flash('Registration failed', 'error')
-        return redirect(url_for('auth.register'))
+        return redirect(url_for('auth_bp.register'))
 
-@auth.route('/api/refresh', methods=['POST'])
+@auth_bp.route('/api/refresh', methods=['POST'])
 @jwt_required(refresh=True)
 def refresh():
     """Refresh access token"""
@@ -272,7 +272,7 @@ def refresh():
             'message': 'Token refresh failed'
         }), 500
 
-@auth.route('/api/verify', methods=['POST'])
+@auth_bp.route('/api/verify', methods=['POST'])
 @jwt_required()
 def verify_token():
     """Verify access token"""
