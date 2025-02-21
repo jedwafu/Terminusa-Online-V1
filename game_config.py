@@ -241,7 +241,3 @@ AI_CONSIDERATION_FACTORS = [
     'gambling_frequency',
     'market_activity'
 ]
-"""
-</edit_file>
-
-Next, I will proceed with updating the `game_handler.py` file to implement the necessary changes for the new currency system and mechanics.
