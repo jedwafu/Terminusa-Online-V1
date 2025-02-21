@@ -9,31 +9,32 @@ def reset_database():
     """Drop all tables and reset migrations"""
     app = create_app()
     with app.app_context():
-        # Drop all tables with foreign key checks disabled
+        # Drop all tables and types with foreign key checks disabled
         with db.engine.connect() as conn:
-            # Disable foreign key checks
-            conn.execute(text('SET FOREIGN_KEY_CHECKS=0;')) if 'mysql' in str(db.engine.url) else conn.execute(text('SET CONSTRAINTS ALL DEFERRED;'))
-            
-            # Get all table names
-            if 'mysql' in str(db.engine.url):
-                result = conn.execute(text('SHOW TABLES;'))
-                tables = [row[0] for row in result]
-            else:
-                result = conn.execute(text("""
-                    SELECT tablename FROM pg_tables 
-                    WHERE schemaname = 'public';
-                """))
-                tables = [row[0] for row in result]
-            
-            # Drop each table
-            for table in tables:
-                conn.execute(text(f'DROP TABLE IF EXISTS {table} CASCADE;'))
-            
+            # Drop all tables
+            conn.execute(text("""
+                DO $$ DECLARE
+                    r RECORD;
+                BEGIN
+                    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+                        EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
+                    END LOOP;
+                END $$;
+            """))
+
+            # Drop all enum types
+            conn.execute(text("""
+                DO $$ DECLARE
+                    r RECORD;
+                BEGIN
+                    FOR r IN (SELECT typname FROM pg_type WHERE typnamespace = 'public'::regnamespace AND typtype = 'e') LOOP
+                        EXECUTE 'DROP TYPE IF EXISTS ' || quote_ident(r.typname) || ' CASCADE';
+                    END LOOP;
+                END $$;
+            """))
+
             # Drop alembic_version table
             conn.execute(text('DROP TABLE IF EXISTS alembic_version;'))
-            
-            # Re-enable foreign key checks
-            conn.execute(text('SET FOREIGN_KEY_CHECKS=1;')) if 'mysql' in str(db.engine.url) else conn.execute(text('SET CONSTRAINTS ALL IMMEDIATE;'))
             
             conn.commit()
         
