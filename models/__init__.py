@@ -10,6 +10,7 @@ db = SQLAlchemy()
 from .user import User
 from .player import Player, PlayerClass, JobType
 from .inventory import Inventory, ItemType, ItemRarity
+from .item import Item
 
 # Import game-related models
 from .announcement import Announcement
