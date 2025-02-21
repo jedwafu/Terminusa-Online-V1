@@ -656,11 +656,22 @@ show_menu() {
                         fi
                         ;;
                     3)
-                        flask db upgrade heads
+                        source venv/bin/activate
+                        flask db stamp head  # Reset migration head
+                        flask db migrate     # Generate new migrations
+                        flask db upgrade     # Apply migrations
                         success_log "Database migrations completed"
                         ;;
                     4)
-                        python init_database.py
+                        source venv/bin/activate
+                        # Create database if it doesn't exist
+                        psql -U terminusa -d postgres -c "CREATE DATABASE terminusa_db;" 2>/dev/null || true
+                        # Initialize database schema
+                        flask db init || true
+                        flask db migrate
+                        flask db upgrade
+                        # Create initial tables
+                        python -c "from app import app, db; from models import init_models; app.app_context().push(); db.create_all(); init_models()"
                         success_log "Database initialized"
                         ;;
                     0) continue ;;
