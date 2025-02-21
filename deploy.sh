@@ -196,6 +196,57 @@ setup_nginx() {
     return 0
 }
 
+# Stop services
+stop_services() {
+    info_log "Stopping services..."
+    
+    # Kill all screen sessions first
+    info_log "Stopping screen sessions..."
+    for service in "${!SERVICE_SCREENS[@]}"; do
+        screen_name=${SERVICE_SCREENS[$service]}
+        if screen -list | grep -q "$screen_name"; then
+            info_log "Killing screen session: $screen_name"
+            screen -S "$screen_name" -X quit
+        fi
+    done
+    
+    # Stop system services
+    info_log "Stopping system services..."
+    systemctl stop nginx
+    systemctl stop redis-server
+    systemctl stop postgresql
+    systemctl stop postfix
+    
+    # Kill any processes on our ports
+    for service in "${!SERVICE_PORTS[@]}"; do
+        IFS=',' read -ra PORTS <<< "${SERVICE_PORTS[$service]}"
+        for port in "${PORTS[@]}"; do
+            if check_port $port; then
+                info_log "Killing process on port $port..."
+                kill_port_process $port
+            fi
+        done
+    done
+    
+    success_log "All services stopped"
+}
+
+# Function to check if a port is in use
+check_port() {
+    local port=$1
+    netstat -tuln | grep -q ":$port "
+    return $?
+}
+
+# Function to kill process on a port
+kill_port_process() {
+    local port=$1
+    local pid=$(lsof -t -i:$port)
+    if [ ! -z "$pid" ]; then
+        kill -9 $pid 2>/dev/null
+    fi
+}
+
 # Enhanced service management
 start_services() {
     info_log "Starting services..."
