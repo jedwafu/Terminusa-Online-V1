@@ -51,10 +51,11 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 required_vars=(
     "PROD_SERVER"
     "PROD_USER"
-    "APP_DIR"
+    "MAIN_APP_DIR"
+    "MAIN_STATIC_DIR"
+    "GAME_APP_DIR"
+    "GAME_STATIC_DIR"
     "BACKUP_DIR"
-    "WEB_ROOT"
-    "STATIC_DIR"
     "DATABASE_URL"
     "POSTGRES_USER"
     "POSTGRES_PASSWORD"
@@ -138,29 +139,35 @@ info_log() {
 setup_static_files() {
     info_log "Setting up static files..."
     
-    # Create required directories
-    sudo mkdir -p $STATIC_DIR/{css,js,images}
-    
-    # Copy static files with error checking
-    info_log "Copying static files..."
-    if [ -d "static" ]; then
-        sudo cp -r static/* $STATIC_DIR/ 2>/dev/null || {
-            error_log "Failed to copy static files"
+    # Setup main website static files
+    info_log "Setting up main website static files..."
+    sudo mkdir -p $MAIN_STATIC_DIR/{css,js,images}
+    if [ -d "static/web" ]; then
+        sudo cp -r static/web/* $MAIN_STATIC_DIR/ 2>/dev/null || {
+            error_log "Failed to copy main website static files"
             return 1
         }
     else
-        error_log "Static directory not found!"
+        error_log "Main website static directory not found!"
         return 1
     fi
+    sudo chown -R www-data:www-data $MAIN_APP_DIR
+    sudo chmod -R 755 $MAIN_APP_DIR
     
-    # Set permissions
-    info_log "Setting permissions..."
-    sudo chown -R www-data:www-data $WEB_ROOT
-    sudo chmod -R 755 $WEB_ROOT
-    
-    # Create symbolic links
-    info_log "Creating symbolic links..."
-    sudo ln -sf $STATIC_DIR /root/Terminusa/static
+    # Setup game application static files
+    info_log "Setting up game application static files..."
+    sudo mkdir -p $GAME_STATIC_DIR/{css,js,images}
+    if [ -d "static/game" ]; then
+        sudo cp -r static/game/* $GAME_STATIC_DIR/ 2>/dev/null || {
+            error_log "Failed to copy game static files"
+            return 1
+        }
+    else
+        error_log "Game static directory not found!"
+        return 1
+    fi
+    sudo chown -R www-data:www-data $GAME_APP_DIR
+    sudo chmod -R 755 $GAME_APP_DIR
     
     # Verify nginx configuration
     info_log "Verifying nginx configuration..."
@@ -464,13 +471,23 @@ show_system_status() {
 deploy_production() {
     info_log "Preparing for production deployment..."
     
-    # Create backup
+    # Create backups
     ssh $PROD_USER@$PROD_SERVER "mkdir -p $BACKUP_DIR"
-    ssh $PROD_USER@$PROD_SERVER "if [ -d $APP_DIR ]; then tar -czf $BACKUP_DIR/terminusa_$TIMESTAMP.tar.gz -C $APP_DIR .; fi"
+    ssh $PROD_USER@$PROD_SERVER "
+        if [ -d $MAIN_APP_DIR ]; then 
+            tar -czf $BACKUP_DIR/terminusa-web_$TIMESTAMP.tar.gz -C $MAIN_APP_DIR .;
+        fi;
+        if [ -d $GAME_APP_DIR ]; then 
+            tar -czf $BACKUP_DIR/terminusa-game_$TIMESTAMP.tar.gz -C $GAME_APP_DIR .;
+        fi
+    "
     
-    # Create deployment package
-    info_log "Creating deployment package..."
-    tar -czf deploy.tar.gz \
+    # Create deployment packages
+    info_log "Creating deployment packages..."
+    
+    # Main website package
+    info_log "Creating main website package..."
+    tar -czf deploy-web.tar.gz \
         --exclude='*.pyc' \
         --exclude='__pycache__' \
         --exclude='.git' \
@@ -478,24 +495,58 @@ deploy_production() {
         --exclude='node_modules' \
         --exclude='tests' \
         --exclude='*.log' \
-        .
+        --exclude='static/game' \
+        web/
+    
+    # Game application package
+    info_log "Creating game application package..."
+    tar -czf deploy-game.tar.gz \
+        --exclude='*.pyc' \
+        --exclude='__pycache__' \
+        --exclude='.git' \
+        --exclude='.env' \
+        --exclude='node_modules' \
+        --exclude='tests' \
+        --exclude='*.log' \
+        --exclude='static/web' \
+        game/
     
     # Upload and deploy
-    scp deploy.tar.gz $PROD_USER@$PROD_SERVER:/tmp/
+    info_log "Uploading deployment packages..."
+    scp deploy-web.tar.gz deploy-game.tar.gz $PROD_USER@$PROD_SERVER:/tmp/
+    
+    info_log "Deploying main website..."
     ssh $PROD_USER@$PROD_SERVER "
-        systemctl stop terminusa terminusa-terminal
-        rm -rf $APP_DIR/*
-        mkdir -p $APP_DIR
-        tar -xzf /tmp/deploy.tar.gz -C $APP_DIR
-        chown -R www-data:www-data $APP_DIR
-        chmod -R 755 $APP_DIR
-        cd $APP_DIR
+        systemctl stop terminusa-web
+        rm -rf $MAIN_APP_DIR/*
+        mkdir -p $MAIN_APP_DIR
+        tar -xzf /tmp/deploy-web.tar.gz -C $MAIN_APP_DIR
+        chown -R www-data:www-data $MAIN_APP_DIR
+        chmod -R 755 $MAIN_APP_DIR
+        cd $MAIN_APP_DIR
         python3 -m venv venv
         source venv/bin/activate
         pip install -r requirements.txt
         flask db upgrade
-        systemctl start terminusa terminusa-terminal
-        rm /tmp/deploy.tar.gz
+        systemctl start terminusa-web
+        rm /tmp/deploy-web.tar.gz
+    "
+    
+    info_log "Deploying game application..."
+    ssh $PROD_USER@$PROD_SERVER "
+        systemctl stop terminusa-game terminusa-terminal
+        rm -rf $GAME_APP_DIR/*
+        mkdir -p $GAME_APP_DIR
+        tar -xzf /tmp/deploy-game.tar.gz -C $GAME_APP_DIR
+        chown -R www-data:www-data $GAME_APP_DIR
+        chmod -R 755 $GAME_APP_DIR
+        cd $GAME_APP_DIR
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install -r requirements.txt
+        flask db upgrade
+        systemctl start terminusa-game terminusa-terminal
+        rm /tmp/deploy-game.tar.gz
     "
     
     # Verify deployment
@@ -508,10 +559,10 @@ deploy_production() {
         success_log "Game server is up" || \
         error_log "Game server verification failed"
     
-    # Cleanup
-    rm deploy.tar.gz
+    # Cleanup local files
+    rm -f deploy-web.tar.gz deploy-game.tar.gz
     
-    success_log "Production deployment completed"
+    success_log "Production deployment completed successfully"
 }
 
 # Show logs menu
