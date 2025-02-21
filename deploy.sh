@@ -139,33 +139,34 @@ info_log() {
 setup_static_files() {
     info_log "Setting up static files..."
     
-    # Setup main website static files
-    info_log "Setting up main website static files..."
+    # Setup static files
+    info_log "Setting up static files..."
+    
+    # Create directories
     sudo mkdir -p $MAIN_STATIC_DIR/{css,js,images}
-    if [ -d "static/web" ]; then
-        sudo cp -r static/web/* $MAIN_STATIC_DIR/ 2>/dev/null || {
-            error_log "Failed to copy main website static files"
+    sudo mkdir -p $GAME_STATIC_DIR/{css,js,images}
+    
+    # Copy static files
+    if [ -d "static" ]; then
+        # Copy to main website
+        sudo cp -r static/* $MAIN_STATIC_DIR/ 2>/dev/null || {
+            error_log "Failed to copy static files to main website"
+            return 1
+        }
+        
+        # Copy to game application
+        sudo cp -r static/* $GAME_STATIC_DIR/ 2>/dev/null || {
+            error_log "Failed to copy static files to game application"
             return 1
         }
     else
-        error_log "Main website static directory not found!"
+        error_log "Static directory not found!"
         return 1
     fi
+    
+    # Set permissions
     sudo chown -R www-data:www-data $MAIN_APP_DIR
     sudo chmod -R 755 $MAIN_APP_DIR
-    
-    # Setup game application static files
-    info_log "Setting up game application static files..."
-    sudo mkdir -p $GAME_STATIC_DIR/{css,js,images}
-    if [ -d "static/game" ]; then
-        sudo cp -r static/game/* $GAME_STATIC_DIR/ 2>/dev/null || {
-            error_log "Failed to copy game static files"
-            return 1
-        }
-    else
-        error_log "Game static directory not found!"
-        return 1
-    fi
     sudo chown -R www-data:www-data $GAME_APP_DIR
     sudo chmod -R 755 $GAME_APP_DIR
     
