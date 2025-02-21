@@ -1,19 +1,29 @@
-from alembic.config import Config
-from alembic import command
 import os
+from flask_migrate import Migrate, init, migrate, upgrade
+from app import app, db
 
 def run_migrations():
     """Run database migrations"""
-    # Create Alembic configuration
-    alembic_cfg = Config("alembic.ini")
-    
-    # Ensure migrations directory exists
-    os.makedirs("migrations/versions", exist_ok=True)
-    
     try:
-        # Run the migration
-        command.upgrade(alembic_cfg, "head")
-        print("Migrations completed successfully!")
+        # Set up application context
+        with app.app_context():
+            # Initialize Flask-Migrate
+            migrate = Migrate(app, db)
+            
+            # Initialize migrations directory if it doesn't exist
+            if not os.path.exists("migrations"):
+                print("Initializing migrations directory...")
+                init()
+            
+            # Create migration
+            print("Creating migration...")
+            migrate()
+            
+            # Apply migration
+            print("Applying migration...")
+            upgrade()
+            
+            print("Migrations completed successfully!")
     except Exception as e:
         print(f"Error running migrations: {e}")
         raise
