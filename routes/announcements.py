@@ -5,7 +5,7 @@ from models import db, Announcement
 from datetime import datetime
 from functools import wraps
 
-announcements = Blueprint('announcements', __name__)
+announcements_bp = Blueprint('announcements_bp', __name__)
 
 def admin_required(f):
     @wraps(f)
@@ -16,7 +16,7 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-@announcements.route('/')
+@announcements_bp.route('/')
 def list_announcements():
     """Display all active announcements to users"""
     announcements = Announcement.query.filter_by(is_active=True)\
@@ -24,7 +24,7 @@ def list_announcements():
         .all()
     return render_template('announcements.html', announcements=announcements)
 
-@announcements.route('/admin')
+@announcements_bp.route('/admin')
 @login_required
 @admin_required
 def admin_announcements():
@@ -35,7 +35,7 @@ def admin_announcements():
     ).all()
     return render_template('admin/announcements.html', announcements=announcements)
 
-@announcements.route('/admin/create', methods=['GET', 'POST'])
+@announcements_bp.route('/admin/create', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def create_announcement():
@@ -47,7 +47,7 @@ def create_announcement():
         
         if not title or not content:
             flash('Title and content are required.', 'error')
-            return redirect(url_for('.create_announcement'))
+            return redirect(url_for('announcements_bp.create_announcement'))
         
         announcement = Announcement(
             title=title,
@@ -60,11 +60,11 @@ def create_announcement():
         db.session.commit()
         
         flash('Announcement created successfully!', 'success')
-        return redirect(url_for('.admin_announcements'))
+        return redirect(url_for('announcements_bp.admin_announcements'))
     
     return render_template('admin/create_announcement.html')
 
-@announcements.route('/admin/<int:id>/edit', methods=['GET', 'POST'])
+@announcements_bp.route('/admin/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 @admin_required
 def edit_announcement(id):
@@ -79,7 +79,7 @@ def edit_announcement(id):
         
         if not title or not content:
             flash('Title and content are required.', 'error')
-            return redirect(url_for('.edit_announcement', id=id))
+            return redirect(url_for('announcements_bp.edit_announcement', id=id))
         
         announcement.title = title
         announcement.content = content
@@ -90,11 +90,11 @@ def edit_announcement(id):
         db.session.commit()
         
         flash('Announcement updated successfully!', 'success')
-        return redirect(url_for('.admin_announcements'))
+        return redirect(url_for('announcements_bp.admin_announcements'))
     
     return render_template('admin/edit_announcement.html', announcement=announcement)
 
-@announcements.route('/admin/<int:id>/delete', methods=['POST'])
+@announcements_bp.route('/admin/<int:id>/delete', methods=['POST'])
 @login_required
 @admin_required
 def delete_announcement(id):
@@ -104,9 +104,9 @@ def delete_announcement(id):
     db.session.commit()
     
     flash('Announcement deleted successfully!', 'success')
-    return redirect(url_for('.admin_announcements'))
+    return redirect(url_for('announcements_bp.admin_announcements'))
 
-@announcements.route('/admin/<int:id>/toggle', methods=['POST'])
+@announcements_bp.route('/admin/<int:id>/toggle', methods=['POST'])
 @login_required
 @admin_required
 def toggle_announcement(id):
@@ -117,10 +117,10 @@ def toggle_announcement(id):
     
     status = 'activated' if announcement.is_active else 'deactivated'
     flash(f'Announcement {status} successfully!', 'success')
-    return redirect(url_for('.admin_announcements'))
+    return redirect(url_for('announcements_bp.admin_announcements'))
 
 # API routes
-@announcements.route('/api/<int:id>')
+@announcements_bp.route('/api/<int:id>')
 def get_announcement(id):
     """Get announcement details"""
     try:
@@ -139,7 +139,7 @@ def get_announcement(id):
         current_app.logger.error(f"Error getting announcement: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Failed to get announcement'}), 500
 
-@announcements.route('/api/latest')
+@announcements_bp.route('/api/latest')
 def get_latest_announcements():
     """Get latest active announcements"""
     try:
