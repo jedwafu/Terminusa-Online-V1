@@ -12,6 +12,7 @@ from .player import Player, PlayerClass, JobType
 from .inventory import Inventory, ItemType, ItemRarity
 
 # Import game-related models
+from .announcement import Announcement
 from .achievement import Achievement
 from .gate import Gate
 from .guild import Guild, GuildMember, GuildQuest
