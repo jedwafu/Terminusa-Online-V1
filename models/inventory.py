@@ -1,249 +1,296 @@
-from database import db
+"""
+Inventory model for Terminusa Online
+"""
+from typing import Dict, List, Optional, Tuple
 from datetime import datetime
-from sqlalchemy.orm import relationship
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Enum, JSON
-import enum
+from sqlalchemy.dialects.postgresql import JSONB
+from enum import Enum
 
-class ItemType(enum.Enum):
-    WEAPON = "Weapon"
-    ARMOR = "Armor"
-    ACCESSORY = "Accessory"
-    CONSUMABLE = "Consumable"
-    MATERIAL = "Material"
-    LICENSE = "License"
-    SPECIAL = "Special"
+from models import db
 
-class ItemRarity(enum.Enum):
-    BASIC = "Basic"
-    INTERMEDIATE = "Intermediate"
-    EXCELLENT = "Excellent"
-    LEGENDARY = "Legendary"
-    IMMORTAL = "Immortal"
+class ItemType(Enum):
+    WEAPON = "weapon"
+    ARMOR = "armor"
+    ACCESSORY = "accessory"
+    CONSUMABLE = "consumable"
+    MATERIAL = "material"
+    QUEST_ITEM = "quest_item"
+    MOUNT = "mount"
+    PET = "pet"
 
-class EquipmentType(enum.Enum):
-    # Weapons
-    SWORD = "Sword"
-    STAFF = "Staff"
-    DAGGER = "Dagger"
-    BOW = "Bow"
-    WAND = "Wand"
-    
-    # Armor
-    HELMET = "Helmet"
-    CHEST = "Chest"
-    GLOVES = "Gloves"
-    BOOTS = "Boots"
-    SHIELD = "Shield"
-    
-    # Accessories
-    RING = "Ring"
-    NECKLACE = "Necklace"
-    EARRING = "Earring"
-    BELT = "Belt"
-
-class EquipmentSlot(enum.Enum):
-    MAIN_HAND = "Main Hand"
-    OFF_HAND = "Off Hand"
-    HEAD = "Head"
-    CHEST = "Chest"
-    HANDS = "Hands"
-    FEET = "Feet"
-    RING_1 = "Ring 1"
-    RING_2 = "Ring 2"
-    NECKLACE = "Necklace"
-    EARRING_1 = "Earring 1"
-    EARRING_2 = "Earring 2"
-    BELT = "Belt"
-
-class Item(db.Model):
-    __tablename__ = 'items'
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False)
-    description = Column(String(500))
-    type = Column(Enum(ItemType), nullable=False)
-    rarity = Column(Enum(ItemRarity), nullable=False)
-    level_requirement = Column(Integer, default=1)
-    is_tradeable = Column(Boolean, default=True)
-    is_stackable = Column(Boolean, default=False)
-    max_stack = Column(Integer, default=1)
-    buy_price_exons = Column(Float)
-    buy_price_crystals = Column(Float)
-    sell_price_exons = Column(Float)
-    sell_price_crystals = Column(Float)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Equipment specific fields
-    equipment_type = Column(Enum(EquipmentType))
-    equipment_slot = Column(Enum(EquipmentSlot))
-    durability = Column(Float)  # Current durability
-    max_durability = Column(Float, default=100.0)  # Maximum durability
-    stats = Column(JSON)  # Equipment stats as JSON
-
-    # Relationships
-    inventories = relationship('Inventory', back_populates='item')
-    equipment = relationship('Equipment', back_populates='item')
-
-    def __repr__(self):
-        return f'<Item {self.name} ({self.type.value})>'
-
-    def calculate_durability_loss(self, damage_taken, mana_used, time_spent):
-        """Calculate durability loss based on combat factors"""
-        durability_loss = (
-            (damage_taken * 0.01) +  # 1% per damage taken
-            (mana_used * 0.005) +    # 0.5% per mana used
-            (time_spent * 0.1)       # 0.1% per second
-        )
-        return min(durability_loss, self.durability)
-
-    def repair_cost_crystals(self):
-        """Calculate repair cost in crystals"""
-        if self.durability >= self.max_durability:
-            return 0
-        
-        missing_durability = self.max_durability - self.durability
-        base_cost = missing_durability * (
-            10 if self.rarity == ItemRarity.BASIC else
-            20 if self.rarity == ItemRarity.INTERMEDIATE else
-            40 if self.rarity == ItemRarity.EXCELLENT else
-            80 if self.rarity == ItemRarity.LEGENDARY else
-            160  # IMMORTAL
-        )
-        return base_cost
+class ItemRarity(Enum):
+    COMMON = "common"
+    UNCOMMON = "uncommon"
+    RARE = "rare"
+    EPIC = "epic"
+    LEGENDARY = "legendary"
+    MYTHICAL = "mythical"
 
 class Inventory(db.Model):
     __tablename__ = 'inventories'
 
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    item_id = Column(Integer, ForeignKey('items.id'), nullable=False)
-    quantity = Column(Integer, default=1)
-    slot = Column(Integer)  # Inventory slot number
-    is_locked = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    
+    # Main inventory storage
+    items = db.Column(JSONB, nullable=False, default={})
+    
+    # Equipment slots
+    equipment = db.Column(JSONB, nullable=False, default={
+        'weapon': None,
+        'armor': None,
+        'helmet': None,
+        'gloves': None,
+        'boots': None,
+        'accessory1': None,
+        'accessory2': None,
+        'mount': None,
+        'pet': None
+    })
+    
+    # Quick access slots for consumables
+    quickslots = db.Column(JSONB, nullable=False, default={
+        'slot1': None,
+        'slot2': None,
+        'slot3': None,
+        'slot4': None
+    })
+    
+    # Inventory limits
+    max_slots = db.Column(db.Integer, default=50)
+    max_weight = db.Column(db.Float, default=100.0)
+    current_weight = db.Column(db.Float, default=0.0)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # Relationships
-    user = relationship('User', back_populates='inventory')
-    item = relationship('Item', back_populates='inventories')
+    def __init__(self, user_id: int):
+        self.user_id = user_id
 
-    def __repr__(self):
-        return f'<Inventory {self.user.username} - {self.item.name} x{self.quantity}>'
-
-class Equipment(db.Model):
-    __tablename__ = 'equipment'
-
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    item_id = Column(Integer, ForeignKey('items.id'), nullable=False)
-    slot = Column(Enum(EquipmentSlot), nullable=False)
-    is_broken = Column(Boolean, default=False)
-    equipped_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Relationships
-    user = relationship('User', back_populates='equipment')
-    item = relationship('Item', back_populates='equipment')
-
-    def __repr__(self):
-        return f'<Equipment {self.user.username} - {self.item.name} ({self.slot.value})>'
-
-    def update_durability(self, damage_taken, mana_used, time_spent):
-        """Update equipment durability based on combat factors"""
-        if not self.is_broken:
-            durability_loss = self.item.calculate_durability_loss(
-                damage_taken, mana_used, time_spent
-            )
-            self.item.durability -= durability_loss
+    def add_item(self, item_id: str, item_data: Dict) -> Tuple[bool, str]:
+        """Add an item to inventory"""
+        try:
+            # Check inventory space
+            if len(self.items) >= self.max_slots:
+                return False, "Inventory is full"
             
-            if self.item.durability <= 0:
-                self.item.durability = 0
-                self.is_broken = True
+            # Check weight limit
+            new_weight = self.current_weight + item_data.get('weight', 0)
+            if new_weight > self.max_weight:
+                return False, "Weight limit exceeded"
             
-            db.session.commit()
+            # Add or stack item
+            if item_data.get('stackable', False):
+                if item_id in self.items:
+                    self.items[item_id]['quantity'] += item_data['quantity']
+                else:
+                    self.items[item_id] = item_data
+            else:
+                # Generate unique instance ID for non-stackable items
+                instance_id = f"{item_id}_{datetime.utcnow().timestamp()}"
+                self.items[instance_id] = item_data
+            
+            self.current_weight = new_weight
+            return True, "Item added successfully"
+            
+        except Exception as e:
+            return False, str(e)
 
-# Initialize default items
-def init_items():
-    """Initialize default items"""
-    default_items = [
-        # Licenses
-        {
-            'name': 'Job Reset License',
-            'description': 'Allows resetting current job',
-            'type': ItemType.LICENSE,
-            'rarity': ItemRarity.BASIC,
-            'buy_price_exons': 1000,
-            'is_tradeable': False
-        },
-        {
-            'name': 'Job License',
-            'description': 'Required for job advancement',
-            'type': ItemType.LICENSE,
-            'rarity': ItemRarity.BASIC,
-            'buy_price_exons': 2000,
-            'is_tradeable': False
-        },
-        {
-            'name': 'Hunter Class Upgrade License',
-            'description': 'Required for hunter class advancement',
-            'type': ItemType.LICENSE,
-            'rarity': ItemRarity.BASIC,
-            'buy_price_exons': 5000,
-            'is_tradeable': False
-        },
-        {
-            'name': 'Remote Shop License',
-            'description': 'Enables remote shop access',
-            'type': ItemType.LICENSE,
-            'rarity': ItemRarity.BASIC,
-            'buy_price_exons': 3000,
-            'is_tradeable': False
-        },
-        
-        # Consumables
-        {
-            'name': 'Basic Life Potion',
-            'description': 'Restores 30% HP',
-            'type': ItemType.CONSUMABLE,
-            'rarity': ItemRarity.BASIC,
-            'buy_price_crystals': 100,
-            'is_stackable': True,
-            'max_stack': 100
-        },
-        {
-            'name': 'High Grade Life Potion',
-            'description': 'Restores 70% HP',
-            'type': ItemType.CONSUMABLE,
-            'rarity': ItemRarity.INTERMEDIATE,
-            'buy_price_crystals': 300,
-            'is_stackable': True,
-            'max_stack': 100
-        },
-        {
-            'name': 'Basic Resurrection Potion',
-            'description': 'Revives with 50% HP',
-            'type': ItemType.CONSUMABLE,
-            'rarity': ItemRarity.EXCELLENT,
-            'buy_price_exons': 1000,
-            'is_stackable': True,
-            'max_stack': 10
-        },
-        {
-            'name': 'Advanced Resurrection Potion',
-            'description': 'Revives with 100% HP, works on decapitated/shadow status',
-            'type': ItemType.CONSUMABLE,
-            'rarity': ItemRarity.LEGENDARY,
-            'buy_price_exons': 3000,
-            'is_stackable': True,
-            'max_stack': 5
+    def remove_item(self, item_id: str, quantity: int = 1) -> Tuple[bool, str]:
+        """Remove an item from inventory"""
+        try:
+            if item_id not in self.items:
+                return False, "Item not found"
+            
+            item = self.items[item_id]
+            
+            if item.get('stackable', False):
+                if item['quantity'] < quantity:
+                    return False, "Insufficient quantity"
+                    
+                item['quantity'] -= quantity
+                if item['quantity'] <= 0:
+                    del self.items[item_id]
+            else:
+                del self.items[item_id]
+            
+            self.current_weight -= item.get('weight', 0) * quantity
+            return True, "Item removed successfully"
+            
+        except Exception as e:
+            return False, str(e)
+
+    def equip_item(self, item_id: str) -> Tuple[bool, str]:
+        """Equip an item"""
+        try:
+            if item_id not in self.items:
+                return False, "Item not found"
+            
+            item = self.items[item_id]
+            slot = item.get('slot')
+            
+            if not slot:
+                return False, "Item cannot be equipped"
+            
+            # Unequip current item in slot if any
+            if self.equipment[slot]:
+                old_item_id = self.equipment[slot]
+                self.equipment[slot] = None
+                # Move old item back to inventory
+                if old_item_id in self.items:
+                    self.items[old_item_id]['equipped'] = False
+            
+            # Equip new item
+            self.equipment[slot] = item_id
+            item['equipped'] = True
+            
+            return True, "Item equipped successfully"
+            
+        except Exception as e:
+            return False, str(e)
+
+    def unequip_item(self, slot: str) -> Tuple[bool, str]:
+        """Unequip an item"""
+        try:
+            if slot not in self.equipment:
+                return False, "Invalid equipment slot"
+            
+            item_id = self.equipment[slot]
+            if not item_id:
+                return False, "No item equipped in slot"
+            
+            # Check inventory space
+            if len(self.items) >= self.max_slots:
+                return False, "Inventory is full"
+            
+            # Unequip item
+            self.equipment[slot] = None
+            if item_id in self.items:
+                self.items[item_id]['equipped'] = False
+            
+            return True, "Item unequipped successfully"
+            
+        except Exception as e:
+            return False, str(e)
+
+    def set_quickslot(self, slot: str, item_id: str) -> Tuple[bool, str]:
+        """Set an item to a quickslot"""
+        try:
+            if slot not in self.quickslots:
+                return False, "Invalid quickslot"
+            
+            if item_id and item_id not in self.items:
+                return False, "Item not found"
+            
+            # Clear other quickslots with this item
+            for qs in self.quickslots:
+                if self.quickslots[qs] == item_id:
+                    self.quickslots[qs] = None
+            
+            self.quickslots[slot] = item_id
+            return True, "Quickslot set successfully"
+            
+        except Exception as e:
+            return False, str(e)
+
+    def use_item(self, item_id: str) -> Tuple[bool, str, Dict]:
+        """Use a consumable item"""
+        try:
+            if item_id not in self.items:
+                return False, "Item not found", {}
+            
+            item = self.items[item_id]
+            if item['type'] != ItemType.CONSUMABLE.value:
+                return False, "Item cannot be used", {}
+            
+            # Check if item can be used
+            if not item.get('usable', False):
+                return False, "Item cannot be used", {}
+            
+            # Get item effects
+            effects = item.get('effects', {})
+            
+            # Remove one from quantity or remove item
+            success, message = self.remove_item(item_id, 1)
+            if not success:
+                return False, message, {}
+            
+            return True, "Item used successfully", effects
+            
+        except Exception as e:
+            return False, str(e), {}
+
+    def has_item(self, item_id: str, quantity: int = 1) -> bool:
+        """Check if inventory has item in specified quantity"""
+        if item_id not in self.items:
+            return False
+            
+        item = self.items[item_id]
+        if item.get('stackable', False):
+            return item['quantity'] >= quantity
+        return True
+
+    def get_equipped_items(self) -> Dict[str, Dict]:
+        """Get all equipped items"""
+        equipped = {}
+        for slot, item_id in self.equipment.items():
+            if item_id and item_id in self.items:
+                equipped[slot] = self.items[item_id]
+        return equipped
+
+    def get_consumables(self) -> List[Dict]:
+        """Get all consumable items"""
+        return [
+            {'id': item_id, **item_data}
+            for item_id, item_data in self.items.items()
+            if item_data['type'] == ItemType.CONSUMABLE.value
+        ]
+
+    def get_resurrection_potions(self) -> List[Dict]:
+        """Get all resurrection potions"""
+        return [
+            {'id': item_id, **item_data}
+            for item_id, item_data in self.items.items()
+            if (item_data['type'] == ItemType.CONSUMABLE.value and 
+                item_data.get('effect_type') == 'resurrection')
+        ]
+
+    def calculate_stats(self) -> Dict[str, float]:
+        """Calculate total stats from equipped items"""
+        total_stats = {
+            'attack': 0,
+            'defense': 0,
+            'magic_attack': 0,
+            'magic_defense': 0,
+            'health': 0,
+            'mana': 0,
+            'critical_rate': 0,
+            'critical_damage': 0,
+            'speed': 0
         }
-    ]
-    
-    for item_data in default_items:
-        item = Item.query.filter_by(name=item_data['name']).first()
-        if not item:
-            item = Item(**item_data)
-            db.session.add(item)
-    
-    db.session.commit()
+        
+        # Add stats from equipped items
+        for item_id in self.equipment.values():
+            if item_id and item_id in self.items:
+                item = self.items[item_id]
+                stats = item.get('stats', {})
+                for stat, value in stats.items():
+                    if stat in total_stats:
+                        total_stats[stat] += value
+        
+        return total_stats
+
+    def to_dict(self) -> Dict:
+        """Convert inventory data to dictionary"""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'items': self.items,
+            'equipment': self.equipment,
+            'quickslots': self.quickslots,
+            'max_slots': self.max_slots,
+            'max_weight': self.max_weight,
+            'current_weight': self.current_weight,
+            'stats': self.calculate_stats()
+        }

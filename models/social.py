@@ -1,180 +1,240 @@
-from database import db
+"""
+Social models for Terminusa Online
+"""
+from typing import Dict, List, Optional
 from datetime import datetime
-from sqlalchemy.orm import relationship
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Enum, JSON
-import enum
+from enum import Enum
+from sqlalchemy.dialects.postgresql import JSONB
 
-class GuildRank(enum.Enum):
-    MASTER = "Master"
-    VICE_MASTER = "Vice Master"
-    ELDER = "Elder"
-    VETERAN = "Veteran"
-    MEMBER = "Member"
-    RECRUIT = "Recruit"
+from models import db
 
-class PartyRole(enum.Enum):
-    LEADER = "Leader"
-    MEMBER = "Member"
+class FriendStatus(Enum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    BLOCKED = "blocked"
 
-class FriendStatus(enum.Enum):
-    PENDING = "Pending"
-    ACCEPTED = "Accepted"
-    BLOCKED = "Blocked"
-
-class Guild(db.Model):
-    __tablename__ = 'guilds'
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False, unique=True)
-    description = Column(String(500))
-    level = Column(Integer, default=1)
-    experience = Column(Integer, default=0)
-    creation_cost_exons = Column(Float, nullable=False)
-    creation_cost_crystals = Column(Float, nullable=False)
-    max_members = Column(Integer, default=100)
-    announcement = Column(String(500))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Relationships
-    members = relationship('GuildMember', back_populates='guild')
-    quests = relationship('Quest', back_populates='guild')
-
-    def __repr__(self):
-        return f'<Guild {self.name} (Level {self.level})>'
-
-    def calculate_tax(self, amount):
-        """Calculate guild tax (2%) for transactions"""
-        return amount * 0.02
-
-    def can_accept_members(self):
-        """Check if guild can accept more members"""
-        return len(self.members) < self.max_members
-
-    def get_online_members(self):
-        """Get list of online guild members"""
-        return [member for member in self.members if member.user.is_online]
-
-class GuildMember(db.Model):
-    __tablename__ = 'guild_members'
-
-    id = Column(Integer, primary_key=True)
-    guild_id = Column(Integer, ForeignKey('guilds.id'), nullable=False)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    rank = Column(Enum(GuildRank), default=GuildRank.RECRUIT)
-    contribution = Column(Integer, default=0)
-    joined_at = Column(DateTime, default=datetime.utcnow)
-    last_active = Column(DateTime, default=datetime.utcnow)
-
-    # Relationships
-    guild = relationship('Guild', back_populates='members')
-    user = relationship('User', back_populates='guild_membership')
-
-    def __repr__(self):
-        return f'<GuildMember {self.user.username} ({self.rank.value})>'
-
-    def can_manage_members(self):
-        """Check if member can manage other members"""
-        return self.rank in [GuildRank.MASTER, GuildRank.VICE_MASTER]
-
-    def can_manage_quests(self):
-        """Check if member can manage guild quests"""
-        return self.rank in [GuildRank.MASTER, GuildRank.VICE_MASTER, GuildRank.ELDER]
-
-class Party(db.Model):
-    __tablename__ = 'parties'
-
-    id = Column(Integer, primary_key=True)
-    name = Column(String(100))
-    leader_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    disbanded_at = Column(DateTime)
-
-    # Party settings
-    level_range = Column(Integer, default=10)  # Max level difference between members
-    auto_loot_distribution = Column(Boolean, default=True)
-    loot_quality_threshold = Column(String(20), default='BASIC')  # Minimum quality for auto-looting
-
-    # Relationships
-    leader = relationship('User', foreign_keys=[leader_id])
-    members = relationship('PartyMember', back_populates='party')
-    gate_sessions = relationship('GateSession', back_populates='party')
-
-    def __repr__(self):
-        return f'<Party {self.name} (Leader: {self.leader.username})>'
-
-    def calculate_rewards_share(self, total_reward):
-        """Calculate reward share based on number of members"""
-        member_count = len(self.members)
-        if member_count <= 1:
-            return total_reward
-        
-        # Diminishing returns based on party size
-        share_multiplier = 1.0
-        for i in range(1, member_count):
-            share_multiplier *= 0.9  # 10% reduction per additional member
-        
-        return total_reward * share_multiplier / member_count
-
-    def get_average_luck(self):
-        """Calculate average luck stat of party members"""
-        if not self.members:
-            return 0
-        return sum(member.user.character.luck for member in self.members) / len(self.members)
-
-class PartyMember(db.Model):
-    __tablename__ = 'party_members'
-
-    id = Column(Integer, primary_key=True)
-    party_id = Column(Integer, ForeignKey('parties.id'), nullable=False)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    role = Column(Enum(PartyRole), default=PartyRole.MEMBER)
-    joined_at = Column(DateTime, default=datetime.utcnow)
-    left_at = Column(DateTime)
-
-    # Combat stats for current session
-    damage_dealt = Column(Float, default=0)
-    healing_done = Column(Float, default=0)
-    deaths = Column(Integer, default=0)
-
-    # Relationships
-    party = relationship('Party', back_populates='members')
-    user = relationship('User', back_populates='party_memberships')
-
-    def __repr__(self):
-        return f'<PartyMember {self.user.username} ({self.role.value})>'
+class PartyRole(Enum):
+    LEADER = "leader"
+    MEMBER = "member"
 
 class Friend(db.Model):
     __tablename__ = 'friends'
 
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    friend_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    status = Column(Enum(FriendStatus), default=FriendStatus.PENDING)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Relationships
-    user = relationship('User', foreign_keys=[user_id], back_populates='friends')
-    friend = relationship('User', foreign_keys=[friend_id], back_populates='friend_requests')
-
-    def __repr__(self):
-        return f'<Friend {self.user.username} -> {self.friend.username} ({self.status.value})>'
-
-# Initialize default guild settings
-def init_guild_settings():
-    """Initialize default guild settings"""
-    settings = {
-        'creation_cost_exons': 100000,  # 100k Exons
-        'creation_cost_crystals': 50000,  # 50k Crystals
-        'max_members_initial': 100,
-        'max_members_per_level': 10,  # Additional slots per guild level
-        'experience_requirement': {
-            'base': 1000,  # Base XP needed for level 1
-            'multiplier': 1.5  # XP requirement increases by 50% per level
-        }
-    }
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    friend_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     
-    # Store settings in database or config file
-    return settings
+    # Friendship Status
+    status = db.Column(db.Enum(FriendStatus), nullable=False, default=FriendStatus.PENDING)
+    
+    # Friendship Stats
+    gates_cleared_together = db.Column(db.Integer, default=0)
+    quests_completed_together = db.Column(db.Integer, default=0)
+    trades_completed = db.Column(db.Integer, default=0)
+    
+    # Privacy Settings
+    share_location = db.Column(db.Boolean, default=True)
+    share_status = db.Column(db.Boolean, default=True)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_interaction = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def accept_request(self) -> Dict:
+        """Accept friend request"""
+        if self.status != FriendStatus.PENDING:
+            return {
+                'success': False,
+                'message': 'Request is not pending'
+            }
+            
+        self.status = FriendStatus.ACCEPTED
+        return {
+            'success': True,
+            'message': 'Friend request accepted'
+        }
+
+    def block_friend(self) -> Dict:
+        """Block friend"""
+        if self.status == FriendStatus.BLOCKED:
+            return {
+                'success': False,
+                'message': 'Already blocked'
+            }
+            
+        self.status = FriendStatus.BLOCKED
+        return {
+            'success': True,
+            'message': 'Friend blocked'
+        }
+
+    def update_interaction(self, interaction_type: str) -> None:
+        """Update friendship interaction stats"""
+        self.last_interaction = datetime.utcnow()
+        
+        if interaction_type == 'gate':
+            self.gates_cleared_together += 1
+        elif interaction_type == 'quest':
+            self.quests_completed_together += 1
+        elif interaction_type == 'trade':
+            self.trades_completed += 1
+
+    def to_dict(self) -> Dict:
+        """Convert friend data to dictionary"""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'friend_id': self.friend_id,
+            'status': self.status.value,
+            'stats': {
+                'gates_cleared': self.gates_cleared_together,
+                'quests_completed': self.quests_completed_together,
+                'trades_completed': self.trades_completed
+            },
+            'privacy': {
+                'share_location': self.share_location,
+                'share_status': self.share_status
+            },
+            'timestamps': {
+                'created': self.created_at.isoformat(),
+                'updated': self.updated_at.isoformat(),
+                'last_interaction': self.last_interaction.isoformat()
+            }
+        }
+
+class BlockedUser(db.Model):
+    __tablename__ = 'blocked_users'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    blocked_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    reason = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self) -> Dict:
+        """Convert blocked user data to dictionary"""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'blocked_id': self.blocked_id,
+            'reason': self.reason,
+            'created_at': self.created_at.isoformat()
+        }
+
+class Party(db.Model):
+    __tablename__ = 'parties'
+
+    id = db.Column(db.Integer, primary_key=True)
+    leader_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    
+    # Party Settings
+    name = db.Column(db.String(50), nullable=True)
+    max_size = db.Column(db.Integer, default=4)
+    min_level = db.Column(db.Integer, default=1)
+    is_public = db.Column(db.Boolean, default=True)
+    
+    # Party Status
+    in_gate = db.Column(db.Boolean, default=False)
+    gate_id = db.Column(db.Integer, db.ForeignKey('gates.id'), nullable=True)
+    
+    # Party Settings
+    loot_method = db.Column(db.String(20), default='free_for_all')
+    exp_share = db.Column(db.Boolean, default=True)
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    disbanded_at = db.Column(db.DateTime, nullable=True)
+
+    def add_member(self, user_id: int) -> Dict:
+        """Add member to party"""
+        member = PartyMember.query.filter_by(party_id=self.id).count()
+        
+        if member >= self.max_size:
+            return {
+                'success': False,
+                'message': 'Party is full'
+            }
+            
+        new_member = PartyMember(
+            party_id=self.id,
+            user_id=user_id,
+            role=PartyRole.MEMBER
+        )
+        db.session.add(new_member)
+        
+        return {
+            'success': True,
+            'message': 'Member added to party'
+        }
+
+    def remove_member(self, user_id: int) -> Dict:
+        """Remove member from party"""
+        member = PartyMember.query.filter_by(
+            party_id=self.id,
+            user_id=user_id
+        ).first()
+        
+        if not member:
+            return {
+                'success': False,
+                'message': 'Member not found'
+            }
+            
+        db.session.delete(member)
+        return {
+            'success': True,
+            'message': 'Member removed from party'
+        }
+
+    def disband(self) -> Dict:
+        """Disband the party"""
+        self.disbanded_at = datetime.utcnow()
+        PartyMember.query.filter_by(party_id=self.id).delete()
+        
+        return {
+            'success': True,
+            'message': 'Party disbanded'
+        }
+
+    def to_dict(self) -> Dict:
+        """Convert party data to dictionary"""
+        return {
+            'id': self.id,
+            'leader_id': self.leader_id,
+            'settings': {
+                'name': self.name,
+                'max_size': self.max_size,
+                'min_level': self.min_level,
+                'is_public': self.is_public,
+                'loot_method': self.loot_method,
+                'exp_share': self.exp_share
+            },
+            'status': {
+                'in_gate': self.in_gate,
+                'gate_id': self.gate_id
+            },
+            'timestamps': {
+                'created': self.created_at.isoformat(),
+                'disbanded': self.disbanded_at.isoformat() if self.disbanded_at else None
+            }
+        }
+
+class PartyMember(db.Model):
+    __tablename__ = 'party_members'
+
+    id = db.Column(db.Integer, primary_key=True)
+    party_id = db.Column(db.Integer, db.ForeignKey('parties.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    role = db.Column(db.Enum(PartyRole), nullable=False, default=PartyRole.MEMBER)
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self) -> Dict:
+        """Convert party member data to dictionary"""
+        return {
+            'id': self.id,
+            'party_id': self.party_id,
+            'user_id': self.user_id,
+            'role': self.role.value,
+            'joined_at': self.joined_at.isoformat()
+        }

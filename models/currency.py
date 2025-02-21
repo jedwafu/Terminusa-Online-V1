@@ -1,140 +1,254 @@
-from database import db
+"""
+Currency model for Terminusa Online
+"""
+from typing import Dict, Optional
 from datetime import datetime
-from sqlalchemy.orm import relationship
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Enum, Numeric
-import enum
+from decimal import Decimal
+from sqlalchemy.dialects.postgresql import JSONB
 
-class CurrencyType(enum.Enum):
-    SOLANA = "Solana"  # Web3 currency
-    EXONS = "Exons"    # Primary in-game currency
-    CRYSTALS = "Crystals"  # Secondary in-game currency
-
-class TransactionType(enum.Enum):
-    EARN = "Earn"           # Earning from activities
-    SPEND = "Spend"         # Spending on items/services
-    TRANSFER = "Transfer"   # Transfer between players
-    SWAP = "Swap"          # Currency swapping
-    REFUND = "Refund"      # Refunds
-    TAX = "Tax"            # Tax collection
-    GUILD = "Guild"        # Guild-related transactions
-    SYSTEM = "System"      # System operations
-    DEATH = "Death"        # Currency lost on death
-    QUEST = "Quest"        # Quest rewards
-    GATE = "Gate"         # Gate rewards
-    GAMBLING = "Gambling"  # Gambling transactions
-    LOYALTY = "Loyalty"    # Loyalty rewards
+from models import db
 
 class Currency(db.Model):
     __tablename__ = 'currencies'
 
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    type = Column(Enum(CurrencyType), nullable=False)
-    amount = Column(Numeric(precision=36, scale=18), default=0.0)  # High precision for blockchain currencies
-    max_supply = Column(Numeric(precision=36, scale=18))  # Maximum supply limit
-    is_gate_reward = Column(Boolean, default=False)  # Whether currency can be earned in gates
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)
+    symbol = db.Column(db.String(10), unique=True, nullable=False)
+    
+    # Currency Properties
+    is_crypto = db.Column(db.Boolean, default=False)
+    is_tradeable = db.Column(db.Boolean, default=True)
+    is_mintable = db.Column(db.Boolean, default=False)
+    
+    # Supply Information
+    total_supply = db.Column(db.Numeric(precision=36, scale=18), nullable=False)
+    circulating_supply = db.Column(db.Numeric(precision=36, scale=18), nullable=False)
+    max_supply = db.Column(db.Numeric(precision=36, scale=18), nullable=True)
+    
+    # Exchange Rates (updated periodically)
+    exchange_rates = db.Column(JSONB, nullable=False, default={})
+    
+    # Transaction Limits
+    min_transaction = db.Column(db.Numeric(precision=36, scale=18), nullable=False)
+    max_transaction = db.Column(db.Numeric(precision=36, scale=18), nullable=True)
+    daily_limit = db.Column(db.Numeric(precision=36, scale=18), nullable=True)
+    
+    # Fee Structure
+    transfer_fee = db.Column(db.Numeric(precision=5, scale=2), default=0)  # Percentage
+    swap_fee = db.Column(db.Numeric(precision=5, scale=2), default=0)      # Percentage
+    mint_fee = db.Column(db.Numeric(precision=5, scale=2), default=0)      # Percentage
+    
+    # Metadata
+    metadata = db.Column(JSONB, nullable=False, default={})
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    last_rate_update = db.Column(db.DateTime, nullable=True)
 
-    # Tax configuration
-    base_tax_rate = Column(Float, default=0.13)  # 13% base tax
-    guild_tax_rate = Column(Float, default=0.02)  # 2% additional guild tax
-    admin_wallet = Column(String(100))  # Admin wallet for tax collection
-    admin_username = Column(String(100))  # Admin username for tax collection
+    def __init__(self, name: str, symbol: str, total_supply: Decimal, 
+                 circulating_supply: Decimal, min_transaction: Decimal):
+        self.name = name
+        self.symbol = symbol
+        self.total_supply = total_supply
+        self.circulating_supply = circulating_supply
+        self.min_transaction = min_transaction
 
-    # Relationships
-    user = relationship('User', back_populates='currencies')
-    transactions = relationship('Transaction', back_populates='currency')
-    swaps = relationship('TokenSwap', back_populates='currency')
+    def update_exchange_rates(self, rates: Dict[str, Decimal]) -> bool:
+        """Update currency exchange rates"""
+        try:
+            self.exchange_rates = {
+                currency: str(rate)  # Convert Decimal to string for JSONB
+                for currency, rate in rates.items()
+            }
+            self.last_rate_update = datetime.utcnow()
+            db.session.commit()
+            return True
+        except Exception:
+            db.session.rollback()
+            return False
 
-    def __repr__(self):
-        return f'<Currency {self.type.value} ({self.amount})>'
+    def get_exchange_rate(self, to_currency: str) -> Optional[Decimal]:
+        """Get exchange rate to another currency"""
+        if to_currency in self.exchange_rates:
+            return Decimal(self.exchange_rates[to_currency])
+        return None
 
-    def calculate_tax(self, amount, include_guild_tax=False):
-        """Calculate tax for a given amount"""
-        base_tax = amount * self.base_tax_rate
-        guild_tax = amount * self.guild_tax_rate if include_guild_tax else 0
-        return base_tax + guild_tax
-
-    def can_afford(self, amount):
-        """Check if user has enough currency"""
-        return self.amount >= amount
-
-class Transaction(db.Model):
-    __tablename__ = 'transactions'
-
-    id = Column(Integer, primary_key=True)
-    currency_id = Column(Integer, ForeignKey('currencies.id'), nullable=False)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    type = Column(Enum(TransactionType), nullable=False)
-    amount = Column(Numeric(precision=36, scale=18), nullable=False)
-    tax_amount = Column(Numeric(precision=36, scale=18), default=0)
-    guild_tax_amount = Column(Numeric(precision=36, scale=18), default=0)
-    description = Column(String(500))
-    reference_id = Column(String(100))  # For tracking related transactions
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    # Relationships
-    currency = relationship('Currency', back_populates='transactions')
-    user = relationship('User', back_populates='transactions')
-
-    def __repr__(self):
-        return f'<Transaction {self.type.value} {self.amount} ({self.description})>'
-
-class TokenSwap(db.Model):
-    __tablename__ = 'token_swaps'
-
-    id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
-    currency_id = Column(Integer, ForeignKey('currencies.id'), nullable=False)
-    from_currency = Column(Enum(CurrencyType), nullable=False)
-    to_currency = Column(Enum(CurrencyType), nullable=False)
-    from_amount = Column(Numeric(precision=36, scale=18), nullable=False)
-    to_amount = Column(Numeric(precision=36, scale=18), nullable=False)
-    rate = Column(Float, nullable=False)
-    tax_amount = Column(Numeric(precision=36, scale=18), default=0)
-    status = Column(String(20), default='pending')  # pending, completed, failed
-    created_at = Column(DateTime, default=datetime.utcnow)
-    completed_at = Column(DateTime)
-
-    # Relationships
-    user = relationship('User', back_populates='token_swaps')
-    currency = relationship('Currency', back_populates='swaps')
-
-    def __repr__(self):
-        return f'<TokenSwap {self.from_currency.value} -> {self.to_currency.value} ({self.status})>'
-
-# Initialize default currencies
-def init_currencies(admin_wallet, admin_username):
-    """Initialize default currencies with their configurations"""
-    default_currencies = [
-        {
-            'type': CurrencyType.SOLANA,
-            'max_supply': None,  # No max supply for SOLANA
-            'is_gate_reward': False,
-            'admin_wallet': admin_wallet,
-            'admin_username': admin_username
-        },
-        {
-            'type': CurrencyType.EXONS,
-            'max_supply': None,  # Configurable through contract
-            'is_gate_reward': False,
-            'admin_wallet': admin_wallet,
-            'admin_username': admin_username
-        },
-        {
-            'type': CurrencyType.CRYSTALS,
-            'max_supply': 100_000_000,  # 100M initial supply
-            'is_gate_reward': True,
-            'admin_wallet': admin_wallet,
-            'admin_username': admin_username
+    def calculate_swap_amount(self, amount: Decimal, to_currency: str) -> Dict:
+        """Calculate swap amount including fees"""
+        rate = self.get_exchange_rate(to_currency)
+        if not rate:
+            return {
+                'success': False,
+                'message': f'No exchange rate found for {to_currency}'
+            }
+            
+        # Check minimum transaction
+        if amount < self.min_transaction:
+            return {
+                'success': False,
+                'message': f'Amount below minimum transaction of {self.min_transaction} {self.symbol}'
+            }
+            
+        # Check maximum transaction
+        if self.max_transaction and amount > self.max_transaction:
+            return {
+                'success': False,
+                'message': f'Amount above maximum transaction of {self.max_transaction} {self.symbol}'
+            }
+            
+        # Calculate fees
+        swap_fee = (amount * self.swap_fee) / 100
+        
+        # Calculate conversion
+        converted_amount = (amount - swap_fee) * rate
+        
+        return {
+            'success': True,
+            'input_amount': amount,
+            'fee': swap_fee,
+            'rate': rate,
+            'output_amount': converted_amount,
+            'output_currency': to_currency
         }
-    ]
-    
-    for currency_data in default_currencies:
-        currency = Currency.query.filter_by(type=currency_data['type']).first()
-        if not currency:
-            currency = Currency(**currency_data)
-            db.session.add(currency)
-    
-    db.session.commit()
+
+    def calculate_transfer_fee(self, amount: Decimal) -> Decimal:
+        """Calculate transfer fee for amount"""
+        return (amount * self.transfer_fee) / 100
+
+    def can_mint(self, amount: Decimal) -> bool:
+        """Check if amount can be minted"""
+        if not self.is_mintable:
+            return False
+            
+        if self.max_supply:
+            return self.circulating_supply + amount <= self.max_supply
+            
+        return True
+
+    def mint(self, amount: Decimal) -> bool:
+        """Mint new currency"""
+        try:
+            if not self.can_mint(amount):
+                return False
+                
+            self.circulating_supply += amount
+            self.total_supply += amount
+            
+            db.session.commit()
+            return True
+            
+        except Exception:
+            db.session.rollback()
+            return False
+
+    def burn(self, amount: Decimal) -> bool:
+        """Burn (destroy) currency"""
+        try:
+            if amount > self.circulating_supply:
+                return False
+                
+            self.circulating_supply -= amount
+            self.total_supply -= amount
+            
+            db.session.commit()
+            return True
+            
+        except Exception:
+            db.session.rollback()
+            return False
+
+    def to_dict(self) -> Dict:
+        """Convert currency data to dictionary"""
+        return {
+            'id': self.id,
+            'name': self.name,
+            'symbol': self.symbol,
+            'properties': {
+                'is_crypto': self.is_crypto,
+                'is_tradeable': self.is_tradeable,
+                'is_mintable': self.is_mintable
+            },
+            'supply': {
+                'total': str(self.total_supply),
+                'circulating': str(self.circulating_supply),
+                'max': str(self.max_supply) if self.max_supply else None
+            },
+            'exchange_rates': self.exchange_rates,
+            'limits': {
+                'min_transaction': str(self.min_transaction),
+                'max_transaction': str(self.max_transaction) if self.max_transaction else None,
+                'daily_limit': str(self.daily_limit) if self.daily_limit else None
+            },
+            'fees': {
+                'transfer': str(self.transfer_fee),
+                'swap': str(self.swap_fee),
+                'mint': str(self.mint_fee)
+            },
+            'metadata': self.metadata,
+            'timestamps': {
+                'created': self.created_at.isoformat(),
+                'updated': self.updated_at.isoformat(),
+                'last_rate_update': self.last_rate_update.isoformat() if self.last_rate_update else None
+            }
+        }
+
+    @classmethod
+    def get_by_symbol(cls, symbol: str) -> Optional['Currency']:
+        """Get currency by symbol"""
+        return cls.query.filter_by(symbol=symbol).first()
+
+    @classmethod
+    def initialize_game_currencies(cls):
+        """Initialize default game currencies"""
+        currencies = [
+            {
+                'name': 'Solana',
+                'symbol': 'SOL',
+                'is_crypto': True,
+                'total_supply': Decimal('1000000000'),
+                'circulating_supply': Decimal('500000000'),
+                'min_transaction': Decimal('0.000000001'),
+                'transfer_fee': Decimal('0.5'),
+                'swap_fee': Decimal('1.0')
+            },
+            {
+                'name': 'Exons',
+                'symbol': 'EXON',
+                'is_crypto': True,
+                'total_supply': Decimal('1000000000000'),
+                'circulating_supply': Decimal('100000000000'),
+                'min_transaction': Decimal('0.000001'),
+                'transfer_fee': Decimal('0.1'),
+                'swap_fee': Decimal('0.5')
+            },
+            {
+                'name': 'Crystals',
+                'symbol': 'CRYS',
+                'is_crypto': False,
+                'total_supply': Decimal('1000000000000000'),
+                'circulating_supply': Decimal('0'),
+                'min_transaction': Decimal('1'),
+                'transfer_fee': Decimal('0'),
+                'swap_fee': Decimal('0'),
+                'is_mintable': True
+            }
+        ]
+        
+        for currency_data in currencies:
+            if not cls.get_by_symbol(currency_data['symbol']):
+                currency = cls(
+                    name=currency_data['name'],
+                    symbol=currency_data['symbol'],
+                    total_supply=currency_data['total_supply'],
+                    circulating_supply=currency_data['circulating_supply'],
+                    min_transaction=currency_data['min_transaction']
+                )
+                currency.is_crypto = currency_data['is_crypto']
+                currency.transfer_fee = currency_data['transfer_fee']
+                currency.swap_fee = currency_data['swap_fee']
+                currency.is_mintable = currency_data.get('is_mintable', False)
+                
+                db.session.add(currency)
+                
+        db.session.commit()
