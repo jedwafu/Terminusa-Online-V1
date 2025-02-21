@@ -14,7 +14,7 @@ from .inventory import Inventory, ItemType, ItemRarity
 # Import game-related models
 from .achievement import Achievement
 from .gate import Gate
-from .guild import Guild, GuildMember, GuildQuest, GuildTransaction
+from .guild import Guild, GuildMember, GuildQuest
 from .mount_pet import Mount, Pet
 from .transaction import Transaction
 from .currency import Currency
