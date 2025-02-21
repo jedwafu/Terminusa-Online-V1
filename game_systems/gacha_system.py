@@ -12,8 +12,17 @@ from ai_agent import AIAgent
 
 class GachaSystem:
     def __init__(self):
-        self.admin_user = User.query.filter_by(username=ADMIN_USERNAME).first()
+        self._admin_user = None
         self.ai_agent = AIAgent()
+
+    @property
+    def admin_user(self):
+        """Lazy load admin user when needed"""
+        if self._admin_user is None:
+            from flask import current_app
+            with current_app.app_context():
+                self._admin_user = User.query.filter_by(username=ADMIN_USERNAME).first()
+        return self._admin_user
 
     def roll_mount(self, user: User, amount: int = 1) -> Dict:
         """Roll for mounts using Exons"""
