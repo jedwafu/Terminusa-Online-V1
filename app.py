@@ -20,7 +20,7 @@ def create_app():
     db = SQLAlchemy(app)
     migrate = Migrate(app, db)
     login_manager = LoginManager(app)
-    login_manager.login_view = 'auth.login'
+    login_manager.login_view = 'auth_bp.login'
     CORS(app)
     
     # Initialize WebSocket manager
