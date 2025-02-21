@@ -328,6 +328,43 @@ start_services() {
     success_log "All services started"
 }
 
+# Function to save status to JSON
+save_status_json() {
+    mkdir -p logs
+    local status_file="logs/service_status.json"
+    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    
+    # Start JSON object
+    cat > "$status_file" << EOF
+{
+    "timestamp": "$timestamp",
+    "system": {
+        "cpu_usage": "$(top -bn1 | grep "Cpu(s)" | awk '{print $2}')%",
+        "memory_usage": "$(free -m | awk 'NR==2{printf "%.2f", $3*100/$2}')%",
+        "disk_usage": "$(df -h / | awk 'NR==2{print $5}')"
+    },
+    "services": {
+        "system_services": {
+            "postgresql": "$(systemctl is-active postgresql)",
+            "redis": "$(systemctl is-active redis-server)",
+            "nginx": "$(systemctl is-active nginx)",
+            "postfix": "$(systemctl is-active postfix)"
+        },
+        "application_services": {
+            "flask": "$(screen -list | grep -q "terminusa-flask" && echo "running" || echo "stopped")",
+            "terminal": "$(screen -list | grep -q "terminusa-terminal" && echo "running" || echo "stopped")",
+            "game": "$(screen -list | grep -q "terminusa-game" && echo "running" || echo "stopped")",
+            "email_monitor": "$(screen -list | grep -q "terminusa-email" && echo "running" || echo "stopped")",
+            "ai_manager": "$(screen -list | grep -q "terminusa-ai" && echo "running" || echo "stopped")",
+            "combat_manager": "$(screen -list | grep -q "terminusa-combat" && echo "running" || echo "stopped")",
+            "economy_systems": "$(screen -list | grep -q "terminusa-economy" && echo "running" || echo "stopped")",
+            "game_mechanics": "$(screen -list | grep -q "terminusa-mechanics" && echo "running" || echo "stopped")"
+        }
+    }
+}
+EOF
+}
+
 # Enhanced system status monitoring
 show_system_status() {
     clear
