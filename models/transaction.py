@@ -1,7 +1,7 @@
 """
 Transaction model for Terminusa Online
 """
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 from datetime import datetime
 from enum import Enum
 from decimal import Decimal
