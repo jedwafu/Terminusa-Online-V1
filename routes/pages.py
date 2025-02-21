@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, redirect, url_for
 from flask_login import login_required, current_user
 
 from game_systems.marketplace_system import MarketplaceSystem
@@ -6,6 +6,14 @@ from game_systems.gacha_system import GachaSystem
 from game_systems.inventory_system import InventorySystem
 
 pages_bp = Blueprint('pages', __name__)
+
+@pages_bp.route('/')
+def index():
+    """Render homepage"""
+    if current_user.is_authenticated:
+        return redirect(url_for('pages.marketplace'))
+    return render_template('index.html')
+
 marketplace_system = MarketplaceSystem()
 gacha_system = GachaSystem()
 inventory_system = InventorySystem()
