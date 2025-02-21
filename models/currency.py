@@ -39,7 +39,7 @@ class Currency(db.Model):
     mint_fee = db.Column(db.Numeric(precision=5, scale=2), default=0)      # Percentage
     
     # Metadata
-    metadata = db.Column(JSONB, nullable=False, default={})
+    currency_metadata = db.Column(JSONB, nullable=False, default={})
     
     # Timestamps
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -185,7 +185,7 @@ class Currency(db.Model):
                 'swap': str(self.swap_fee),
                 'mint': str(self.mint_fee)
             },
-            'metadata': self.metadata,
+            'metadata': self.currency_metadata,
             'timestamps': {
                 'created': self.created_at.isoformat(),
                 'updated': self.updated_at.isoformat(),
