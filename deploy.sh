@@ -204,9 +204,9 @@ stop_services() {
     info_log "Stopping screen sessions..."
     for service in "${!SERVICE_SCREENS[@]}"; do
         screen_name=${SERVICE_SCREENS[$service]}
-        if screen -list | grep -q "$screen_name"; then
+        if check_screen_session "$screen_name"; then
             info_log "Killing screen session: $screen_name"
-            screen -S "$screen_name" -X quit
+            kill_screen "$screen_name"
         fi
     done
     
@@ -247,9 +247,36 @@ kill_port_process() {
     fi
 }
 
+# Screen management functions
+check_screen() {
+    if ! command -v screen &> /dev/null; then
+        info_log "Installing screen..."
+        apt-get update && apt-get install -y screen
+    fi
+}
+
+start_screen() {
+    local name=$1
+    local command=$2
+    screen -dmS $name bash -c "$command"
+}
+
+check_screen_session() {
+    local name=$1
+    screen -list | grep -q "$name"
+}
+
+kill_screen() {
+    local name=$1
+    screen -X -S $name quit >/dev/null 2>&1
+}
+
 # Enhanced service management
 start_services() {
     info_log "Starting services..."
+    
+    # Check if screen is installed
+    check_screen
     
     # Create logs directory
     mkdir -p logs
