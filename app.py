@@ -17,7 +17,8 @@ def create_app():
     app.config.from_object('config.Config')
 
     # Initialize extensions
-    db = SQLAlchemy(app)
+    from models import db
+    db.init_app(app)
     migrate = Migrate(app, db)
     login_manager = LoginManager(app)
     login_manager.login_view = 'auth_bp.login'
