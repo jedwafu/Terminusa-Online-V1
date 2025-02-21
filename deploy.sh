@@ -155,11 +155,19 @@ setup_database() {
         }
     fi
     
-    flask db migrate -m "Initial database setup" || {
+    # Stamp the database with the current head
+    flask db stamp head || {
+        error_log "Migration stamp failed!"
+        return 1
+    }
+    
+    # Create new migration
+    flask db migrate -m "Database update $(date +%Y%m%d_%H%M%S)" || {
         error_log "Migration creation failed!"
         return 1
     }
     
+    # Apply migrations
     flask db upgrade || {
         error_log "Migration upgrade failed!"
         return 1
