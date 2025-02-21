@@ -9,8 +9,17 @@ from game_config import (
 
 class CurrencySystem:
     def __init__(self):
-        self.admin_user = User.query.filter_by(username=ADMIN_USERNAME).first()
-        
+        self._admin_user = None
+
+    @property
+    def admin_user(self):
+        """Lazy load admin user when needed"""
+        if self._admin_user is None:
+            from flask import current_app
+            with current_app.app_context():
+                self._admin_user = User.query.filter_by(username=ADMIN_USERNAME).first()
+        return self._admin_user
+
     def swap_currency(self, user: User, from_currency: str, to_currency: str, amount: Decimal) -> Dict:
         """Swap between currencies"""
         if amount <= 0:
