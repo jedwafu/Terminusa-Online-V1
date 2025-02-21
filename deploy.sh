@@ -8,14 +8,37 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
-# Production deployment configuration
-PROD_SERVER="46.250.228.210"
-PROD_USER="root"
-APP_DIR="/var/www/terminusa"
-BACKUP_DIR="/var/www/backups"
+# Load environment variables
+if [ -f .env ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+else
+    error_log ".env file not found"
+    exit 1
+fi
+
+# Set timestamp
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-WEB_ROOT="/var/www/terminusa"
-STATIC_DIR="$WEB_ROOT/static"
+
+# Verify required environment variables
+required_vars=(
+    "PROD_SERVER"
+    "PROD_USER"
+    "APP_DIR"
+    "BACKUP_DIR"
+    "WEB_ROOT"
+    "STATIC_DIR"
+    "DATABASE_URL"
+    "POSTGRES_USER"
+    "POSTGRES_PASSWORD"
+    "POSTGRES_DB"
+)
+
+for var in "${required_vars[@]}"; do
+    if [ -z "${!var}" ]; then
+        error_log "Required environment variable $var is not set"
+        exit 1
+    fi
+done
 
 # Debug mode flag
 DEBUG=false
@@ -461,6 +484,105 @@ deploy_production() {
     rm deploy.tar.gz
     
     success_log "Production deployment completed"
+}
+
+# Show logs menu
+show_logs_menu() {
+    echo -e "\n${YELLOW}Available Logs:${NC}"
+    echo "1) Flask App Log"
+    echo "2) Terminal Server Log"
+    echo "3) Game Server Log"
+    echo "4) Email Monitor Log"
+    echo "5) AI Manager Log"
+    echo "6) Combat Manager Log"
+    echo "7) Economy Systems Log"
+    echo "8) Game Mechanics Log"
+    echo "9) Nginx Error Log"
+    echo "10) Nginx Access Log"
+    echo "11) PostgreSQL Log"
+    echo "12) Redis Log"
+    echo "13) Service Status Log"
+    echo "0) Back to main menu"
+    
+    read -p "Select log to view: " log_choice
+    case $log_choice in
+        1) tail -f logs/flask.log ;;
+        2) tail -f logs/terminal.log ;;
+        3) tail -f logs/game.log ;;
+        4) tail -f logs/email_monitor.log ;;
+        5) tail -f logs/ai_manager.log ;;
+        6) tail -f logs/combat_manager.log ;;
+        7) tail -f logs/economy_systems.log ;;
+        8) tail -f logs/game_mechanics.log ;;
+        9) tail -f /var/log/nginx/error.log ;;
+        10) tail -f /var/log/nginx/access.log ;;
+        11) tail -f /var/log/postgresql/postgresql-main.log ;;
+        12) tail -f /var/log/redis/redis-server.log ;;
+        13) cat logs/service_status.json | python3 -m json.tool ;;
+        0) return ;;
+        *) error_log "Invalid option" ;;
+    esac
+}
+
+# Show database menu
+show_database_menu() {
+    echo -e "\n${YELLOW}Database Operations:${NC}"
+    echo "1) Backup Database"
+    echo "2) Restore Database"
+    echo "3) Run Migrations"
+    echo "4) Initialize Database"
+    echo "0) Back to main menu"
+    
+    read -p "Select operation: " db_choice
+    case $db_choice in
+        1) 
+            backup_file="backup_$(date +%Y%m%d_%H%M%S).sql"
+            info_log "Creating database backup: $backup_file"
+            PGPASSWORD=${POSTGRES_PASSWORD} pg_dump -h localhost -U ${POSTGRES_USER} ${POSTGRES_DB} > $backup_file
+            if [ $? -eq 0 ]; then
+                success_log "Database backed up to $backup_file"
+            else
+                error_log "Database backup failed"
+            fi
+            ;;
+        2)
+            read -p "Enter backup file path: " restore_file
+            if [ -f "$restore_file" ]; then
+                info_log "Restoring database from: $restore_file"
+                PGPASSWORD=${POSTGRES_PASSWORD} psql -h localhost -U ${POSTGRES_USER} ${POSTGRES_DB} < $restore_file
+                if [ $? -eq 0 ]; then
+                    success_log "Database restored from $restore_file"
+                else
+                    error_log "Database restore failed"
+                fi
+            else
+                error_log "Backup file not found"
+            fi
+            ;;
+        3)
+            info_log "Running database migrations"
+            source venv/bin/activate
+            flask db stamp head  # Reset migration head
+            flask db migrate     # Generate new migrations
+            flask db upgrade     # Apply migrations
+            success_log "Database migrations completed"
+            ;;
+        4)
+            info_log "Initializing database"
+            source venv/bin/activate
+            # Create database if it doesn't exist
+            PGPASSWORD=${POSTGRES_PASSWORD} psql -h localhost -U ${POSTGRES_USER} -d postgres -c "CREATE DATABASE ${POSTGRES_DB};" 2>/dev/null || true
+            # Initialize database schema
+            python init_db.py
+            if [ $? -eq 0 ]; then
+                success_log "Database initialized successfully"
+            else
+                error_log "Database initialization failed"
+            fi
+            ;;
+        0) return ;;
+        *) error_log "Invalid option" ;;
+    esac
 }
 
 # Main menu
