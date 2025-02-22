@@ -4,6 +4,9 @@ from flask_login import login_required, current_user
 from game_systems.marketplace_system import MarketplaceSystem
 from game_systems.gacha_system import GachaSystem
 from game_systems.inventory_system import InventorySystem
+from models.user import User
+from models.guild import Guild
+from models.gate import Gate, GateRank
 
 pages_bp = Blueprint('pages', __name__)
 
@@ -130,6 +133,3 @@ def page_not_found(error):
 @pages_bp.errorhandler(500)
 def internal_error(error):
     return render_template('error.html', error=error), 500
-
-# Register blueprint in app.py
-# app.register_blueprint(pages_bp)
