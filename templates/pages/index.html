@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Terminusa Online{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <h1>Welcome to Terminusa Online</h1>
+    <p>Embark on an epic journey in a world of terminal-based adventures!</p>
+    <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Login</a>
+    <a href="{{ url_for('auth.register') }}" class="btn btn-secondary">Register</a>
+</div>
+{% endblock %}

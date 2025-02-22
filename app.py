@@ -7,9 +7,7 @@ from flask_cors import CORS
 import routes
 
 def create_app():
-    app = Flask(__name__, 
-                template_folder='/var/www/terminusa/templates',
-                static_folder='/var/www/terminusa/static')
+    app = Flask(__name__)
     
     app.config.from_object('config.Config')
     app.config['DEBUG'] = False
