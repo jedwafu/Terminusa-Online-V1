@@ -5,11 +5,7 @@ from flask_migrate import Migrate
 from flask_cors import CORS
 from flask_socketio import emit
 
-from routes.pages import pages_bp
-from routes.marketplace import marketplace_bp
-from routes.inventory import inventory_bp
-from routes.auth_routes import auth_bp
-from routes.announcements import announcements_bp
+import routes
 from websocket_manager import WebSocketManager
 
 def create_app():
@@ -28,12 +24,8 @@ def create_app():
     websocket = WebSocketManager(app)
     app.websocket = websocket
 
-    # Register blueprints
-    app.register_blueprint(pages_bp)
-    app.register_blueprint(marketplace_bp, url_prefix='/api/marketplace')
-    app.register_blueprint(inventory_bp, url_prefix='/api/inventory')
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(announcements_bp)
+    # Initialize routes
+    routes.init_app(app)
 
     # User loader
     @login_manager.user_loader

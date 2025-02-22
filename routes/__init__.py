@@ -22,7 +22,7 @@ __all__ = [
 def init_app(app):
     """Initialize application with all blueprints"""
     # Register main blueprint
-    app.register_blueprint(main, url_prefix='/')
+    app.register_blueprint(main, url_prefix='/main')
     
     # Register auth blueprint
     app.register_blueprint(auth_bp, url_prefix='/auth')
