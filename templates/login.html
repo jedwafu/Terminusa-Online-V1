@@ -7,7 +7,7 @@
     <div class="auth-panel">
         <div class="auth-box">
             <h2 class="auth-title">Login to Terminusa</h2>
-            <form method="POST" action="{{ url_for('auth.login') }}" class="auth-form">
+            <form method="POST" action="{{ url_for('auth_bp.login') }}" class="auth-form">
                 <div class="form-group">
                     <label for="username">Username or Email</label>
                     <input type="text" id="username" name="username" required 
@@ -27,7 +27,7 @@
             <div class="auth-links">
                 <a href="#" class="text-neon">Forgot Password?</a>
                 <span class="separator">|</span>
-                <a href="{{ url_for('auth.register') }}" class="text-neon">Create Account</a>
+                <a href="{{ url_for('auth_bp.register') }}" class="text-neon">Create Account</a>
             </div>
         </div>
         <div class="announcements-box">
