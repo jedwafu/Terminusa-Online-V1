@@ -1,16 +1,26 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, current_app
 from flask_login import LoginManager, current_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
-from flask_socketio import emit
+import logging
 
 import routes
-from websocket_manager import WebSocketManager
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__, 
+                template_folder='/var/www/terminusa/templates',
+                static_folder='/var/www/terminusa/static')
+    
+    # Configure logging
+    logging.basicConfig(level=logging.INFO)
+    app.logger.setLevel(logging.INFO)
+    
+    # Configure app
     app.config.from_object('config.Config')
+    app.config['DEBUG'] = False
+    app.config['TESTING'] = False
+    app.config['ENV'] = 'production'
 
     # Initialize extensions
     from models import db
@@ -19,10 +29,6 @@ def create_app():
     login_manager = LoginManager(app)
     login_manager.login_view = 'auth_bp.login'
     CORS(app)
-    
-    # Initialize WebSocket manager
-    websocket = WebSocketManager(app)
-    app.websocket = websocket
 
     # Initialize routes
     routes.init_app(app)
@@ -33,31 +39,15 @@ def create_app():
         from models import User
         return User.query.get(int(user_id))
 
-    # WebSocket event handlers
-    @websocket.socketio.on('connect')
-    def handle_connect():
-        if current_user.is_authenticated:
-            app.logger.info(f'User {current_user.id} connected')
-            emit('connection_success', {'message': 'Connected successfully'})
-        else:
-            return False
-
-    @websocket.socketio.on('disconnect')
-    def handle_disconnect():
-        if current_user.is_authenticated:
-            app.logger.info(f'User {current_user.id} disconnected')
-
-    @websocket.socketio.on_error_default
-    def default_error_handler(e):
-        app.logger.error(f'WebSocket error: {str(e)}')
-
     # Error handlers
     @app.errorhandler(404)
     def not_found_error(error):
+        app.logger.error(f'404 Error: {error}')
         return render_template('error.html', error=error), 404
 
     @app.errorhandler(500)
     def internal_error(error):
+        app.logger.error(f'500 Error: {error}')
         db.session.rollback()
         return render_template('error.html', error=error), 500
 
@@ -78,8 +68,8 @@ def create_app():
     # Before request handlers
     @app.before_request
     def before_request():
+        app.logger.info('Processing request')
         if current_user.is_authenticated:
-            # Update last seen timestamp
             current_user.update_last_seen()
             db.session.commit()
 
@@ -96,27 +86,8 @@ def create_app():
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
         
+        app.logger.info(f'Request completed with status {response.status_code}')
         return response
-
-    # Shell context
-    @app.shell_context_processor
-    def make_shell_context():
-        from models import (
-            User, Mount, Pet, Item, Transaction,
-            Gate, Guild, Quest, Achievement
-        )
-        return {
-            'db': db,
-            'User': User,
-            'Mount': Mount,
-            'Pet': Pet,
-            'Item': Item,
-            'Transaction': Transaction,
-            'Gate': Gate,
-            'Guild': Guild,
-            'Quest': Quest,
-            'Achievement': Achievement
-        }
 
     return app
 
@@ -124,4 +95,5 @@ def create_app():
 app = create_app()
 
 if __name__ == '__main__':
-    app.websocket.run(host='0.0.0.0', port=5000, debug=True)
+    app.logger.info('Starting application')
+    app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
