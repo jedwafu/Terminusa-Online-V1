@@ -125,6 +125,21 @@ def help_page():
     """Render help/documentation page"""
     return render_template('help.html')
 
+@pages_bp.route('/features')
+def features():
+    """Render features page"""
+    return render_template('features.html')
+
+@pages_bp.route('/terms')
+def terms():
+    """Render terms of service page"""
+    return render_template('terms.html')
+
+@pages_bp.route('/privacy')
+def privacy():
+    """Render privacy policy page"""
+    return render_template('privacy.html')
+
 # Error handlers
 @pages_bp.errorhandler(404)
 def page_not_found(error):

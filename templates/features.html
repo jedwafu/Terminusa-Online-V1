@@ -1,277 +1,49 @@
-{% extends "base.html" %}
+{% extends "base_single.html" %}
 
 {% block title %}Features - Terminusa Online{% endblock %}
 
 {% block content %}
-<section class="features-hero">
+<section class="features-section">
     <div class="container">
         <h1>Game Features</h1>
-        <p>Discover what makes Terminusa Online unique</p>
-    </div>
-</section>
-
-<section class="feature-details">
-    <div class="container">
-        <div class="feature-block">
-            <div class="feature-content">
-                <h2>Dual Interface System</h2>
-                <p>Experience the game your way with our unique dual interface system:</p>
-                <ul>
-                    <li>Modern Web Interface with stunning visuals and intuitive controls</li>
-                    <li>Classic CLI Experience for terminal enthusiasts</li>
-                    <li>Seamless switching between interfaces</li>
-                    <li>Cross-platform compatibility</li>
-                </ul>
-            </div>
-            <div class="feature-image">
-                <i class="fas fa-terminal feature-icon"></i>
-            </div>
-        </div>
-
-        <div class="feature-block reverse">
-            <div class="feature-content">
-                <h2>Solo Leveling Mechanics</h2>
-                <p>Progress through the game with our unique leveling system:</p>
-                <ul>
-                    <li>Dynamic difficulty scaling</li>
-                    <li>Procedurally generated dungeons</li>
-                    <li>Unique skill tree system</li>
-                    <li>Character customization</li>
-                </ul>
-            </div>
-            <div class="feature-image">
-                <i class="fas fa-level-up-alt feature-icon"></i>
-            </div>
-        </div>
-
-        <div class="feature-block">
-            <div class="feature-content">
-                <h2>Player Economy</h2>
-                <p>Engage in a player-driven economy:</p>
-                <ul>
-                    <li>Dynamic marketplace system</li>
-                    <li>Player-to-player trading</li>
-                    <li>Rare item auctions</li>
-                    <li>Currency exchange system</li>
-                </ul>
-            </div>
-            <div class="feature-image">
-                <i class="fas fa-store feature-icon"></i>
-            </div>
-        </div>
-
-        <div class="feature-block reverse">
-            <div class="feature-content">
-                <h2>Guild System</h2>
-                <p>Join forces with other players:</p>
-                <ul>
-                    <li>Create or join guilds</li>
-                    <li>Participate in guild raids</li>
-                    <li>Guild rankings and rewards</li>
-                    <li>Guild territory control</li>
-                </ul>
-            </div>
-            <div class="feature-image">
-                <i class="fas fa-users feature-icon"></i>
-            </div>
-        </div>
-    </div>
-</section>
-
-<section class="gameplay-features">
-    <div class="container">
-        <h2 class="section-title">Gameplay Elements</h2>
-        <div class="gameplay-grid">
-            <div class="gameplay-card">
+        
+        <div class="features-grid">
+            <div class="feature-card">
                 <i class="fas fa-dungeon"></i>
-                <h3>Dungeons</h3>
-                <p>Explore procedurally generated dungeons with unique challenges and rewards</p>
+                <h3>Gate System</h3>
+                <p>Explore dynamic dungeons with AI-powered difficulty scaling and unique challenges.</p>
             </div>
-            <div class="gameplay-card">
-                <i class="fas fa-hat-wizard"></i>
-                <h3>Skills</h3>
-                <p>Master various skills and abilities to become stronger</p>
+            
+            <div class="feature-card">
+                <i class="fas fa-users"></i>
+                <h3>Guild System</h3>
+                <p>Join or create guilds, participate in guild wars, and complete guild quests together.</p>
             </div>
-            <div class="gameplay-card">
-                <i class="fas fa-chess-rook"></i>
-                <h3>PvP Arenas</h3>
-                <p>Test your skills against other players in various PvP modes</p>
+            
+            <div class="feature-card">
+                <i class="fas fa-store"></i>
+                <h3>Marketplace</h3>
+                <p>Trade items with other players in our dynamic player-driven economy.</p>
             </div>
-            <div class="gameplay-card">
-                <i class="fas fa-scroll"></i>
-                <h3>Quests</h3>
-                <p>Embark on epic quests and uncover the world's mysteries</p>
+            
+            <div class="feature-card">
+                <i class="fas fa-coins"></i>
+                <h3>Play to Earn</h3>
+                <p>Earn cryptocurrency through gameplay with Solana blockchain integration.</p>
             </div>
-        </div>
-    </div>
-</section>
-
-<section class="upcoming-features">
-    <div class="container">
-        <h2>Coming Soon</h2>
-        <div class="upcoming-grid">
-            <div class="upcoming-card">
-                <h3>New Regions</h3>
-                <p>Explore vast new territories with unique challenges</p>
+            
+            <div class="feature-card">
+                <i class="fas fa-dragon"></i>
+                <h3>Mount & Pet System</h3>
+                <p>Collect and train unique mounts and pets through our gacha system.</p>
             </div>
-            <div class="upcoming-card">
-                <h3>Class System</h3>
-                <p>Choose from multiple specialized classes</p>
-            </div>
-            <div class="upcoming-card">
-                <h3>Events System</h3>
-                <p>Participate in regular special events</p>
+            
+            <div class="feature-card">
+                <i class="fas fa-chart-line"></i>
+                <h3>Progression System</h3>
+                <p>Level up your character, master different job classes, and unlock achievements.</p>
             </div>
         </div>
     </div>
 </section>
-{% endblock %}
-
-{% block extra_css %}
-<style>
-.features-hero {
-    background-color: var(--primary-color);
-    color: white;
-    padding: 4rem 0;
-    text-align: center;
-}
-
-.features-hero h1 {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-}
-
-.feature-block {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 4rem;
-    padding: 4rem 0;
-    align-items: center;
-}
-
-.feature-block.reverse {
-    direction: rtl;
-}
-
-.feature-block.reverse .feature-content {
-    direction: ltr;
-}
-
-.feature-content h2 {
-    color: var(--primary-color);
-    margin-bottom: 1.5rem;
-    font-size: 2rem;
-}
-
-.feature-content ul {
-    list-style: none;
-    margin-top: 1rem;
-}
-
-.feature-content ul li {
-    margin-bottom: 0.5rem;
-    padding-left: 1.5rem;
-    position: relative;
-}
-
-.feature-content ul li:before {
-    content: "•";
-    color: var(--secondary-color);
-    position: absolute;
-    left: 0;
-}
-
-.feature-image {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.feature-icon {
-    font-size: 8rem;
-    color: var(--secondary-color);
-}
-
-.gameplay-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
-    margin: 3rem 0;
-}
-
-.gameplay-card {
-    background: white;
-    padding: 2rem;
-    border-radius: 8px;
-    text-align: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease;
-}
-
-.gameplay-card:hover {
-    transform: translateY(-5px);
-}
-
-.gameplay-card i {
-    font-size: 3rem;
-    color: var(--secondary-color);
-    margin-bottom: 1rem;
-}
-
-.gameplay-card h3 {
-    color: var(--primary-color);
-    margin-bottom: 1rem;
-}
-
-.upcoming-features {
-    background-color: var(--light-bg);
-    padding: 4rem 0;
-    margin-top: 4rem;
-}
-
-.upcoming-features h2 {
-    text-align: center;
-    margin-bottom: 3rem;
-    color: var(--primary-color);
-}
-
-.upcoming-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 2rem;
-}
-
-.upcoming-card {
-    background: white;
-    padding: 2rem;
-    border-radius: 8px;
-    text-align: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.upcoming-card h3 {
-    color: var(--primary-color);
-    margin-bottom: 1rem;
-}
-
-@media (max-width: 768px) {
-    .feature-block {
-        grid-template-columns: 1fr;
-        gap: 2rem;
-        padding: 2rem 0;
-    }
-
-    .feature-block.reverse {
-        direction: ltr;
-    }
-
-    .feature-icon {
-        font-size: 6rem;
-    }
-
-    .features-hero h1 {
-        font-size: 2rem;
-    }
-}
-</style>
 {% endblock %}
