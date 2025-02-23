@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Terminusa Online{% endblock %}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23001800'/><text x='16' y='22' font-family='monospace' font-size='20' fill='%2300FF41' text-anchor='middle'>T</text></svg>">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/buttons.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/alerts.css') }}">
-    {% block extra_css %}{% endblock %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
     <canvas id="matrixRain"></canvas>
+    
     <header class="main-header">
         <nav class="main-nav">
             <div class="nav-brand">
@@ -25,62 +25,51 @@
                 </a>
             </div>
             <div class="nav-links">
+                <a href="{{ url_for('pages.index') }}" class="nav-link">Home</a>
+                <a href="{{ url_for('pages.features') }}" class="nav-link">Features</a>
                 {% if current_user.is_authenticated %}
-                    <a href="{{ url_for('pages.index') }}" class="nav-link">Home</a>
-                    <a href="{{ url_for('pages.profile') }}" class="nav-link">Profile</a>
-                    <a href="{{ url_for('auth.logout') }}" class="nav-button">Logout</a>
+                <a href="{{ url_for('pages.marketplace') }}" class="nav-link">Marketplace</a>
+                <a href="{{ url_for('pages.leaderboard') }}" class="nav-link">Leaderboard</a>
+                <a href="{{ url_for('pages.play') }}" class="nav-button">Play Now</a>
+                <a href="{{ url_for('auth.logout') }}" class="nav-link">Logout</a>
                 {% else %}
-                    <a href="{{ url_for('auth.login') }}" class="nav-link">Login</a>
-                    <a href="{{ url_for('auth.register') }}" class="nav-button glow">Register</a>
+                <a href="{{ url_for('auth.login') }}" class="nav-link">Login</a>
+                <a href="{{ url_for('auth.register') }}" class="nav-button glow">Sign Up</a>
                 {% endif %}
             </div>
         </nav>
     </header>
 
     <main>
-        <div class="container">
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }} alert-matrix">
-                            {{ message }}
-                        </div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-            {% block content %}{% endblock %}
-        </div>
+        {% block content %}{% endblock %}
     </main>
 
     <footer class="main-footer">
         <div class="footer-content">
             <div class="footer-section">
-                <h3>About</h3>
+                <h3>About Terminusa</h3>
+                <p>A Solo-leveling inspired MMORPG with CLI and web interfaces. Join the adventure today!</p>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
                 <ul>
-                    <li><a href="{{ url_for('pages.about') }}">About Us</a></li>
+                    <li><a href="{{ url_for('pages.about') }}">About</a></li>
+                    <li><a href="{{ url_for('pages.support') }}">Support</a></li>
                     <li><a href="{{ url_for('pages.terms') }}">Terms of Service</a></li>
                     <li><a href="{{ url_for('pages.privacy') }}">Privacy Policy</a></li>
                 </ul>
             </div>
             <div class="footer-section">
-                <h3>Community</h3>
-                <ul>
-                    <li><a href="#">Discord</a></li>
-                    <li><a href="#">Twitter</a></li>
-                    <li><a href="#">Blog</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h3>Support</h3>
-                <ul>
-                    <li><a href="{{ url_for('pages.help_page') }}">Help Center</a></li>
-                    <li><a href="{{ url_for('pages.support') }}">Contact Us</a></li>
-                    <li><a href="{{ url_for('pages.help_page') }}">FAQ</a></li>
-                </ul>
+                <h3>Connect</h3>
+                <div class="social-links">
+                    <a href="#" class="social-link"><i class="fab fa-discord"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-github"></i></a>
+                    <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                </div>
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; 2025 Terminusa Online. All rights reserved.</p>
+            <p>&copy; 2024 Terminusa Online. All rights reserved.</p>
         </div>
     </footer>
 
@@ -89,8 +78,13 @@
         const canvas = document.getElementById('matrixRain');
         const ctx = canvas.getContext('2d');
 
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
 
         const matrix = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%";
         const drops = [];
@@ -120,12 +114,7 @@
         }
 
         setInterval(draw, 35);
-
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
     </script>
-    {% block extra_js %}{% endblock %}
+    {% block scripts %}{% endblock %}
 </body>
 </html>
