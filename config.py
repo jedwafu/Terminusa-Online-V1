@@ -10,6 +10,10 @@ class Config:
     SECRET_KEY = os.getenv('FLASK_SECRET_KEY', 'dev_key')
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'dev_jwt_key')
     
+    # Static files
+    STATIC_FOLDER = 'static'
+    STATIC_URL_PATH = '/static'
+    
     # Database
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'postgresql://localhost/terminusa')
     SQLALCHEMY_TRACK_MODIFICATIONS = False

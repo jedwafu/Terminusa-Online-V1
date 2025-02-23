@@ -3,11 +3,14 @@ from flask_login import LoginManager, current_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_cors import CORS
+from config import Config
 
 import routes
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(__name__,
+                static_folder=Config.STATIC_FOLDER,
+                static_url_path=Config.STATIC_URL_PATH)
     
     app.config.from_object('config.Config')
     app.config['DEBUG'] = False
