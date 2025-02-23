@@ -139,84 +139,70 @@ info_log() {
 setup_static_files() {
     info_log "Setting up static files..."
     
+    # Load environment variables
+    if [ -f .env ]; then
+        set -a
+        source .env
+        set +a
+    else
+        error_log ".env file not found"
+        return 1
+    fi
+
     # Define directories
+    STATIC_DIR="${STATIC_DIR:-/var/www/terminusa/static}"
+    SOURCE_DIR="${SOURCE_DIR:-./static}"
     NGINX_ROOT="/var/www/terminusa"
-    NGINX_STATIC_DIR="$NGINX_ROOT/static"
+    NGINX_STATIC_DIR="$STATIC_DIR"
     PROJECT_ROOT=$(pwd)
     BACKUP_DIR="$NGINX_ROOT/static_backup_$(date +%Y%m%d_%H%M%S)"
     
-    # Create directories
+    # Create directories with error handling
     info_log "Creating static directories..."
-    sudo mkdir -p $NGINX_STATIC_DIR
-    sudo mkdir -p $NGINX_STATIC_DIR/css
-    sudo mkdir -p $NGINX_STATIC_DIR/js
-    sudo mkdir -p $NGINX_STATIC_DIR/images
+    sudo mkdir -p "$NGINX_STATIC_DIR/css" || { error_log "Failed to create CSS directory"; return 1; }
+    sudo mkdir -p "$NGINX_STATIC_DIR/js" || { error_log "Failed to create JS directory"; return 1; }
+    sudo mkdir -p "$NGINX_STATIC_DIR/images" || { error_log "Failed to create images directory"; return 1; }
     
+    # Verify source directories exist
+    [ -d "$SOURCE_DIR/css" ] || { error_log "Source CSS directory not found"; return 1; }
+    [ -d "$SOURCE_DIR/js" ] || { error_log "Source JS directory not found"; return 1; }
+
     # Backup existing files if they exist
     if [ -d "$NGINX_STATIC_DIR" ]; then
         info_log "Backing up existing static files..."
-        sudo cp -r $NGINX_STATIC_DIR $BACKUP_DIR
+        sudo cp -r "$NGINX_STATIC_DIR" "$BACKUP_DIR" || { error_log "Failed to create backup"; return 1; }
     fi
     
-    # Copy static files
-    if [ -d "static" ]; then
-        info_log "Copying static files..."
-        
-        # Copy CSS files with verification
-        info_log "Copying CSS files..."
-        if [ -d "static/css" ]; then
-            for css_file in static/css/*.css; do
-                filename=$(basename "$css_file")
-                target_file="$NGINX_STATIC_DIR/css/$filename"
-                
-                # Backup existing file if it exists
-                if [ -f "$target_file" ]; then
-                    sudo cp "$target_file" "$target_file.backup"
-                fi
-                
-                # Copy new file
-                sudo cp "$css_file" "$target_file" || {
-                    error_log "Failed to copy $filename"
-                    if [ -f "$target_file.backup" ]; then
-                        sudo mv "$target_file.backup" "$target_file"
-                    fi
-                    continue
-                }
-                
-                # Set permissions
-                sudo chown www-data:www-data "$target_file"
-                sudo chmod 644 "$target_file"
-                
-                success_log "Successfully copied $filename"
-            done
-        fi
-        
-        # Copy JS files
-        info_log "Copying JavaScript files..."
-        if [ -d "static/js" ]; then
-            sudo cp -r static/js/* $NGINX_STATIC_DIR/js/ 2>/dev/null || {
-                error_log "Failed to copy JavaScript files"
-            }
-        fi
-        
-        # Copy images
-        info_log "Copying image files..."
-        if [ -d "static/images" ]; then
-            sudo cp -r static/images/* $NGINX_STATIC_DIR/images/ 2>/dev/null || {
-                error_log "Failed to copy image files"
-            }
-        fi
-    else
-        error_log "Static directory not found!"
+    # Copy files with error handling
+    info_log "Copying static files..."
+    
+    # Copy CSS files
+    info_log "Copying CSS files..."
+    sudo cp -r "$SOURCE_DIR/css/"* "$NGINX_STATIC_DIR/css/" || { error_log "Failed to copy CSS files"; return 1; }
+    
+    # Copy JS files
+    info_log "Copying JavaScript files..."
+    sudo cp -r "$SOURCE_DIR/js/"* "$NGINX_STATIC_DIR/js/" || { error_log "Failed to copy JS files"; return 1; }
+    
+    # Copy images
+    info_log "Copying image files..."
+    sudo cp -r "$SOURCE_DIR/images/"* "$NGINX_STATIC_DIR/images/" 2>/dev/null || info_log "No images found"
+    
+    # Set permissions
+    info_log "Setting permissions..."
+    sudo chown -R www-data:www-data "$NGINX_ROOT" || { error_log "Failed to set ownership"; return 1; }
+    sudo chmod -R 755 "$NGINX_ROOT" || { error_log "Failed to set permissions"; return 1; }
+    sudo find "$NGINX_STATIC_DIR" -type f -exec chmod 644 {} \;
+    
+    # Verify nginx directory exists
+    if [ ! -d "/var/www/terminusa" ]; then
+        error_log "Nginx directory /var/www/terminusa not found"
         return 1
     fi
-    
-    # Set directory permissions
-    info_log "Setting directory permissions..."
-    sudo chown -R www-data:www-data $NGINX_ROOT
-    sudo chmod -R 755 $NGINX_ROOT
-    sudo find $NGINX_STATIC_DIR -type f -exec chmod 644 {} \;
-    
+
+    # Create symbolic link
+    ln -sfn "$NGINX_STATIC_DIR" "/var/www/terminusa/static" || { error_log "Failed to create symbolic link"; return 1; }
+
     # Clear nginx cache
     info_log "Clearing nginx cache..."
     sudo rm -rf /var/cache/nginx/*
