@@ -236,30 +236,168 @@ setup_database() {
     return 0
 }
 
-# Enhanced nginx setup
+# Enhanced nginx setup with configuration installer
 setup_nginx() {
     info_log "Setting up nginx..."
-    
+
+    # Backup existing configuration if it exists
+    if [ -f /etc/nginx/sites-available/terminusa.conf ]; then
+        backup_file="/etc/nginx/sites-available/terminusa.conf.backup_$(date +%Y%m%d_%H%M%S)"
+        info_log "Backing up existing nginx config to $backup_file"
+        sudo cp /etc/nginx/sites-available/terminusa.conf "$backup_file"
+    fi
+
     # Update nginx user
     sudo sed -i 's/user root/user www-data/' /etc/nginx/nginx.conf
-    
-    # Copy nginx configuration
-    sudo cp nginx/terminusa.conf /etc/nginx/sites-available/
-    
+
+    # Create nginx configuration
+    info_log "Creating nginx configuration..."
+    sudo tee /etc/nginx/sites-available/terminusa.conf > /dev/null << 'EOL'
+server {
+    listen 80;
+    server_name terminusa.online;
+
+    # SSL configuration
+    listen 443 ssl;
+    ssl_certificate /etc/letsencrypt/live/terminusa.online/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/terminusa.online/privkey.pem;
+
+    # Root directory
+    root /var/www/terminusa;
+
+    # Static files
+    location /static/ {
+        alias /var/www/terminusa/static/;
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+        
+        # Enable gzip compression
+        gzip on;
+        gzip_vary on;
+        gzip_min_length 10240;
+        gzip_proxied expired no-cache no-store private auth;
+        gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml;
+        gzip_disable "MSIE [1-6]\.";
+        
+        # Proper MIME type handling
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+        
+        # Specific MIME types for web files
+        types {
+            text/css css;
+            text/javascript js;
+            image/svg+xml svg svgz;
+            image/png png;
+            image/jpeg jpg jpeg;
+            image/gif gif;
+            image/x-icon ico;
+            font/woff woff;
+            font/woff2 woff2;
+            application/font-woff woff;
+            application/font-woff2 woff2;
+        }
+        
+        # Try to serve the exact file, then directory index, then 404
+        try_files \$uri \$uri/ =404;
+        
+        # Add CORS headers
+        add_header 'Access-Control-Allow-Origin' '*';
+        add_header 'Access-Control-Allow-Methods' 'GET, OPTIONS';
+        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
+        
+        # Cache settings
+        add_header Cache-Control "public, max-age=2592000";
+        etag on;
+        
+        # Security headers
+        add_header X-Content-Type-Options "nosniff";
+        add_header X-Frame-Options "SAMEORIGIN";
+        add_header X-XSS-Protection "1; mode=block";
+    }
+
+    # Proxy to Flask application
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        
+        # WebSocket support
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    # Error pages
+    error_page 404 /404.html;
+    error_page 500 502 503 504 /50x.html;
+    location = /50x.html {
+        root /usr/share/nginx/html;
+    }
+
+    # Additional security headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # Client caching for common file types
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg)\$ {
+        expires 30d;
+        add_header Cache-Control "public, no-transform";
+    }
+}
+EOL
+
     # Enable site
+    info_log "Enabling nginx site..."
     sudo ln -sf /etc/nginx/sites-available/terminusa.conf /etc/nginx/sites-enabled/
     sudo rm -f /etc/nginx/sites-enabled/default
-    
+
     # Test configuration
+    info_log "Testing nginx configuration..."
     if ! sudo nginx -t; then
         error_log "Nginx configuration test failed!"
+        if [ -f "$backup_file" ]; then
+            info_log "Restoring backup configuration..."
+            sudo cp "$backup_file" /etc/nginx/sites-available/terminusa.conf
+            sudo nginx -t && sudo systemctl restart nginx
+        fi
         return 1
     fi
-    
+
     # Restart nginx
-    sudo systemctl restart nginx
-    
-    success_log "Nginx setup completed"
+    info_log "Restarting nginx..."
+    if ! sudo systemctl restart nginx; then
+        error_log "Failed to restart nginx!"
+        if [ -f "$backup_file" ]; then
+            info_log "Restoring backup configuration..."
+            sudo cp "$backup_file" /etc/nginx/sites-available/terminusa.conf
+            sudo nginx -t && sudo systemctl restart nginx
+        fi
+        return 1
+    fi
+
+    # Verify nginx is running
+    if ! systemctl is-active --quiet nginx; then
+        error_log "Nginx is not running after configuration update!"
+        if [ -f "$backup_file" ]; then
+            info_log "Restoring backup configuration..."
+            sudo cp "$backup_file" /etc/nginx/sites-available/terminusa.conf
+            sudo nginx -t && sudo systemctl restart nginx
+        fi
+        return 1
+    fi
+
+    success_log "Nginx setup completed successfully"
     return 0
 }
 
