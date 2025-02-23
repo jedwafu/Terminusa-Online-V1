@@ -147,7 +147,10 @@ setup_static_files() {
     
     # Create directories
     info_log "Creating static directories..."
-    sudo mkdir -p $NGINX_STATIC_DIR/{css,js,images}
+    sudo mkdir -p $NGINX_STATIC_DIR
+    sudo mkdir -p $NGINX_STATIC_DIR/css
+    sudo mkdir -p $NGINX_STATIC_DIR/js
+    sudo mkdir -p $NGINX_STATIC_DIR/images
     
     # Backup existing files if they exist
     if [ -d "$NGINX_STATIC_DIR" ]; then
