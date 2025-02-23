@@ -11,6 +11,7 @@ from models.gate import Gate, GateRank
 pages_bp = Blueprint('pages', __name__)
 
 @pages_bp.route('/')
+@pages_bp.route('/index')
 def index():
     """Render homepage"""
     if current_user.is_authenticated:
@@ -25,12 +26,10 @@ inventory_system = InventorySystem()
 @login_required
 def marketplace():
     """Render marketplace page"""
-    # Get current rates for gacha
     mount_rates = gacha_system.get_rates(current_user, 'mount')
     pet_rates = gacha_system.get_rates(current_user, 'pet')
     pity_info = gacha_system.get_pity_info(current_user)
     
-    # Get current listings
     listings = marketplace_system.get_listings()
     my_listings = marketplace_system.get_listings(seller_id=current_user.id)
     
@@ -48,10 +47,7 @@ def marketplace():
 @login_required
 def inventory():
     """Render inventory page"""
-    # Get inventory data
     inventory_data = inventory_system.get_inventory(current_user)
-    
-    # Get mount and pet stats
     mount_stats = inventory_system.get_mount_stats(current_user)
     pet_abilities = inventory_system.get_pet_abilities(current_user)
     
@@ -67,7 +63,6 @@ def inventory():
 @login_required
 def profile():
     """Render profile page"""
-    # Get player stats and achievements
     mount_stats = inventory_system.get_mount_stats(current_user)
     pet_abilities = inventory_system.get_pet_abilities(current_user)
     
@@ -81,7 +76,6 @@ def profile():
 @pages_bp.route('/leaderboard')
 def leaderboard():
     """Render leaderboard page"""
-    # Get top players and guilds
     top_hunters = User.query.order_by(User.level.desc()).limit(100).all()
     top_guilds = Guild.query.order_by(Guild.level.desc()).limit(50).all()
     
@@ -94,7 +88,6 @@ def leaderboard():
 @pages_bp.route('/gate-stats')
 def gate_stats():
     """Render gate statistics page"""
-    # Get overall gate statistics
     gate_stats = {
         'total_cleared': Gate.query.filter_by(cleared=True).count(),
         'by_rank': {
@@ -119,6 +112,21 @@ def guild_page(guild_id):
         members=guild.members,
         quests=guild.active_quests
     )
+
+@pages_bp.route('/play')
+def play():
+    """Redirect to game client"""
+    return redirect('https://play.terminusa.online', code=301)
+
+@pages_bp.route('/about')
+def about():
+    """Render about page"""
+    return render_template('about.html')
+
+@pages_bp.route('/support')
+def support():
+    """Render support page"""
+    return render_template('help.html')
 
 @pages_bp.route('/help')
 def help_page():
