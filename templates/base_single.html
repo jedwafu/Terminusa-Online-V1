@@ -5,20 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Terminusa Online{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    {% if extra_css %}
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/' + extra_css) }}">
-    {% endif %}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
     {% block extra_head %}{% endblock %}
 </head>
 <body>
-    <header>
+    <header class="main-header">
         <nav class="main-nav">
             <div class="nav-brand">
-                <a href="{{ url_for('pages.index') }}">
-                    <img src="{{ url_for('static', filename='images/favicon-32x32.png') }}" alt="Terminusa Logo">
-                    <span>Terminusa Online</span>
+                <a href="{{ url_for('pages.index') }}" class="logo-link">
+                    <div class="logo">
+                        <div class="logo-glow"></div>
+                        <span class="logo-text">T</span>
+                    </div>
+                    <span class="brand-text">Terminusa</span>
                 </a>
             </div>
             <div class="nav-links">
@@ -31,7 +31,7 @@
                 <a href="{{ url_for('auth.logout') }}" class="nav-link">Logout</a>
                 {% else %}
                 <a href="{{ url_for('auth.login') }}" class="nav-link">Login</a>
-                <a href="{{ url_for('auth.register') }}" class="nav-button">Sign Up</a>
+                <a href="{{ url_for('auth.register') }}" class="nav-button glow">Sign Up</a>
                 {% endif %}
             </div>
         </nav>
@@ -41,7 +41,7 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer>
+    <footer class="main-footer">
         <div class="footer-content">
             <div class="footer-section">
                 <h3>About Terminusa</h3>
@@ -70,6 +70,49 @@
         </div>
     </footer>
 
+    <canvas id="matrixRain"></canvas>
     {% block scripts %}{% endblock %}
+    <script>
+        // Matrix Rain Animation
+        const canvas = document.getElementById('matrixRain');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const matrix = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%";
+        const drops = [];
+        const fontSize = 16;
+        const columns = canvas.width/fontSize;
+
+        for(let x = 0; x < columns; x++) {
+            drops[x] = 1;
+        }
+
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#00FF41';
+            ctx.font = fontSize + 'px monospace';
+
+            for(let i = 0; i < drops.length; i++) {
+                const text = matrix[Math.floor(Math.random() * matrix.length)];
+                ctx.fillText(text, i*fontSize, drops[i]*fontSize);
+
+                if(drops[i]*fontSize > canvas.height && Math.random() > 0.975)
+                    drops[i] = 0;
+
+                drops[i]++;
+            }
+        }
+
+        setInterval(draw, 35);
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    </script>
 </body>
 </html>
