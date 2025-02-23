@@ -417,6 +417,18 @@ server {
     location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg)\$ {
         expires 30d;
         add_header Cache-Control "public, no-transform";
+        
+        # Ensure CSS files are served with correct MIME type
+        location ~* \.css$ {
+            add_header Content-Type text/css;
+            add_header X-Content-Type-Options nosniff;
+        }
+        
+        # Ensure JS files are served with correct MIME type
+        location ~* \.js$ {
+            add_header Content-Type application/javascript;
+            add_header X-Content-Type-Options nosniff;
+        }
     }
 }
 EOL
