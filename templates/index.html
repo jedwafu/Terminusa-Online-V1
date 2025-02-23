@@ -9,13 +9,13 @@
         <p class="hero-subtitle">Enter a world of cybernetic adventure</p>
         {% if not current_user.is_authenticated %}
         <div class="hero-actions">
-            <a href="{{ url_for('auth_bp.register') }}" class="btn btn-primary btn-glow nav-button">Get Started</a>
-            <a href="{{ url_for('auth_bp.login') }}" class="btn btn-outline nav-button">Login</a>
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-glow nav-button">Get Started</a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline nav-button">Login</a>
         </div>
         {% else %}
         <div class="hero-actions">
-            <a href="{{ url_for('main.play') }}" class="btn btn-primary btn-glow nav-button">Enter Game</a>
-            <a href="{{ url_for('main.profile') }}" class="btn btn-outline nav-button">View Profile</a>
+            <a href="{{ url_for('pages.play') }}" class="btn btn-primary btn-glow nav-button">Enter Game</a>
+            <a href="{{ url_for('pages.profile') }}" class="btn btn-outline nav-button">View Profile</a>
         </div>
         {% endif %}
     </div>
