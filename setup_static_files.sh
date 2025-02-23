@@ -66,7 +66,7 @@ log_info "Copying static files..."
 
 # Copy CSS files with verification
 log_info "Copying CSS files..."
-REQUIRED_CSS=("style.css" "buttons.css" "alerts.css")
+REQUIRED_CSS=("style.css" "buttons.css" "alerts.css" "auth.css")
 for css_file in "${REQUIRED_CSS[@]}"; do
     source_file="$PROJECT_ROOT/static/css/$css_file"
     target_file="$NGINX_STATIC_DIR/css/$css_file"
