@@ -13,18 +13,18 @@
                 <form class="auth-form" method="POST" action="{{ url_for('auth.login') }}">
                     <div class="form-group">
                         <label for="username" class="form-label">Username or Email</label>
-                        <input type="text" id="username" name="username" class="form-input" required autocomplete="username">
+                        <input type="text" id="username" name="username" class="form-input" required 
+                               autocomplete="username">
                     </div>
 
                     <div class="form-group">
                         <label for="password" class="form-label">Password</label>
-                        <input type="password" id="password" name="password" class="form-input" required autocomplete="current-password">
-                        <div class="password-options">
-                            <label class="remember-me">
-                                <input type="checkbox" name="remember" id="remember">
-                                <span>Remember me</span>
-                            </label>
-                            <a href="/forgot-password" class="forgot-password">Forgot Password?</a>
+                        <input type="password" id="password" name="password" class="form-input" required
+                               autocomplete="current-password">
+                        <div class="checkbox-group">
+                            <input type="checkbox" name="remember" id="remember">
+                            <label for="remember">Remember me</label>
+                            <a href="{{ url_for('auth.forgot_password') }}" class="forgot-password">Forgot Password?</a>
                         </div>
                     </div>
 
