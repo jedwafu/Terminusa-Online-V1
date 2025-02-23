@@ -19,7 +19,7 @@ def create_app():
     db.init_app(app)
     migrate = Migrate(app, db)
     login_manager = LoginManager(app)
-    login_manager.login_view = 'auth_bp.login'
+    login_manager.login_view = 'auth.login'
     CORS(app)
 
     # Initialize routes

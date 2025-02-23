@@ -12,7 +12,7 @@ from models import User, Announcement
 from datetime import datetime, timedelta
 import bcrypt
 
-auth_bp = Blueprint('auth_bp', __name__)
+auth_bp = Blueprint('auth', __name__)
 
 def get_latest_announcements(limit=5):
     """Get latest active announcements"""
@@ -31,10 +31,14 @@ def login():
     if request.method == 'GET':
         try:
             announcements = get_latest_announcements()
-            return render_template('login.html', announcements=announcements)
+            return render_template('login_single.html', 
+                                announcements=announcements,
+                                is_authenticated=current_user.is_authenticated)
         except Exception as e:
             current_app.logger.error(f"Error rendering login page: {str(e)}")
-            return render_template('login.html', announcements=[])
+            return render_template('login_single.html', 
+                                announcements=[],
+                                is_authenticated=current_user.is_authenticated)
     
     try:
         # Handle AJAX request
@@ -56,7 +60,7 @@ def login():
                     'message': 'Username and password are required'
                 }), 400
             flash('Username and password are required', 'error')
-            return redirect(url_for('auth_bp.login'))
+            return redirect(url_for('auth.login'))
 
         # Try to find user by username or email
         user = User.query.filter(
@@ -71,7 +75,7 @@ def login():
                     'message': 'Invalid credentials'
                 }), 401
             flash('Invalid credentials', 'error')
-            return redirect(url_for('auth_bp.login'))
+            return redirect(url_for('auth.login'))
 
         # Verify password
         if not bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
@@ -82,7 +86,7 @@ def login():
                     'message': 'Invalid credentials'
                 }), 401
             flash('Invalid credentials', 'error')
-            return redirect(url_for('auth_bp.login'))
+            return redirect(url_for('auth.login'))
 
         # Update last login
         user.last_login = datetime.utcnow()
@@ -137,7 +141,7 @@ def login():
                 'message': 'Login failed'
             }), 500
         flash('Login failed', 'error')
-        return redirect(url_for('auth_bp.login'))
+        return redirect(url_for('auth.login'))
 
 @auth_bp.route('/logout')
 def logout():
@@ -159,10 +163,14 @@ def register():
     if request.method == 'GET':
         try:
             announcements = get_latest_announcements()
-            return render_template('register.html', announcements=announcements)
+            return render_template('register_single.html', 
+                                announcements=announcements,
+                                is_authenticated=current_user.is_authenticated)
         except Exception as e:
             current_app.logger.error(f"Error rendering register page: {str(e)}")
-            return render_template('register.html', announcements=[])
+            return render_template('register_single.html', 
+                                announcements=[],
+                                is_authenticated=current_user.is_authenticated)
     
     try:
         # Handle AJAX request
@@ -184,7 +192,7 @@ def register():
                     'message': 'Missing required fields'
                 }), 400
             flash('All fields are required', 'error')
-            return redirect(url_for('auth_bp.register'))
+            return redirect(url_for('auth.register'))
 
         # Check if user already exists
         if User.query.filter_by(username=username).first():
@@ -194,7 +202,7 @@ def register():
                     'message': 'Username already exists'
                 }), 400
             flash('Username already exists', 'error')
-            return redirect(url_for('auth_bp.register'))
+            return redirect(url_for('auth.register'))
 
         if User.query.filter_by(email=email).first():
             if request.is_json:
@@ -203,7 +211,7 @@ def register():
                     'message': 'Email already registered'
                 }), 400
             flash('Email already registered', 'error')
-            return redirect(url_for('auth_bp.register'))
+            return redirect(url_for('auth.register'))
 
         # Create user
         salt = bcrypt.gensalt()
@@ -232,7 +240,7 @@ def register():
             }), 201
         
         flash('Registration successful! You can now log in.', 'success')
-        return redirect(url_for('auth_bp.login'))
+        return redirect(url_for('auth.login'))
 
     except Exception as e:
         current_app.logger.error(f"Registration error: {str(e)}")
@@ -243,7 +251,7 @@ def register():
                 'message': 'Registration failed'
             }), 500
         flash('Registration failed', 'error')
-        return redirect(url_for('auth_bp.register'))
+        return redirect(url_for('auth.register'))
 
 @auth_bp.route('/api/refresh', methods=['POST'])
 @jwt_required(refresh=True)

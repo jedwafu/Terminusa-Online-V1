@@ -2,6 +2,8 @@
 
 {% block title %}Register - Terminusa Online{% endblock %}
 
+{% block extra_head %}{% endblock %}
+
 {% block content %}
 <section class="auth-section">
     <div class="container">
@@ -10,7 +12,7 @@
                 <h1>Create Your Account</h1>
                 <p class="subtitle">Join the adventure in Terminusa Online</p>
                 
-                <form class="auth-form" method="POST" action="{{ url_for('register') }}">
+                <form class="auth-form" method="POST" action="{{ url_for('auth.register') }}">
                     <div class="form-group">
                         <label for="username" class="form-label">Username</label>
                         <input type="text" id="username" name="username" class="form-input" required 
@@ -40,14 +42,14 @@
 
                     <div class="checkbox-group">
                         <input type="checkbox" id="terms" name="terms" required>
-                        <label for="terms">I agree to the <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a></label>
+                        <label for="terms">I agree to the <a href="{{ url_for('pages.terms') }}">Terms of Service</a> and <a href="{{ url_for('pages.privacy') }}">Privacy Policy</a></label>
                     </div>
 
                     <button type="submit" class="btn btn-primary btn-block">Create Account</button>
                 </form>
 
                 <div class="form-footer">
-                    <p>Already have an account? <a href="{{ url_for('login_page') }}">Log In</a></p>
+                    <p>Already have an account? <a href="{{ url_for('auth.login') }}">Log In</a></p>
                 </div>
             </div>
             

@@ -52,6 +52,7 @@
                 Already have an account? <a href="{{ url_for('auth.login') }}" class="text-neon">Login here</a>
             </div>
         </div>
+        {% if announcements %}
         <div class="announcements-box">
             <h2 class="announcements-title">Latest News</h2>
             <div class="announcements-list">
@@ -64,14 +65,54 @@
                     </div>
                     <div class="announcement-content">{{ announcement.content }}</div>
                 </div>
-                {% else %}
-                <div class="announcement-empty">No announcements available</div>
                 {% endfor %}
             </div>
         </div>
+        {% endif %}
     </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const password = document.getElementById('password');
+    const confirmPassword = document.getElementById('confirm_password');
+    const requirements = {
+        length: str => str.length >= 8,
+        uppercase: str => /[A-Z]/.test(str),
+        number: str => /[0-9]/.test(str),
+        special: str => /[^A-Za-z0-9]/.test(str)
+    };
+
+    function validatePassword() {
+        const value = password.value;
+        Object.keys(requirements).forEach(req => {
+            const element = document.querySelector(`[data-requirement="${req}"]`);
+            if (requirements[req](value)) {
+                element.classList.add('met');
+            } else {
+                element.classList.remove('met');
+            }
+        });
+    }
+
+    function validateConfirmPassword() {
+        if (password.value === confirmPassword.value) {
+            confirmPassword.setCustomValidity('');
+        } else {
+            confirmPassword.setCustomValidity('Passwords do not match');
+        }
+    }
+
+    password.addEventListener('input', validatePassword);
+    confirmPassword.addEventListener('input', validateConfirmPassword);
+    password.addEventListener('input', validateConfirmPassword);
+});
+</script>
+{% endblock %}
+
+{% block extra_css %}
 <style>
 .auth-container {
     display: flex;
@@ -307,13 +348,6 @@
     line-height: 1.5;
 }
 
-.announcement-empty {
-    color: var(--text-color);
-    text-align: center;
-    padding: 2rem;
-    opacity: 0.7;
-}
-
 @media (max-width: 900px) {
     .auth-panel {
         flex-direction: column;
@@ -331,42 +365,4 @@
     }
 }
 </style>
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const password = document.getElementById('password');
-    const confirmPassword = document.getElementById('confirm_password');
-    const requirements = {
-        length: str => str.length >= 8,
-        uppercase: str => /[A-Z]/.test(str),
-        number: str => /[0-9]/.test(str),
-        special: str => /[^A-Za-z0-9]/.test(str)
-    };
-
-    function validatePassword() {
-        const value = password.value;
-        Object.keys(requirements).forEach(req => {
-            const element = document.querySelector(`[data-requirement="${req}"]`);
-            if (requirements[req](value)) {
-                element.classList.add('met');
-            } else {
-                element.classList.remove('met');
-            }
-        });
-    }
-
-    function validateConfirmPassword() {
-        if (password.value === confirmPassword.value) {
-            confirmPassword.setCustomValidity('');
-        } else {
-            confirmPassword.setCustomValidity('Passwords do not match');
-        }
-    }
-
-    password.addEventListener('input', validatePassword);
-    confirmPassword.addEventListener('input', validateConfirmPassword);
-    password.addEventListener('input', validateConfirmPassword);
-});
-</script>
 {% endblock %}
