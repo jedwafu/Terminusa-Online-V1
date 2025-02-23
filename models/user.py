@@ -66,7 +66,12 @@ class User(db.Model):
     
     # Relationships
     player = db.relationship('Player', backref='user', uselist=False)
-    transactions = db.relationship('Transaction', backref='user')
+    transactions = db.relationship('Transaction', 
+                                 foreign_keys='Transaction.user_id',
+                                 backref='user')
+    received_transactions = db.relationship('Transaction',
+                                          foreign_keys='Transaction.recipient_id',
+                                          backref='recipient')
     achievements = db.relationship('Achievement', backref='user')
     inventory = db.relationship('Inventory', backref='user', uselist=False)
 

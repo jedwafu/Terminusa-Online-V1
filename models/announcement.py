@@ -16,7 +16,7 @@ class Announcement(BaseModel, TimestampMixin):
     
     # Author relationship
     author_id = Column(Integer, ForeignKey('users.id'), nullable=True)
-    author = relationship('User', backref='announcements')
+    author = relationship('User', foreign_keys=[author_id], backref='authored_announcements')
 
     def __repr__(self):
         """String representation of Announcement."""
