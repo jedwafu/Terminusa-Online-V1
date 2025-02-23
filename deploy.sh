@@ -203,12 +203,13 @@ setup_static_files() {
     # Create symbolic link
     ln -sfn "$NGINX_STATIC_DIR" "/var/www/terminusa/static" || { error_log "Failed to create symbolic link"; return 1; }
 
-    # Clear nginx cache
-    info_log "Clearing nginx cache..."
+    # Clear nginx cache and restart
+    info_log "Clearing nginx cache and restarting..."
     sudo rm -rf /var/cache/nginx/*
+    sudo systemctl restart nginx
     
-    # Verify nginx configuration
-    info_log "Verifying nginx configuration..."
+    # Verify nginx configuration and restart
+    info_log "Verifying nginx configuration and restarting..."
     if ! sudo nginx -t; then
         error_log "Nginx configuration test failed!"
         if [ -d "$BACKUP_DIR" ]; then
