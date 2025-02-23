@@ -2,6 +2,10 @@
 
 {% block title %}Login - Terminusa Online{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+{% endblock %}
+
 {% block content %}
 <section class="auth-section">
     <div class="container">
@@ -10,15 +14,15 @@
                 <h1>Welcome Back</h1>
                 <p class="subtitle">Log in to continue your adventure</p>
 
-                <form class="auth-form" method="POST" action="{{ url_for('login') }}">
+                <form class="auth-form" method="POST" action="{{ url_for('auth.login') }}">
                     <div class="form-group">
                         <label for="username" class="form-label">Username or Email</label>
-                        <input type="text" id="username" name="username" class="form-input" required>
+                        <input type="text" id="username" name="username" class="form-input" required autocomplete="username">
                     </div>
 
                     <div class="form-group">
                         <label for="password" class="form-label">Password</label>
-                        <input type="password" id="password" name="password" class="form-input" required>
+                        <input type="password" id="password" name="password" class="form-input" required autocomplete="current-password">
                         <div class="password-options">
                             <label class="remember-me">
                                 <input type="checkbox" name="remember" id="remember">
@@ -32,7 +36,7 @@
                 </form>
 
                 <div class="form-footer">
-                    <p>Don't have an account? <a href="{{ url_for('register_page') }}">Sign Up</a></p>
+                    <p>Don't have an account? <a href="{{ url_for('auth.register') }}">Sign Up</a></p>
                 </div>
 
                 <div class="cli-login-info">

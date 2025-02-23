@@ -2,7 +2,9 @@
 
 {% block title %}Register - Terminusa Online{% endblock %}
 
-{% block extra_head %}{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+{% endblock %}
 
 {% block content %}
 <section class="auth-section">
@@ -17,13 +19,15 @@
                         <label for="username" class="form-label">Username</label>
                         <input type="text" id="username" name="username" class="form-input" required 
                                minlength="3" maxlength="20" pattern="[a-zA-Z0-9_-]+" 
-                               title="Username can only contain letters, numbers, underscores and hyphens">
+                               title="Username can only contain letters, numbers, underscores and hyphens"
+                               autocomplete="username">
                         <small class="form-help">3-20 characters, letters, numbers, _ and - only</small>
                     </div>
 
                     <div class="form-group">
                         <label for="email" class="form-label">Email Address</label>
-                        <input type="email" id="email" name="email" class="form-input" required>
+                        <input type="email" id="email" name="email" class="form-input" required
+                               autocomplete="email">
                     </div>
 
                     <div class="form-group">
@@ -31,13 +35,15 @@
                         <input type="password" id="password" name="password" class="form-input" required 
                                minlength="8"
                                pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
-                               title="Must contain at least one number, one uppercase and lowercase letter, and be at least 8 characters long">
+                               title="Must contain at least one number, one uppercase and lowercase letter, and be at least 8 characters long"
+                               autocomplete="new-password">
                         <small class="form-help">Minimum 8 characters, at least one uppercase letter, one lowercase letter, and one number</small>
                     </div>
 
                     <div class="form-group">
                         <label for="confirm_password" class="form-label">Confirm Password</label>
-                        <input type="password" id="confirm_password" name="confirm_password" class="form-input" required>
+                        <input type="password" id="confirm_password" name="confirm_password" class="form-input" required
+                               autocomplete="new-password">
                     </div>
 
                     <div class="checkbox-group">
@@ -50,6 +56,14 @@
 
                 <div class="form-footer">
                     <p>Already have an account? <a href="{{ url_for('auth.login') }}">Log In</a></p>
+                </div>
+
+                <div class="cli-login-info">
+                    <h3>CLI Registration</h3>
+                    <p>To register via CLI, use the following command:</p>
+                    <div class="code-block">
+                        <code>terminusa register --username YOUR_USERNAME --email YOUR_EMAIL</code>
+                    </div>
                 </div>
             </div>
             
