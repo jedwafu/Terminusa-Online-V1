@@ -1,139 +1,57 @@
-:root {
-    --matrix-black: #000000;
-    --matrix-dark: #001800;
-    --matrix-green: #00FF41;
-    --matrix-light-green: #03C03C;
-    --neon-blue: #00F3FF;
-    --hunter-purple: #7B2CBF;
-    --deep-purple: #240046;
-    --accent-red: #FF0000;
-    --text-color: #E0E0E0;
-    --text-shadow: 0 0 10px var(--matrix-green);
-    --neon-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue), 0 0 30px var(--neon-blue);
-    --background-gradient: linear-gradient(135deg, var(--matrix-black) 0%, var(--matrix-dark) 100%);
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: 'Rajdhani', 'Segoe UI', sans-serif;
-    line-height: 1.6;
-    color: var(--text-color);
-    background: var(--background-gradient);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-}
-
-/* Section Styles */
-.features-section,
-.auth-section {
-    padding: 4rem 1rem;
-    background: rgba(0, 24, 0, 0.5);
-    border-top: 1px solid var(--neon-blue);
-    border-bottom: 1px solid var(--neon-blue);
-    animation: borderGlow 3s infinite;
-    min-height: calc(100vh - 200px);
-    display: flex;
-    align-items: center;
-}
-
-/* Container Styles */
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    width: 100%;
-    position: relative;
-    z-index: 1;
-}
-
-.container h1 {
-    color: var(--neon-blue);
-    font-size: 2.5rem;
-    margin-bottom: 2rem;
-    text-align: center;
+/* Button Styles */
+.btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 2px;
-    text-shadow: var(--neon-shadow);
+    letter-spacing: 1px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    text-align: center;
 }
 
-/* Grid Layouts */
-.features-grid,
-.auth-container {
-    display: grid;
-    gap: 2rem;
-    margin: 0 auto;
-    background: rgba(0, 24, 0, 0.95);
+.btn-primary {
+    background-color: transparent;
+    color: var(--neon-blue);
     border: 1px solid var(--neon-blue);
-    border-radius: 8px;
-    padding: 2rem;
+    text-shadow: var(--neon-shadow);
     animation: neonPulse 2s infinite;
 }
 
-.features-grid {
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    max-width: 1200px;
+.btn-primary:hover {
+    background-color: var(--neon-blue);
+    color: var(--matrix-black);
+    box-shadow: var(--neon-shadow);
+    transform: scale(1.05);
 }
 
-.auth-container {
-    grid-template-columns: 1fr 300px;
-    max-width: 1000px;
-}
-
-/* Card Styles */
-.feature-card,
-.auth-content,
-.auth-sidebar {
-    background: rgba(0, 24, 0, 0.8);
-    border: 1px solid var(--neon-blue);
-    border-radius: 6px;
-    padding: 1.5rem;
-    text-align: center;
+.btn-outline {
+    background-color: transparent;
+    color: var(--text-color);
+    border: 1px solid var(--text-color);
     transition: all 0.3s ease;
 }
 
-.feature-card:hover,
-.auth-content:hover {
-    transform: translateY(-5px);
+.btn-outline:hover {
+    color: var(--neon-blue);
+    border-color: var(--neon-blue);
+    text-shadow: var(--neon-shadow);
     box-shadow: var(--neon-shadow);
 }
 
-.feature-card i,
-.auth-content i {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
-    color: var(--neon-blue);
-    text-shadow: var(--neon-shadow);
+.btn-block {
+    width: 100%;
+    margin-top: 1rem;
 }
 
-.feature-card h3,
-.auth-content h3 {
-    color: var(--neon-blue);
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    text-shadow: var(--neon-shadow);
-}
-
-.feature-card p,
-.auth-content p {
-    color: var(--text-color);
-    opacity: 0.8;
-    line-height: 1.6;
-    transition: all 0.3s ease;
+.btn-glow {
+    box-shadow: var(--neon-shadow);
 }
 
 /* Form Styles */
-.auth-form {
-    text-align: left;
-}
-
 .form-group {
     margin-bottom: 1.5rem;
 }
@@ -198,57 +116,101 @@ body {
     text-shadow: var(--neon-shadow);
 }
 
-/* Button Styles */
-.btn {
-    display: inline-block;
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
-    font-weight: 600;
+/* Container Styles */
+.auth-section {
+    min-height: calc(100vh - 200px);
+    display: flex;
+    align-items: center;
+    padding: 2rem 0;
+}
+
+.auth-container {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 2rem;
+    background: rgba(0, 24, 0, 0.95);
+    border: 1px solid var(--neon-blue);
+    border-radius: 8px;
+    padding: 2rem;
+    animation: neonPulse 2s infinite;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.auth-content {
+    padding: 1rem;
+}
+
+.auth-content h1 {
+    color: var(--neon-blue);
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: var(--neon-shadow);
+}
+
+.auth-content .subtitle {
+    color: var(--text-color);
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    opacity: 0.8;
+}
+
+.auth-sidebar {
+    padding: 1rem;
+    border-left: 1px solid rgba(0, 243, 255, 0.2);
+}
+
+.benefits-card,
+.news-card {
+    background: rgba(0, 24, 0, 0.8);
+    border: 1px solid var(--neon-blue);
+    border-radius: 6px;
+    padding: 1.5rem;
+}
+
+.benefits-card h3,
+.news-card h3 {
+    color: var(--neon-blue);
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
     text-transform: uppercase;
     letter-spacing: 1px;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.btn-primary {
-    background-color: transparent;
-    color: var(--neon-blue);
-    border: 1px solid var(--neon-blue);
     text-shadow: var(--neon-shadow);
 }
 
-.btn-primary:hover {
-    background-color: var(--neon-blue);
-    color: var(--matrix-black);
-    box-shadow: var(--neon-shadow);
+.news-items {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
-.btn-block {
-    width: 100%;
-    text-align: center;
+.news-item {
+    padding: 0.5rem;
+    border-bottom: 1px solid rgba(0, 243, 255, 0.1);
 }
 
-/* Footer Styles */
-.form-footer {
-    text-align: center;
-    margin-top: 2rem;
-    padding-top: 1rem;
-    border-top: 1px solid rgba(0, 243, 255, 0.2);
+.news-item:last-child {
+    border-bottom: none;
 }
 
-.form-footer p {
+.news-item h4 {
+    color: var(--neon-blue);
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+}
+
+.news-item p {
     color: var(--text-color);
+    font-size: 0.9rem;
+    opacity: 0.8;
 }
 
-.form-footer a {
-    color: var(--neon-blue);
-    text-decoration: none;
-    transition: all 0.3s ease;
-}
-
-.form-footer a:hover {
-    text-shadow: var(--neon-shadow);
+.news-date {
+    color: var(--matrix-light-green);
+    font-size: 0.8rem;
+    text-transform: uppercase;
 }
 
 /* CLI Info Section */
@@ -258,6 +220,13 @@ body {
     background: rgba(0, 24, 0, 0.8);
     border: 1px solid var(--neon-blue);
     border-radius: 6px;
+}
+
+.cli-login-info h3 {
+    color: var(--neon-blue);
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    text-shadow: var(--neon-shadow);
 }
 
 .code-block {
@@ -283,12 +252,12 @@ body {
         border-top: 1px solid rgba(0, 243, 255, 0.2);
     }
 
-    .container h1 {
+    .auth-content h1 {
         font-size: 2rem;
     }
 
-    .form-footer {
-        margin-top: 1.5rem;
-        padding-top: 1rem;
+    .btn {
+        padding: 0.6rem 1.2rem;
+        font-size: 0.9rem;
     }
 }
