@@ -135,49 +135,113 @@ info_log() {
     echo "[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> logs/deploy.log
 }
 
-# Enhanced setup_static_files with better error handling
+# Enhanced setup_static_files with better error handling and update functionality
 setup_static_files() {
     info_log "Setting up static files..."
     
-    # Setup static files
-    info_log "Setting up static files..."
+    # Define directories
+    NGINX_ROOT="/var/www/terminusa"
+    NGINX_STATIC_DIR="$NGINX_ROOT/static"
+    PROJECT_ROOT=$(pwd)
+    BACKUP_DIR="$NGINX_ROOT/static_backup_$(date +%Y%m%d_%H%M%S)"
     
     # Create directories
-    sudo mkdir -p $MAIN_STATIC_DIR/{css,js,images}
-    sudo mkdir -p $GAME_STATIC_DIR/{css,js,images}
+    info_log "Creating static directories..."
+    sudo mkdir -p $NGINX_STATIC_DIR/{css,js,images}
+    
+    # Backup existing files if they exist
+    if [ -d "$NGINX_STATIC_DIR" ]; then
+        info_log "Backing up existing static files..."
+        sudo cp -r $NGINX_STATIC_DIR $BACKUP_DIR
+    fi
     
     # Copy static files
     if [ -d "static" ]; then
-        # Copy to main website
-        sudo cp -r static/* $MAIN_STATIC_DIR/ 2>/dev/null || {
-            error_log "Failed to copy static files to main website"
-            return 1
-        }
+        info_log "Copying static files..."
         
-        # Copy to game application
-        sudo cp -r static/* $GAME_STATIC_DIR/ 2>/dev/null || {
-            error_log "Failed to copy static files to game application"
-            return 1
-        }
+        # Copy CSS files with verification
+        info_log "Copying CSS files..."
+        if [ -d "static/css" ]; then
+            for css_file in static/css/*.css; do
+                filename=$(basename "$css_file")
+                target_file="$NGINX_STATIC_DIR/css/$filename"
+                
+                # Backup existing file if it exists
+                if [ -f "$target_file" ]; then
+                    sudo cp "$target_file" "$target_file.backup"
+                fi
+                
+                # Copy new file
+                sudo cp "$css_file" "$target_file" || {
+                    error_log "Failed to copy $filename"
+                    if [ -f "$target_file.backup" ]; then
+                        sudo mv "$target_file.backup" "$target_file"
+                    fi
+                    continue
+                }
+                
+                # Set permissions
+                sudo chown www-data:www-data "$target_file"
+                sudo chmod 644 "$target_file"
+                
+                success_log "Successfully copied $filename"
+            done
+        fi
+        
+        # Copy JS files
+        info_log "Copying JavaScript files..."
+        if [ -d "static/js" ]; then
+            sudo cp -r static/js/* $NGINX_STATIC_DIR/js/ 2>/dev/null || {
+                error_log "Failed to copy JavaScript files"
+            }
+        fi
+        
+        # Copy images
+        info_log "Copying image files..."
+        if [ -d "static/images" ]; then
+            sudo cp -r static/images/* $NGINX_STATIC_DIR/images/ 2>/dev/null || {
+                error_log "Failed to copy image files"
+            }
+        fi
     else
         error_log "Static directory not found!"
         return 1
     fi
     
-    # Set permissions
-    sudo chown -R www-data:www-data $MAIN_APP_DIR
-    sudo chmod -R 755 $MAIN_APP_DIR
-    sudo chown -R www-data:www-data $GAME_APP_DIR
-    sudo chmod -R 755 $GAME_APP_DIR
+    # Set directory permissions
+    info_log "Setting directory permissions..."
+    sudo chown -R www-data:www-data $NGINX_ROOT
+    sudo chmod -R 755 $NGINX_ROOT
+    sudo find $NGINX_STATIC_DIR -type f -exec chmod 644 {} \;
+    
+    # Clear nginx cache
+    info_log "Clearing nginx cache..."
+    sudo rm -rf /var/cache/nginx/*
     
     # Verify nginx configuration
     info_log "Verifying nginx configuration..."
     if ! sudo nginx -t; then
         error_log "Nginx configuration test failed!"
+        if [ -d "$BACKUP_DIR" ]; then
+            info_log "Restoring from backup..."
+            sudo rm -rf $NGINX_STATIC_DIR
+            sudo cp -r $BACKUP_DIR/* $NGINX_STATIC_DIR/
+        fi
         return 1
     fi
     
-    success_log "Static files setup completed"
+    # Reload nginx
+    info_log "Reloading nginx..."
+    sudo systemctl reload nginx
+    
+    # Verify file access
+    info_log "Verifying file access..."
+    if ! sudo -u www-data test -r "$NGINX_STATIC_DIR/css/style.css"; then
+        error_log "www-data cannot read style.css"
+        return 1
+    fi
+    
+    success_log "Static files setup completed successfully"
     return 0
 }
 
