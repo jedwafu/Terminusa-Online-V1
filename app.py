@@ -12,6 +12,11 @@ def create_app():
                 static_folder=Config.STATIC_FOLDER,
                 static_url_path=Config.STATIC_URL_PATH)
 
+    @app.route('/static/<path:filename>')
+    def static_files(filename):
+        return send_from_directory(app.static_folder, filename)
+
+
     # Load configuration
     app.config.from_object(Config)
     
