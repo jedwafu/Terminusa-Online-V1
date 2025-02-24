@@ -2,7 +2,7 @@
 Database initialization script for Terminusa Online
 """
 from app import create_app
-from models import db, init_models
+from models import db
 
 def init_database():
     """Initialize the database"""
@@ -10,9 +10,6 @@ def init_database():
     with app.app_context():
         # Create all tables
         db.create_all()
-        
-        # Initialize model relationships
-        init_models()
         
         print("Database initialized successfully")
 
