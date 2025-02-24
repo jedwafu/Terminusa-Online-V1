@@ -150,9 +150,9 @@ setup_static_files() {
     fi
 
     # Define directories
-    STATIC_DIR="${STATIC_DIR:-/var/www/terminusa/static}"
+    STATIC_DIR="${STATIC_DIR:-/var/www/terminusa-web/static}"
     SOURCE_DIR="${SOURCE_DIR:-./static}"
-    NGINX_ROOT="/var/www/terminusa"
+    NGINX_ROOT="/var/www/terminusa-web"
     NGINX_STATIC_DIR="$STATIC_DIR"
     PROJECT_ROOT=$(pwd)
     BACKUP_DIR="$NGINX_ROOT/static_backup_$(date +%Y%m%d_%H%M%S)"
@@ -195,8 +195,8 @@ setup_static_files() {
     sudo find "$NGINX_STATIC_DIR" -type f -exec chmod 644 {} \;
     
     # Verify nginx directory exists
-    if [ ! -d "/var/www/terminusa" ]; then
-        error_log "Nginx directory /var/www/terminusa not found"
+    if [ ! -d "/var/www/terminusa-web" ]; then
+        error_log "Nginx directory /var/www/terminusa-web not found"
         return 1
     fi
 
