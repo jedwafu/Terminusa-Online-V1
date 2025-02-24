@@ -10,11 +10,12 @@ from flask_jwt_extended import (
 from database import db
 from models.user import User
 from models.announcement import Announcement
-from database import db
 
-# Ensure models are initialized
-User.metadata.create_all(db.engine)
-Announcement.metadata.create_all(db.engine)
+def init_models(app):
+    """Initialize database models within application context"""
+    with app.app_context():
+        User.metadata.create_all(db.engine)
+        Announcement.metadata.create_all(db.engine)
 
 from datetime import datetime, timedelta
 import bcrypt
