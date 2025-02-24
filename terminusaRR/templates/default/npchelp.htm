@@ -1,0 +1,171 @@
+<p><span class="lime">BOSS NPC简介</span>：</p>
+此类NPC对玩家<span class="yellow">均有较大威胁</span>，在<span class="yellow">没有足够高的防御</span>的情况下，请<span class="yellow">尽可能避免和它们的接触</span>，也<span class="yellow">不要贸然攻击它们</span>，否则很可能导致自己被击杀。<br>
+当然，如果成功击杀了这些NPC，它们也会掉落<span class="lime">大量有用的道具或金钱</span>。<br>
+以下BOSS NPC将于开局时刷出：<br>
+<br>
+<!--{loop $ty1 $vkind $kind}-->
+{template npcinfohelp}
+<!--{/loop}-->
+以下BOSS NPC将于使用NPC解除钥匙后刷出：<br>
+<br>
+<!--{loop $ty2 $vkind $kind}-->
+{template npcinfohelp}
+<!--{/loop}-->
+<br>
+此外，游戏中还存在着满足条件才能够召唤的特殊BOSS NPC。他们通常拥有独特的战斗机制，很难使用常规的战斗方式击败：
+<input class="cmdbutton" onclick="showModalDialog($('ty2a'))" value="点击这里查看特殊BOSS NPC" type="button">
+<br>
+<dialog id="ty2a">
+    <p><span class="lime b">参战者 红暮&蓝凝 简介：</span></p>
+    <p>使用【我想要领略真正的红杀之力】后，应约而来的红暮&蓝凝。要战胜她们，光凭蛮力是行不通的……</p>
+    <br>
+    <!--{loop $ty2a $vkind $kind}-->
+        {template npcinfohelp}
+    <!--{/loop}-->
+    <img class="dialog-background" src="img/profile.gif" onclick="closeDialog($('ty2a'))">
+</dialog>
+<br>
+<p><span class="lime">真职人 NPC简介</span>：</p>
+此类NPC在开局对<span class="yellow">无防具的玩家有较大威胁</span>，这类NPC的特点是<span class="yellow">防御非常高</span>，且<span class="yellow">武器均带有“电击+冻气+带毒+火焰+音波”属性</span>，很容易导致玩家中异常状态。<br>如果防具很差，或没有属性防御也没钱买药剂，请不要贸然攻击它们，否则很可能导致自己中大量异常状态后难以恢复，苦不堪言。<br>
+当然，击杀这些NPC后可以获取<span class="lime">极为优秀的防具</span>，在游戏中后期<span class="lime">击杀它们并拾取它们的防具保护自己</span>往往是玩家取胜的关键。<br>
+这些NPC初始不会出现，但可通过合成手段，或通过商店售卖的NPC解除钥匙召唤出来。<br>
+<br>
+<!--{loop $ty3 $vkind $kind}-->
+{template npcinfohelp}
+<!--{/loop}-->
+<br>
+<p><span class="lime">全息幻象NPC、小兵NPC、种火NPC 简介</span>：</p>
+此类NPC对玩家基本无威胁，是玩家<span class="yellow">最主要的熟练度、经验来源，也是最主要的击杀对象</span>。每个小兵NPC掉落金钱380元，是玩家<span class="lime">主要金钱来源</span>。<br>全息幻象掉落<span class="lime">更多的金钱</span>以及<span class="lime">各系优秀的武器或强化道具</span>，往往是<span class="yellow">拉开玩家差距、建立优势乃至取得最终胜利的关键</span>。<br>
+其中，全息幻象NPC初始不会出现，但可通过通过商店售卖的钥匙碎片召唤出来。<br>
+以下NPC将于开局时刷出：<br>
+<br>
+<!--{loop $ty4 $vkind $kind}-->
+{template npcinfohelp}
+<!--{/loop}-->
+<br>
+此外，也有一些特殊的小兵NPC可以使用通过称号或随机从盒子中刷出的小兵NPC钥匙<span class="yellow">【自律AI呼唤器】</span>刷出：
+<input class="cmdbutton" onclick="showModalDialog($('ty13'))" value="点击这里查看" type="button"><br>
+<dialog id="ty13">
+    <p><span class="lime b">特殊小兵NPC简介</span>：</p>
+    <p></p>
+    <br>
+    <!--{loop $ty13 $vkind $kind}-->
+        {template npcinfohelp}
+    <!--{/loop}-->
+    <input class="cmdbutton" onclick="closeDialog($('ty13'))" value="关闭窗口" type="button">
+    <img class="dialog-background" src="img/profile.gif" onclick="closeDialog($('ty13'))">
+</dialog>
+<br>
+这些小兵NPC比游戏初始刷出时的小兵NPC要略强，但也就只是略强而已。<br>
+小兵们的主题会在之后的版本更新中增加，但一位玩家每次进场无论如何都只能刷出一种主题的特殊小兵。<br>
+<br>
+以下NPC将于使用对应的NPC解除钥匙后刷出：<br>
+<br>
+<!--{loop $ty5 $vkind $kind}-->
+{template npcinfohelp}
+<!--{/loop}-->
+<br>
+
+
+<p><span class="lime">二重NPC 简介</span>：</p>
+此类NPC对玩家无威胁，但当玩家击杀它们后，它们会变身为<span class="yellow">“第二形态”</span>，此时<span class="yellow">攻击力会变得极强</span>。<br>可别不小心击杀了它们后被第二形态秒杀哦～ 不过，当自己处于劣势时，偷偷击杀这类NPC，并期望对手撞上它们并被它们秒杀，也是不错的翻盘思路哦～<br>
+<input class="cmdbutton" onclick="showModalDialog($('ty6e'))" value="点击这里查看" type="button">她们的第二形态。<br>
+<dialog id="ty6e">
+    <p><span class="lime b">数据碎片第二形态NPC简介</span>：</p>
+    <p>女主们的第二形态实力强大，无准备的情况下遭遇她们<span class="yellow b">有性命之忧！</span>不过，击倒她们也是<span class="lime b">特殊胜利</span>的必经之路。</p>
+    <br>
+    <!--{loop $ty6e $vkind $kind}-->
+        {template npcinfohelp}
+    <!--{/loop}-->
+    <img class="dialog-background" src="img/profile.gif" onclick="closeDialog($('ty6e'))">
+</dialog>
+<br>
+<!--{loop $ty6 $vkind $kind}-->
+{template npcinfohelp}
+<!--{/loop}-->
+<br>
+<p><span class="lime">特殊NPC 简介</span>：</p>
+通过使用各种方式获得特殊的NPC钥匙，可以随机刷出一些具有特别机制的NPC。<br>他们会掉落一些同样提供特殊机制的物品。<br>
+此类NPC往往颇有实力，请注意自己的能力再前往挑战。由于这些NPC都拥有反常的机制，请勿过于依赖以下提供的信息，否则后果自负。<br>
+某些NPC的特殊机制可以让玩家使用，对应的物品将会<span class="spitem">标亮</span>，将鼠标悬浮在这些物品上可以查看机制说明。<br>
+下列的每一种卡池，可以刷出对应卡池的NPC。<br>
+<span class="yellow">Vol.1：电掣召唤仪</span><br>
+该物品可刷出以下NPC：<br>
+<!--<input class="cmdbutton" onclick="showModalDialog($('ty11e'))" value="点击这里查看" type="button">她们的第二形态。<br>-->
+<dialog id="ty11e">
+    <p><span class="lime b">电掣第二形态NPC简介</span>：</p>
+    <p></p>
+    <br>
+    <!--{loop $ty11e $vkind $kind}-->
+        {template npcinfohelp}
+    <!--{/loop}-->
+    <input class="cmdbutton" onclick="closeDialog($('ty11e'))" value="关闭窗口" type="button">
+    <img class="dialog-background" src="img/profile.gif" onclick="closeDialog($('ty11e'))">
+</dialog>
+<br>
+<!--{loop $ty11 $vkind $kind}-->
+{template npcinfohelp}
+<!--{/loop}-->
+<br>
+<p><span class="lime">妖精幻象 简介</span>：</p>
+这些NPC初始不会出现，但可通过合成手段，或在1禁以后，通过商店售卖的NPC解除钥匙召唤出来。<br>
+灵魂抽取定义：<span class="yellow">战斗中使双方的武器和饰品上的属性都无效化，而且灵系武器的伤害下降到只剩1%。</span><br>
+精神抽取定义：<span class="yellow">战斗中使双方身上的四件防具，拥有的效果全部无效化。</span><br>
+技能抽取定义：<span class="yellow">战斗中使双方的熟练度开根号后才计算物理伤害。</span><br>
+此类NPC对玩家没有危险性，<span class="yellow">不会回避禁区。</span><br>
+<br>
+<!--{loop $ty7 $vkind $kind}-->
+{template npcinfohelp}
+<!--{/loop}-->
+<br>
+<p><span class="lime">抹杀使徒 简介</span>：</p>
+抹杀使徒出场的定义：当<span class="yellow">AC专业职人</span>被杀死的时候，就会乱入战场，初始位置是全图随机。<br>
+AC专业职人：全图只有一位，身上的数据、属性、武器、头像都和<span class="yellow">AC专业喷子</span>相同，所以玩家可以秒杀小兵的时候很难察觉到。<br>
+由于<span class="yellow">AC专业职人</span>是全图随机，所以要是刷在开局的热门地点可能很快就会让AI出场，但如果刷在SCP就可能到死斗的时候都没出场。<br>
+此NPC对玩家危险性很高，但是会自动避开非目标范围，<span class="yellow">AI每一次移动位置的时候都会在聊天框显示讯息。</span><br>
+<span class="yellow">即使死斗后，AI依然会存在，但AI本身不算是玩家，所以如果只剩下玩家一人和AI时依然算获胜。</span><br>
+AI会根据玩家目前的<span class="yellow">rp和APM</span>判定是不是目标，只要有一个条件缺乏就不会主动追人。<br>
+<span class="yellow">每攻击一次AI，AI都有机率全属性上升，会越来越强。</span>和AI对决时请速战速决。<br>
+<br>
+<!--{loop $ty8 $vkind $kind}-->
+{template npcinfohelp}
+<!--{/loop}-->
+<p><span class="lime">天神NPC 简介</span>：</p>
+天神称号授予对ACFUN大逃杀的创造和发展有里程碑式贡献的人物。目前只有冴月麟和四面两人。<br>
+虽然理论上还应该有初七等人，但是由于GM的偷懒并没有加入。该等级的NPC对玩家基本就是<span class="yellow">一击即死</span>。<br>
+但是因为没有<span class="yellow">伤害制御和强袭姿态</span>，威胁实际上不如武神。 <br>
+<br>
+<!--{loop $ty9 $vkind $kind}-->
+{template npcinfohelp}
+<!--{/loop}-->
+<br>
+<p><span class="lime">武神NPC 简介</span>：</p>
+武神称号授予参与过ACFUN大逃杀开发工作的人员。武神装备有接近10000总防御的防具，拥有很高的基础攻防，并各有特色。<br>
+武神统一拥有<span class="yellow">“伤害制御”</span>属性，<span class="lime">有90%的几率把受到的伤害压缩到2000点</span>。<br>
+由於大多数武神拥有<span class="yellow">“强袭姿态”</span>，先攻率远高于其他NPC，是进军英灵殿玩家的最大威胁。<br>
+<br>
+<!--{loop $ty10 $vkind $kind}-->
+{template npcinfohelp}
+<!--{/loop}-->
+<p><span class="lime">巫师NPC 简介</span>：</p>
+巫师称号授予参与过常磐大逃杀GE900+版本后开发工作的人员。对巫师的命名与定义，请参见<a href="https://bbs.brdts.online/?thread-10.htm">这篇博文</a>的最后一段。<br>
+巫师全体坐镇在英灵殿，比英灵殿中的英雄NPC稍强一点，但装备着可以完全免疫三次伤害的饰品，请多加小心（？）<br>
+<br>
+<!--{loop $ty12 $vkind $kind}-->
+{template npcinfohelp}
+<!--{/loop}-->
+<br>
+
+<p><span class="lime">佣兵NPC 简介</span>：</p>
+佣兵是富家子弟的称号技能召唤出的NPC。不同的佣兵实力差距很大，能召唤出什么佣兵纯靠运气。<br>
+以下是所有佣兵的列表：<input class="cmdbutton" onclick="showModalDialog($('ty25a'))" value="点击这里查看" type="button">
+<br>
+<dialog id="ty25a">
+    <p>以下是所有可能被召唤出的佣兵列表：</p>
+    <br>
+    <!--{loop $ty25a $vkind $kind}-->
+        {template npcinfohelp}
+    <!--{/loop}-->
+    <img class="dialog-background" src="img/profile.gif" onclick="closeDialog($('ty25a'))">
+</dialog>
+<br>

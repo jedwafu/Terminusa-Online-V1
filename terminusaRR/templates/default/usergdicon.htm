@@ -1,0 +1,38 @@
+<table align="center">
+	<tr>
+		<td>{lang gender}&nbsp;&nbsp;</td>
+		<td>
+			<input type="radio" id="male" name="gender" onclick="userIconMover()" value="m" <!--{if $gender != "f"}-->checked<!--{/if}--> >$sexinfo['m'] &nbsp;&nbsp;
+			<input type="radio" name="gender" onclick="userIconMover()" value="f" <!--{if $gender == "f"}-->checked<!--{/if}-->>$sexinfo['f']
+		</td>
+	</tr>
+	<tr>
+		<td>{lang icon}</td>
+		<td>
+			<div>
+				<div style="display:inline-block; vertical-align:top">
+					<br><br>
+					<select id="icon" name="icon" style="width:80px" onchange="userIconMover()">
+						<!--{loop $iconarray $icon}-->
+						$icon
+						<!--{/loop}-->
+					</select>
+					<br>
+					（0为随机）
+				</div>
+				<div id="userIconImg" class="iconImg" style="display:inline-block;" >
+					<img src="img/<!--{if $gender != 'f'}-->m<!--{else}-->f<!--{/if}-->_{$select_icon}.gif" alt="$select_icon">
+				</div>
+			</div>
+		</td>
+	</tr>
+	<!--{if CURSCRIPT == 'user'}-->
+	<tr>
+		<td>当前界面</td>
+		<td>
+			<input type="radio" id="template_1" name="templateid" value="0" <!--{if !$u_templateid}-->checked<!--{/if}-->><a onclick="sl('template_1')">经典界面</a> &nbsp;&nbsp;
+			<input type="radio" id="template_2" name="templateid" value="1" <!--{if $u_templateid == 1}-->checked<!--{/if}-->><a onclick="sl('template_2')">LULUXIA（未开放）</span>
+		</td>
+	</tr>
+	<!--{/if}-->
+</table>

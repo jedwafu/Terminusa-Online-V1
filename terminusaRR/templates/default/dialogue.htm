@@ -1,0 +1,60 @@
+<dialog id="dialogue" style="width: 460px; max-width: 90%;max-height: 80%;">
+<p><center>
+
+<!-- 当前阅读页面 -->
+<div id="dmarkpage" style="display: none;">0</div>
+<!-- 对话框尾页 -->
+<!--{eval $endpage = count($dialogues[$dialogue_id])-1;}-->
+<div id="dendpage" style="display: none;">$endpage</div>
+
+<!-- 对白分段显示 -->
+<!--{loop $dialogues[$dialogue_id] $dkey $dinfo}-->
+<div id="d{$dkey}" <!--{if $dkey == 0}--> class="ach_box" style="overflow-y: auto; border:0; text-align: center; min-height: min-content; width: max-content; max-width: 560px;" <!--{else}-->  style="display: none;"  <!--{/if}-->>
+    <table>
+        <tr>
+        <!-- 带头像对白 -->
+        <!--{if isset($dialogue_icon[$dialogue_id][$dkey])}--> 
+            <td>
+                <img style="width:140px;height:80px;" src="$dialogue_icon[$dialogue_id][$dkey]">
+            </td>
+            <td class="ach-cont" style="border: 1px; width:280px;height:80px;text-align: left; padding: 3% 6%;">
+                $dinfo
+            </td>
+        <!-- 无头像对白 -->
+        <!--{else}-->
+            <td class="ach-cont" style="width:320px;height:80px;text-align: center; padding: 3% 6%;">
+                $dinfo
+            </td>
+        <!--{/if}--> 
+        </tr>
+    </table>
+    <br>
+    <!--{if $dkey > 0}-->
+        <input type="button" class="cmdbutton" id="i" style="margin-right: 5%;" value="[I]上一页" onclick="changePages('d',-1);">
+    <!--{/if}-->
+    <!--{if (($dkey <= ($endpage-1)) || (isset($dialogue_branch[$dialogue_id])))}-->
+        <input type="button" class="cmdbutton" id="p" value="[P]下一页" onclick="changePages('d',1);">
+    <!--{elseif isset($dialogue_end[$dialogue_id])}-->
+        $dialogue_end[$dialogue_id]    
+    <!--{/if}-->
+</div>
+ <!--{/loop}-->
+
+<!-- 选择肢显示 -->
+ <!--{if isset($dialogue_branch[$dialogue_id])}-->
+<div id="d{$maxdkey}" style="display: none;">
+    <table border="0" style="text-align: center;"><tr><td style="width:280px;height:80px; text-align: center; padding: 3% 6%;">
+    <!--{loop $dialogue_branch[$dialogue_id] $bkey $binfo}-->
+        $binfo
+     <!--{/loop}-->
+    </td></tr></table>
+</div>
+<!--{/if}-->
+
+</center></p>
+<!--{if (isset($dialogue_branch[$dialogue_id]) || isset($dialogue_end[$dialogue_id]))}-->
+    <img class="dialog-background" src="img/profile.gif" onclick="">
+<!--{else}-->
+    <img class="dialog-background" src="img/profile.gif" onclick="closeDialog($('dialogue'));$('command').value='end_dialogue';postCmd('gamecmd','command.php');this.disabled=true;">
+<!--{/if}-->
+</dialog>

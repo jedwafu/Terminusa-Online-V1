@@ -1,0 +1,53 @@
+<form method="post" name="vnworld" onsubmit="return false;">
+	<input type="hidden" name="vnmode" id="vnmode" value="none">
+</form>
+<div id="vlog">$vtips</div>
+所有提交的合成列表（已被采纳的合成不会出现）：<br>
+<span class="grey">（提交合成可能存在延迟，如果发现页面上没有显示，请等一会儿再刷新看看。）</span><br>
+<a href="vn_postitem.php"><input type="button" value="创建一个新的合成"></a>
+<br><br>
+<!--{if !empty($carr)}-->
+<table cellSpacing=3 cellPadding=2>
+	<tr>
+		<td class="b1" height=20px width="100px">{lang vcreator}</td>
+		<td class="b1">{lang vstatus}</td>
+		<td class="b1" width="60px">{lang viclass}</td>
+		<td class="b1">{lang stf0}</td>
+		<td class="b1">{lang stf1}</td>
+		<td class="b1">{lang stf2}</td>
+		<td class="b1">{lang stf3}</td>
+		<td class="b1">{lang stf4}</td>
+		<td class="b1" width="25px"></td>
+		<td class="b1" style="padding-left: 2px; padding-right: 2px;">{lang vitm}</td>
+		<td class="b1" style="padding-left: 3px; padding-right: 3px;">{lang vitmsk}</td>
+		<td class="b1" width="45px">编辑</td>
+		
+	</tr>
+	<!--{loop $carr $cid $cinfo}-->
+		<tr>
+			<td class="b3">$cinfo['creator']</td>
+			<td class="b3">$check_tips[$cinfo['istatus']]</td>
+			<td class="b3">$vrclassinfo[$cinfo['class']][0]</td>
+			<td class="b3" style="max-width:100px">$cinfo['stf0']</td>
+			<td class="b3" style="max-width:100px">$cinfo['stf1']</td>
+			<td class="b3" style="max-width:100px">$cinfo['stf2']</td>
+			<td class="b3" style="max-width:100px">$cinfo['stf3']</td>
+			<td class="b3" style="max-width:100px">$cinfo['stf4']</td>
+			<td class="b3"> → </td>
+			<td class="b3" >$cinfo['itm_desc']</td>
+			<td class="b3" style="max-width:200px">$cinfo['result']</td>
+			<td class="b3">
+				<!--{if ($cinfo['creator']==$udata['username']||$udata['groupid']>=$vnmix_editor_group||$udata['username']==$gamefounder) && $cinfo['istatus']!=1}-->
+				<form method="post" action="vn_postitem.php" name="vn_postitem" onsubmit="vn_postitem.php" style="margin: 0px">
+					<input type="hidden" name="editor" value="$cuser">
+					<input type="hidden" name="editid" value="$cid">
+					<input type="submit" name="vnmode" value="编辑">
+				</form>
+				<!--{/if}-->
+			</td>
+		</tr>
+	<!--{/loop}-->
+</table>
+<!--{else}-->
+<br>暂时还没有人提交过合成！<br>
+<!--{/if}-->

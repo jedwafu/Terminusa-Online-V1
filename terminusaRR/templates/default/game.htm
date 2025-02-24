@@ -1,0 +1,89 @@
+{template header}
+<div id="notice"></div>
+<div id="ingamebgm" style="display:none">
+	<!--{eval $bgm = init_bgm(1)}-->
+	$bgm
+</div>
+<!--{eval $bgurl = "img/location/".$pls.".jpg";}-->
+<!--{if $horizon}-->
+	<style>
+		body {background-image: url("$bgurl");background-position: center;filter: hue-rotate(5deg);}
+	</style>
+<!--{else}-->
+	<style>
+		body {background-image: url("$bgurl");background-position: center;}
+	</style>
+<!--{/if}-->
+<!--{if $horizon}-->
+	<style>
+		.b1 {background-color:rgba(82, 64, 139, 0.6); *BACKGROUND: rgb(98,135,163); *filter:alpha(opacity=60); BORDER: #000 0px none; TEXT-ALIGN: center; COLOR: #fff; border-right: #111 1px solid; border-bottom: #111 1px solid;font:bold 10pt "微软雅黑" serif;}
+		.b2 {background-color:rgba(82, 64, 139, 0.6); *BACKGROUND: rgb(98,135,163); *filter:alpha(opacity=80); BORDER: #000 0px none; TEXT-ALIGN: center; COLOR: #fff; border-right: #111 1px solid;font:10pt "微软雅黑" serif;}
+		.b3 {background-color:rgba(17,17,17,0.5); *BACKGROUND:rgb(17,17,17); *filter:alpha(opacity=50); BORDER: #000 0px none; color: #fff; text-align: center; border-right: #111 1px solid;font:10pt "微软雅黑" serif;}
+	</style>
+<!--{/if}-->
+<table border="0" cellspacing="10" cellpadding="0" align="center">
+	<tr valign=top>
+		<td>
+			<div id="main">
+				<!--{if $main=='battle'}-->
+					{template battle}
+				<!--{elseif $main=='battle_rev'}-->
+					{template battle_rev}
+				<!--{elseif $main=='itemmix_tips'}-->
+					{template itemmix_tips}
+				<!--{else}-->
+					{template profile}
+				<!--{/if}-->
+			</div>
+			<div id="hidden-model">
+				<!--{if !empty($clbpara['noskip_dialogue']) && $clbpara['noskip_dialogue'] == 'opening'}-->
+					{template opening}
+				<!--{/if}-->
+			</div>
+		</td>
+		<td valign="top" rowspan="2">
+			<table border="0" width="300" height="560" cellspacing="0" cellpadding="0" >
+				<tr>
+					<td height="20" class="b1">
+						<div>
+							<!--{if !isset($plsinfo[$pls]) && isset($hplsinfo[$pgroup])}-->
+								<span class="yellow" id="pls">$hplsinfo[$pgroup][$pls]</span>
+							<!--{else}--> 
+								<span class="yellow" id="pls">$plsinfo[$pls]</span>
+							<!--{/if}-->
+							【<span class="red">剩余：<span id="anum">$alivenum</span>人</span>】
+						</div>
+					</td>
+				</tr>
+				<tr>
+					<td valign="top" class="b3" height="540" style="text-align: left;overflow:visible;overflow-x:visible;">
+						<div id="log">$log</div>
+						<div>
+							<form method="post" id="gamecmd" name="gamecmd" style="margin: 0px" >
+								<div id="cmd">
+									<!--{if $hp <= 0}-->
+									{template death}
+									<!--{elseif $state >=1 && $state <= 3}-->
+									{template rest}
+									<!--{elseif $itms0}-->
+									{template itemfind}
+									<!--{elseif $cmd}-->
+									$cmd
+									<!--{else}-->
+									{template command}
+									<!--{/if}-->
+								</div>						
+							</form>
+						</div>
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			{template chat}
+		</td>
+	</tr>
+</table>
+{template footer}

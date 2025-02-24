@@ -1,0 +1,50 @@
+<tr>
+    <td class="b1" width="40">
+        <span>{$cskills['c3_enchant']['name']}</span>
+    </td>
+    <td>
+        <!--{eval $unlock_c3_enchant_flag = check_skill_unlock('c3_enchant',$uidata);}-->
+        <!--{if $unlock_c3_enchant_flag}-->
+        <div style="position:relative; height:100%; width:100%;" onmouseover="skill_unacquired_mouseover.call(this,event)" onmouseout="skill_unacquired_mouseout.call(this,event)">
+        <div class="skill_unacquired">
+        <!--{/if}-->
+            <table class="skilltable">
+                <tr>
+                    <td class="skilldesc_left b3">
+                        <span class="skilldesc">
+                        <!--{eval $c3_enchant_desc = parse_skilldesc('c3_enchant',$uidata);}-->
+                        {$c3_enchant_desc}
+                        <span style="height:4px; display:block;">&nbsp;</span>
+                            <span class="grey">
+                            <!--{eval $c3_counts = 0;$exdmgarr = get_skillvars('c3_enchant','exdmgarr');}-->
+                            <!--{loop get_skillvars('c3_enchant','exdmgdesc') $ex $exdesc}-->
+                                <!--{eval $ex_r = get_skillpara('c3_enchant',$exdmgarr[$ex],$uidata['clbpara']);}-->
+                                    {$exdesc}:+{$ex_r}%;
+                                    <!--{if $c3_counts == 2}--><br><!--{/if}-->
+                                <!--{eval $c3_counts++;}-->
+                            <!--{/loop}-->
+                            </span>
+                        </span>
+                    </td>
+                    <td class="skilldesc_right b3">
+                    </td>
+                </tr>
+            </table>
+        <!--{if $unlock_c3_enchant_flag}-->
+            <!--{eval $unlock_desc = parse_skilllockdesc('c3_enchant',$unlock_c3_enchant_flag);}-->
+        </div>
+        <div class="skill_unacquired_hint">
+            <table class="skilltable">
+                <tr>
+                    <td valign="center" align="center">
+                        <span class="yellow">
+                            $unlock_desc
+                        </span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        </div>
+        <!--{/if}-->
+    </td>
+</tr>

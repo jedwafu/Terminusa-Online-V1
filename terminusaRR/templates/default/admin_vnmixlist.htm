@@ -1,0 +1,41 @@
+<form method="post" name="vnmixlistpage" onsubmit="admin.php">
+	<input type="hidden" name="mode" value="vnmixlist">
+	<input type="hidden" id="vncmd" name="vncmd" value="none">
+	<span class="grey">（回退操作可能存在延迟，如果提交了指令后界面没有变化，请等一会儿再刷新看看。）</span><br>
+	<!--{if !empty($temp_mixinfo)}-->
+	<table class="admin" cellSpacing=1 cellPadding=4>
+		<tr style="text-align: center;">
+			<th class="b1" width="100px"><span>{lang vcreator}</span></th>
+			<th class="b1"><span>{lang vstatus}</span></th>
+			<th class="b1"><span>{lang stf0}</span></th>
+			<th class="b1"><span>{lang stf1}</span></th>
+			<th class="b1"><span>{lang stf2}</span></th>
+			<th class="b1"><span>{lang stf3}</span></th>
+			<th class="b1"><span>{lang stf4}</span></th>
+			<th class="b1" width="25px"><span></span></th>
+			<th class="b1" style="padding-left: 2px; padding-right: 2px;">{lang vitm}</th>
+			<th class="b1" style="padding-left: 3px; padding-right: 3px;">{lang vitmsk}</th>
+			<th class="b1" width="45px">{lang veback}<span></span></th>
+		</tr>
+		<!--{loop $temp_mixinfo $key $arr}-->
+		<tr>
+			<td class="b3">$arr['name']</td>
+			<td class="b3">$vrclassinfo[$arr['class']][0]</td>
+			<td class="b3" style="max-width:60px">$arr['stuff'][0]</td>
+			<td class="b3" style="max-width:60px">$arr['stuff'][1]</td>
+			<td class="b3" style="max-width:60px">$arr['stuff'][2]</td>
+			<td class="b3" style="max-width:60px">$arr['stuff'][3]</td>
+			<td class="b3" style="max-width:60px">$arr['stuff'][4]</td>
+			<td class="b3"> → </td>
+			<td class="b3">$arr['result'][0]</td>
+			<td class="b3" style="max-width:200px">$arr['result'][1]/$arr['result'][2]/$arr['result'][3]<!--{if !empty($arr['result'][4])}-->/$arr['result'][4]<!--{/if}--></td>
+			<td class="b3" style="text-align:center;">
+				<input type="submit" value="回退" onclick="$('vncmd').value='del_$key'">
+			</td>
+		</tr>
+		<!--{/loop}-->
+	</table>
+	<!--{else}-->
+	<br>暂时还没有被采纳的合成！<br>
+	<!--{/if}-->
+</form>

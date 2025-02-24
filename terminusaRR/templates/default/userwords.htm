@@ -1,0 +1,49 @@
+<table align="center">
+<!--{if !empty($udata)}-->
+	<tr>
+		<td>{lang usertitle}</td>
+		<td>
+			<select id="nick" name="nick" onchange="var nicklabel=$('nick').options[$('nick').selectedIndex].getAttribute('comments');if(''!=nicklabel) $('nickcmt').innerHTML=nicklabel; else $('nickcmt').innerHTML='<br><br><br>';">
+				<!--{loop $nicksrev['nicks'] $val}-->
+					<!--{eval $title_desc_tmp = str_replace("\r","<br>",$title_desc[$val]['title']);}-->
+					<option value="{$val}"<!--{if $udata['nick'] == $val}-->selected<!--{/if}--> comments="{$title_desc_tmp}">$titles_list[$val]</option>
+				<!--{/loop}-->
+			</select>
+			<span id="nickcmt">选择一个有趣的头衔，部分头衔存在特殊的入场效果。<br><br><br></span>
+		</td>
+	</tr>
+	<!--{if !empty($t1_list) && !empty($t2_list)}-->
+	<tr>
+		<td>内定称号</td>
+		<td>
+			<select name="club">
+				<optgroup label="普通称号">
+					<!--{loop $t2_list $key}-->
+						<option value="{$key}">$clubinfo[$key]</option>
+					<!--{/loop}-->
+				</optgroup>
+				<optgroup label="特殊称号">
+					<!--{loop $t1_list $key}-->
+						<option value="{$key}">$clubinfo[$key]</option>
+					<!--{/loop}-->
+				</optgroup>
+			</select>
+			选择“无”时，可在游戏内使用<span class="lime">称号卡</span>变更称号。
+		</td>
+	</tr>
+	<!--{/if}-->
+<!--{/if}-->
+	<tr>
+		<td>{lang motto}</td>
+		<td><input size="30" type="text" name="motto" maxlength="30" value="{$motto}">{lang motto_comment}</td>
+	</tr>
+	<tr>
+	<tr>
+		<td>{lang killmsg}</td>
+		<td><input size="30" type="text" name="killmsg" maxlength="30" value="{$killmsg}">{lang killmsg_comment}</td>
+	</tr>
+	<tr>
+		<td>{lang lastword}</td>
+		<td><input size="30" type="text" name="lastword" maxlength="30" value="{$lastword}">{lang lastword_comment}</td>
+	</tr>
+</table> 

@@ -1,0 +1,130 @@
+<dialog id="terminal" style="max-width: 90%;max-height: 80%;">
+<!-- 宽度设计：战场地图476+2px 控制菜单118+2px 间距10px-->
+<div style="text-align: center; width: 608px;">
+    <!-- 背景音乐 -->
+    <div>
+        <!--{if !isset($bgmname)}-->
+            <!--{eval $nowbgmid = isset($_COOKIE["nowbgmid"]) ? filter_var($_COOKIE["nowbgmid"],FILTER_VALIDATE_INT) : 0; $bgmname = $bgmlist[$nowbgmid]['name'];}-->
+        <!--{/if}-->
+        <span class="grey">正在播放：～ <span id="bgmname">$bgmname</span> ～</span>
+    </div>
+    <!-- 战场地图 -->
+    <!-- 这是人能干出来的事吗? -->
+    <!--{if !$horizon}-->
+    <div style="width: 476px; float: left; margin-right: 5px;border-radius: 3px; border:2px solid rgba(225, 124, 226, 0.2);">
+    <!--{else}-->
+    <div style="width: 476px; float: left; margin-right: 5px;border-radius: 3px; border:2px solid rgba(82, 64, 139, 0.2);">
+    <!--{/if}-->
+        <!--{eval $mapdata = init_mapdata();}-->
+        $mapdata 
+    </div>
+    <!-- 控制菜单 -->
+    <div style="width: 118px; float: right; margin-left: 5px;">
+        <!-- 音乐控制指令 -->
+        <!--{if !$horizon}-->
+        <table cellspacing="0" cellpadding="0" style="position:relative;border-radius: 3px; border:2px solid rgba(225, 124, 226, 0.2);">
+        <!--{else}-->    
+        <table cellspacing="0" cellpadding="0" style="position:relative;border-radius: 3px; border:2px solid rgba(82, 64, 139, 0.2);">
+        <!--{/if}-->
+            <tr>
+                <TD colspan="2" class="b1" style="width: 120px; height: 24px;">播放控制</TD>
+            </tr>
+            <tr class="map" height="32">
+                <td td colspan="2">
+                    <span class="eicon" onclick="changeBGM(-1);">⏮️</span>
+                    <span class="eicon" onclick="$('gamebgm').play();">▶️</span>
+                    <span class="eicon" onclick="$('gamebgm').pause();">⏸️</span>
+                    <span class="eicon" onclick="changeBGM();">⏭️</span>
+                </td>
+            </tr>
+            <tr height="24">
+                <TD colspan="2" class=b1>音量调节</TD>
+            </tr>
+            <tr class="map" height="32">
+                <td colspan="2">
+                    <span class="eicon" onmousedown="changeVolume(-0.05);">⏬</span>
+                    <span id="volume_num"><!--{eval $volume = isset($_COOKIE["volume"]) ? filter_var($_COOKIE["volume"],FILTER_VALIDATE_FLOAT)*100 : 20; $v = isset($volume) ? $volume.'%' : '20%';}-->$v</span>
+                    <span class="eicon" onmousedown="changeVolume(0.05);">⏫</span>
+                </td>
+            </tr>
+        </table>
+        <!-- 战场控制指令 -->
+        <!--{if !isset($clbpara['console'])}-->
+        <!--<div style="position:relative; height:100%; width:100%;">
+        <div class="blurtext">-->
+        <table cellspacing="0" cellpadding="0" style="position:relative;">
+            <tr width="120" height="328" rowspan="7" class="map">
+                <td colspan="2" width="120" height="328" class="lockmap"></td>
+            </tr>
+        </table>
+        <!--{else}-->
+        <table cellspacing="0" cellpadding="0" style="position:relative;border-radius: 3px; border:2px solid rgba(225, 124, 226, 0.2);">
+            <tr>
+                <TD colspan="2" class=b1 style="width: 120px; height: 24px;">可用信道</TD>
+            </tr>
+            <tr class="map" height="32">
+                <td colspan="2">
+                    <span class="<!--{if $gamevars['api'] == 0}-->red<!--{else}-->lime<!--{/if}-->">$gamevars['api']/$gamevars['apis']</span>
+                </td>
+            </tr>
+            <tr height="24">
+                <TD colspan="2" class=b1>天气控制</TD>
+            </tr>
+            <tr class="map" height="32">
+                <td colspan="2">
+                    <select id="cwth" name="cwth" style="width:72px" onchange="closeDialog($('terminal'));$('mode').value='command';$('command').value='consle_wthchange';postCmd('gamecmd','command.php');">
+                        <!--{loop $wthinfo $n $wth}-->
+                        <!--{if $n != 18}-->
+                        <option value="$n"<!--{if $weather == $n}--> selected<!--{/if}-->> {$wth} </option>
+                        <!--{/if}-->
+                        <!--{/loop}-->
+                    </select>
+                </td>
+            </tr>
+            <tr height="24">
+                <TD colspan="2" class=b1>数据控制</TD>
+            </tr>
+            <tr class="map" height="32">
+                <td width="42">
+                    <input type="button" value="数据检索" onclick="closeDialog($('terminal'));showModalDialog($('consle_search'));">
+                </td>
+                <td width="42">
+                    <input type="button" value="生命探测" onclick="closeDialog($('terminal'));$('command').value='consle_radar';postCmd('gamecmd','command.php');this.disabled=true;">
+                </td>
+            </tr>
+            <tr height="24">
+                <TD colspan="2" class=b1>禁区控制</TD>
+            </tr>
+            <tr class="map" height="32">
+                <td width="42">
+                    <input type="button" value="增设禁区" onclick="closeDialog($('terminal'));$('command').value='consle_areactrl1';postCmd('gamecmd','command.php');this.disabled=true;">
+                </td>
+                <td width="42">
+                    <input type="button" value="解除禁区" onclick="closeDialog($('terminal'));$('command').value='consle_areactrl0';postCmd('gamecmd','command.php');this.disabled=true;">
+                </td>
+            </tr>
+            <tr class="map">
+                <td colspan="2">
+                    <!--{if !isset($clbpara['nobutton'])}-->
+                    <div class="dangerbutton" onclick="closeDialog($('terminal'));$('command').value='consle_dbutton';postCmd('gamecmd','command.php');this.disabled=true;">DON'T PUSH<br>危险勿触</div>
+                    <!--{else}-->
+                    <div class="lockmap"><img src="img/lock.png" ></div>
+                    <!--{/if}-->
+                </td>
+            </tr>
+        </table>
+        <!--</div>
+        <div class="skill_unacquired_hint">
+            <table class="skilltable">
+                <tr width="84" height="318" rowspan="7" class="lockmap">
+                    <td colspan="2" width="72" height="300" class="blurtext"></td>
+                </tr>
+            </table>
+        </div>
+        </div>-->
+        <!--{/if}-->
+    </div>
+</div>
+<img class="dialog-background" src="img/profile.gif" onclick="closeDialog($('terminal'))">
+</dialog>
+
