@@ -19,12 +19,13 @@ def create_app():
     # Load configuration
     app.config.from_object(Config)
     
-    # Initialize extensions
+    # Initialize database
     from models import db
     db.init_app(app)
     with app.app_context():
         db.create_all()
     migrate = Migrate(app, db)
+
 
     login_manager = LoginManager(app)
     login_manager.login_view = 'auth.login'
@@ -37,6 +38,7 @@ def create_app():
     from routes.auth_routes import init_models
     with app.app_context():
         init_models(app)
+
 
 
     # User loader
