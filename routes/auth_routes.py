@@ -158,9 +158,9 @@ def logout():
         flash('Logout failed', 'error')
         return redirect(url_for('main.index'))
 
-    @auth_bp.route('/register', methods=['GET', 'POST'])
-    def register():
-        """Handle registration page and form submission"""
+@auth_bp.route('/register', methods=['GET', 'POST'])
+def register():
+    """Handle registration page and form submission"""
     if request.method == 'GET':
         try:
             announcements = get_latest_announcements()
