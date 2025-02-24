@@ -159,8 +159,7 @@ def logout():
         return redirect(url_for('main.index'))
 
     @auth_bp.route('/register', methods=['GET', 'POST'])
-
-def register():
+    def register():
     """Handle registration page and form submission"""
     if request.method == 'GET':
         try:
