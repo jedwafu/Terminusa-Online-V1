@@ -22,7 +22,10 @@ def create_app():
     # Initialize extensions
     from models import db
     db.init_app(app)
+    with app.app_context():
+        db.create_all()
     migrate = Migrate(app, db)
+
     login_manager = LoginManager(app)
     login_manager.login_view = 'auth.login'
     CORS(app)
@@ -32,7 +35,9 @@ def create_app():
     
     # Initialize database models
     from routes.auth_routes import init_models
-    init_models(app)
+    with app.app_context():
+        init_models(app)
+
 
     # User loader
     @login_manager.user_loader
