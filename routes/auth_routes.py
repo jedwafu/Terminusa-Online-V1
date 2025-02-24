@@ -31,12 +31,12 @@ def login():
     if request.method == 'GET':
         try:
             announcements = get_latest_announcements()
-            return render_template('login_single.html', 
+            return render_template('auth/login.html', 
                                 announcements=announcements,
                                 is_authenticated=current_user.is_authenticated)
         except Exception as e:
             current_app.logger.error(f"Error rendering login page: {str(e)}")
-            return render_template('login_single.html', 
+            return render_template('auth/login.html', 
                                 announcements=[],
                                 is_authenticated=current_user.is_authenticated)
     
