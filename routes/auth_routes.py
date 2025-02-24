@@ -1,5 +1,6 @@
 """Authentication routes blueprint"""
 from flask import Blueprint, jsonify, request, render_template, redirect, url_for, flash, g, current_app
+from config import Config
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_jwt_extended import (
     create_access_token, create_refresh_token, 
@@ -157,18 +158,18 @@ def logout():
         flash('Logout failed', 'error')
         return redirect(url_for('main.index'))
 
-@auth_bp.route('/register', methods=['GET', 'POST'])
+@auth_bp.route('/register', methods='GET', 'POST'])
 def register():
     """Handle registration page and form submission"""
     if request.method == 'GET':
         try:
             announcements = get_latest_announcements()
-            return render_template('register_single.html', 
+            return render_template('auth/register.html', 
                                 announcements=announcements,
                                 is_authenticated=current_user.is_authenticated)
         except Exception as e:
             current_app.logger.error(f"Error rendering register page: {str(e)}")
-            return render_template('register_single.html', 
+            return render_template('auth/register.html', 
                                 announcements=[],
                                 is_authenticated=current_user.is_authenticated)
     

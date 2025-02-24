@@ -11,12 +11,10 @@ def create_app():
     app = Flask(__name__,
                 static_folder=Config.STATIC_FOLDER,
                 static_url_path=Config.STATIC_URL_PATH)
-    
-    app.config.from_object('config.Config')
-    app.config['DEBUG'] = False
-    app.config['TESTING'] = False
-    app.config['ENV'] = 'production'
 
+    # Load configuration
+    app.config.from_object(Config)
+    
     # Initialize extensions
     from models import db
     db.init_app(app)
