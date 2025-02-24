@@ -160,7 +160,7 @@ def logout():
 
     @auth_bp.route('/register', methods=['GET', 'POST'])
     def register():
-    """Handle registration page and form submission"""
+        """Handle registration page and form submission"""
     if request.method == 'GET':
         try:
             announcements = get_latest_announcements()
