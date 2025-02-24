@@ -22,9 +22,10 @@ def create_app():
     # Initialize database
     from models import db
     db.init_app(app)
-    with app.app_context():
-        db.create_all()
+    app.app_context().push()
+    db.create_all()
     migrate = Migrate(app, db)
+
 
 
     login_manager = LoginManager(app)
@@ -36,8 +37,9 @@ def create_app():
     
     # Initialize database models
     from routes.auth_routes import init_models
-    with app.app_context():
-        init_models(app)
+    app.app_context().push()
+    init_models(app)
+
 
 
 
