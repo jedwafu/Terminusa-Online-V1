@@ -30,6 +30,11 @@ def create_app():
 
     # Initialize routes
     routes.init_app(app)
+    
+    # Initialize database models
+    from routes.auth_routes import init_models
+    init_models(app)
+
 
     # User loader
     @login_manager.user_loader
