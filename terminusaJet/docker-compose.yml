@@ -1,0 +1,79 @@
+services:
+  app:
+    build: .
+    container_name: app
+    restart: always
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - web
+
+  db:
+    container_name: db
+    image: mysql:8.0.30
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "--silent" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    env_file:
+      - .env
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DATABASE_PASSWORD}
+      - MYSQL_DATABASE=${DATABASE_NAME}
+      - MYSQL_LOWER_CASE_TABLE_NAMES=0
+    volumes:
+      - ./data:/var/lib/mysql
+    networks:
+      - web
+
+  nginx:
+    build:
+      context: ./nginx
+    container_name: nginx
+    ports:
+      - "80:80"
+    networks:
+      - web
+    depends_on:
+      - app
+
+  signal_bot:
+    build:
+      context: ./signal_bot
+    container_name: signal_bot
+    depends_on:
+      - app
+    restart: always
+    networks:
+      - web
+    links:
+      - app
+
+  main_bot:
+    build:
+      context: ./main_bot
+    container_name: main_bot
+    depends_on:
+      - app
+    ports:
+      - "5001:5001"
+    restart: always
+    networks:
+      - web
+    links:
+      - app
+
+networks:
+  web:
+    driver: bridge
+
+volumes:
+  data:

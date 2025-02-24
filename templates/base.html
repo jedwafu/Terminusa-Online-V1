@@ -12,10 +12,14 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body>
-    <canvas id="matrixRain"></canvas>
+    <div class="matrix-container">
+        <canvas id="matrixRain"></canvas>
+        <div class="matrix-overlay"></div>
+    </div>
     
     <header class="main-header">
-        <nav class="main-nav">
+        <nav class="main-nav glow-border">
+
             <div class="nav-brand">
                 <a href="{{ url_for('pages.index') }}" class="logo-link">
                     <div class="logo">
@@ -75,48 +79,9 @@
         </div>
     </footer>
 
-    <script>
-        // Matrix Rain Animation
-        const canvas = document.getElementById('matrixRain');
-        const ctx = canvas.getContext('2d');
+    <script src="{{ url_for('static', filename='js/matrix.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/particles.js') }}"></script>
 
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
-
-        const matrix = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789@#$%^&*()*&^%";
-        const drops = [];
-        const fontSize = 16;
-        const columns = canvas.width/fontSize;
-
-        for(let x = 0; x < columns; x++) {
-            drops[x] = 1;
-        }
-
-        function draw() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            ctx.fillStyle = '#00FF41';
-            ctx.font = fontSize + 'px monospace';
-
-            for(let i = 0; i < drops.length; i++) {
-                const text = matrix[Math.floor(Math.random() * matrix.length)];
-                ctx.fillText(text, i*fontSize, drops[i]*fontSize);
-
-                if(drops[i]*fontSize > canvas.height && Math.random() > 0.975)
-                    drops[i] = 0;
-
-                drops[i]++;
-            }
-        }
-
-        setInterval(draw, 35);
-    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
