@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, send_from_directory
 from flask_login import LoginManager, current_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -15,12 +15,6 @@ def create_app():
     @app.route('/static/<path:filename>')
     def static_files(filename):
         return send_from_directory(app.static_folder, filename)
-
-
-    @app.route('/static/<path:filename>')
-    def static_files(filename):
-        return send_from_directory(app.static_folder, filename)
-
 
     # Load configuration
     app.config.from_object(Config)
@@ -39,7 +33,6 @@ def create_app():
     # Initialize database models
     from routes.auth_routes import init_models
     init_models(app)
-
 
     # User loader
     @login_manager.user_loader
