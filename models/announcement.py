@@ -3,7 +3,8 @@
 from .base import BaseModel, TimestampMixin
 from database import db
 from sqlalchemy import Column, String, Text, Integer, Boolean, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
+
 
 class Announcement(BaseModel, TimestampMixin):
     """Announcement model for system-wide announcements."""
@@ -16,7 +17,8 @@ class Announcement(BaseModel, TimestampMixin):
     
     # Author relationship
     author_id = Column(Integer, ForeignKey('users.id'), nullable=True)
-    author = relationship('User', foreign_keys=[author_id], backref='authored_announcements')
+    author = relationship('User', foreign_keys=[author_id], backref=backref('authored_announcements', lazy='dynamic'))
+
 
     def __repr__(self):
         """String representation of Announcement."""
