@@ -473,7 +473,7 @@ stop_services() {
     
     # Kill all screen sessions first
     info_log "Stopping screen sessions..."
-    for service in "${!SERVICE_SCREENS[@]}"; then
+    for service in "${!SERVICE_SCREENS[@]}"; do
         screen_name=${SERVICE_SCREENS[$service]}
         if check_screen_session "$screen_name"; then
             info_log "Killing screen session: $screen_name"
@@ -491,7 +491,7 @@ stop_services() {
     # Kill any processes on our ports
     for service in "${!SERVICE_PORTS[@]}"; do
         IFS=',' read -ra PORTS <<< "${SERVICE_PORTS[$service]}"
-        for port in "${PORTS[@]}"; then
+        for port in "${PORTS[@]}"; do
             if check_port $port; then
                 info_log "Killing process on port $port..."
                 kill_port_process $port
