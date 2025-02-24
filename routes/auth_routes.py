@@ -1,6 +1,5 @@
 """Authentication routes blueprint"""
 from flask import Blueprint, jsonify, request, render_template, redirect, url_for, flash, g, current_app
-from config import Config
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_jwt_extended import (
     create_access_token, create_refresh_token, 
@@ -9,7 +8,9 @@ from flask_jwt_extended import (
     jwt_required, get_jwt
 )
 from database import db
-from models import User, Announcement
+from models.user import User
+from models.announcement import Announcement
+
 from datetime import datetime, timedelta
 import bcrypt
 
