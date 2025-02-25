@@ -301,6 +301,20 @@ class Achievement(db.Model):
     is_completed = db.Column(db.Boolean, default=False)
     completed_at = db.Column(db.DateTime)
 
+class Wallet(db.Model):
+    __tablename__ = 'wallets'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    solana_address = db.Column(db.String(64))
+    solana_balance = db.Column(db.Float, default=0.0)
+    exons_balance = db.Column(db.Float, default=0.0)
+    crystals_balance = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = db.relationship('User', backref='wallet', uselist=False)
+
 class Transaction(db.Model):
     __tablename__ = 'transactions'
     
