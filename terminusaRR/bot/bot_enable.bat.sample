@@ -1,6 +1,0 @@
-@echo off
-PATH=%PATH%;C:\wamp64\bin\php\php7.4.0
-php -v
-
-cd ..
-php bot/revbotservice.php
