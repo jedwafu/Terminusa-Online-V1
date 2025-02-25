@@ -19,15 +19,30 @@ from email.mime.text import MIMEText
 app = Flask(__name__)
 
 # Configure logging
+os.makedirs('logs', exist_ok=True)  # Ensure logs directory exists
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# Create formatter
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# Create file handler
+file_handler = logging.FileHandler('logs/web.log')
+file_handler.setFormatter(formatter)
+
+# Create console handler
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(formatter)
+
+# Add handlers to logger
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+
+# Also configure root logger to ensure all logs are captured
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('logs/web.log'),
-        logging.StreamHandler()
-    ]
+    handlers=[file_handler, console_handler]
 )
-logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -605,10 +620,3 @@ if __name__ == '__main__':
     from gevent.pywsgi import WSGIServer
     http_server = WSGIServer(('0.0.0.0', port), app)
     http_server.serve_forever()
-
-
-
-
-
-
-
