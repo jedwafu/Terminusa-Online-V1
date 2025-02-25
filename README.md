@@ -1,4 +1,7 @@
 # Terminusa Online
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+Terminusa Online is a Teminal-based Dungeon Hunter inspired MMORPG with AI-driven mechanics and a robust economy system.
 
 A web-based MMORPG inspired by Solo Leveling, featuring AI-driven game mechanics, Web3 integration, and a dynamic economy system.
 
@@ -26,6 +29,39 @@ A web-based MMORPG inspired by Solo Leveling, featuring AI-driven game mechanics
 - Node.js 18 or higher (for web client)
 
 ### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/terminusa-online.git
+   cd terminusa-online
+   ```
+
+2. Set up the virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+   ```
+
+3. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. Set up environment variables:
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
+
+5. Initialize the database:
+   ```bash
+   python init_db.py
+   ```
+
+6. Run the development server:
+   ```bash
+   python web_app.py
+   ```
 
 1. Clone the repository:
 ```bash
@@ -132,6 +168,24 @@ flake8
 ```
 
 ## Contributing
+
+We welcome contributions! Please follow these steps:
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+Please ensure your code follows our style guidelines and includes appropriate tests.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+- Inspired by Solo Leveling and other dungeon hunter games
+- Special thanks to our early alpha testers
 
 1. Fork the repository
 2. Create a feature branch
