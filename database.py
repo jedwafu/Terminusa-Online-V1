@@ -12,8 +12,15 @@ def init_db(app):
         from models import Wallet
         from models.announcement import Announcement
         
-        # Create tables in strict dependency order
+        # Create tables in explicit order with proper registration
+        from models.user import User
         User.__table__.create(bind=db.engine, checkfirst=True)
+        
+        from models import Wallet
         Wallet.__table__.create(bind=db.engine, checkfirst=True)
+        
+        from models.player import PlayerCharacter
         PlayerCharacter.__table__.create(bind=db.engine, checkfirst=True)
+        
+        from models.announcement import Announcement
         Announcement.__table__.create(bind=db.engine, checkfirst=True)
