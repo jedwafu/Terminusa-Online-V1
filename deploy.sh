@@ -85,6 +85,9 @@ declare -A SERVICE_PORTS=(
     ["redis"]="6379"
     ["postfix"]="25"
     ["game"]="5001"
+    ["currency"]="5002"
+    ["marketplace"]="5003"
+    ["gacha"]="5004"
 )
 
 declare -A SERVICE_LOGS=(
@@ -100,6 +103,9 @@ declare -A SERVICE_LOGS=(
     ["combat_manager"]="logs/combat_manager.log"
     ["economy_systems"]="logs/economy_systems.log"
     ["game_mechanics"]="logs/game_mechanics.log"
+    ["currency"]="logs/currency.log"
+    ["marketplace"]="logs/marketplace.log"
+    ["gacha"]="logs/gacha.log"
 )
 
 declare -A SERVICE_SCREENS=(
@@ -111,6 +117,9 @@ declare -A SERVICE_SCREENS=(
     ["combat_manager"]="terminusa-combat"
     ["economy_systems"]="terminusa-economy"
     ["game_mechanics"]="terminusa-mechanics"
+    ["currency"]="terminusa-currency"
+    ["marketplace"]="terminusa-marketplace"
+    ["gacha"]="terminusa-gacha"
 )
 
 # Logging functions
@@ -575,6 +584,15 @@ start_services() {
                 "game")
                     start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python game_server.py > logs/game.log 2>&1"
                     ;;
+            "currency")
+                    start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python currency_system.py > logs/currency.log 2>&1"
+                    ;;
+            "marketplace")
+                    start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python marketplace_system.py > logs/marketplace.log 2>&1"
+                    ;;
+            "gacha")
+                    start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python gacha_system.py > logs/gacha.log 2>&1"
+                    ;;
                 *)
                     start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python ${service}.py > logs/${service}.log 2>&1"
                     ;;
@@ -621,7 +639,10 @@ save_status_json() {
             "ai_manager": "$(screen -list | grep -q "terminusa-ai" && echo "running" || echo "stopped")",
             "combat_manager": "$(screen -list | grep -q "terminusa-combat" && echo "running" || echo "stopped")",
             "economy_systems": "$(screen -list | grep -q "terminusa-economy" && echo "running" || echo "stopped")",
-            "game_mechanics": "$(screen -list | grep -q "terminusa-mechanics" && echo "running" || echo "stopped")"
+            "game_mechanics": "$(screen -list | grep -q "terminusa-mechanics" && echo "running" || echo "stopped")",
+            "currency": "$(screen -list | grep -q "terminusa-currency" && echo "running" || echo "stopped")",
+            "marketplace": "$(screen -list | grep -q "terminusa-marketplace" && echo "running" || echo "stopped")",
+            "gacha": "$(screen -list | grep -q "terminusa-gacha" && echo "running" || echo "stopped")"
         }
     }
 }
