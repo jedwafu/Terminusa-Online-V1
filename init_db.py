@@ -28,16 +28,9 @@ def initialize_database():
             Transaction
         )
         
-        # Create tables in specific order with explicit checks
-        from sqlalchemy import inspect
-        
-        # Create users table first
-        User.__table__.create(db.engine)
-        if not inspect(db.engine).has_table('users'):
-            raise Exception("Failed to create users table")
-        
-        # Create remaining tables
+        # Create tables without foreign key constraints first
         tables = [
+            User.__table__,
             Wallet.__table__,
             Announcement.__table__,
             Guild.__table__,
@@ -55,20 +48,16 @@ def initialize_database():
             Transaction.__table__
         ]
         
-        # Create tables with foreign key constraints
+        # Create tables without foreign key constraints
         for table in tables:
-            table.create(bind=db.engine)
+            table.create(bind=db.engine, checkfirst=False)
         
-        # Verify all tables were created
-        inspector = inspect(db.engine)
-        required_tables = ['users', 'wallets', 'announcements', 'guilds', 
-                          'parties', 'gates', 'magic_beasts', 'inventory_items',
-                          'items', 'mounts', 'pets', 'skills', 'quests',
-                          'guild_quests', 'achievements', 'transactions']
-        
-        for table_name in required_tables:
-            if not inspector.has_table(table_name):
-                raise Exception(f"Failed to create table: {table_name}")
+        # Add foreign key constraints after all tables exist
+        from sqlalchemy import DDL
+        db.engine.execute(DDL(
+            "ALTER TABLE wallets ADD CONSTRAINT fk_wallets_users "
+            "FOREIGN KEY (user_id) REFERENCES users (id)"
+        ))
         
         print("[INFO] Database initialized successfully")
 
