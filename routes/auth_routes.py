@@ -14,10 +14,7 @@ from models.announcement import Announcement
 def init_models(app):
     """Initialize database models within application context"""
     with app.app_context():
-        if not db.engine.has_table(User.__tablename__):
-            User.metadata.create_all(db.engine)
-        if not db.engine.has_table(Announcement.__tablename__):
-            Announcement.metadata.create_all(db.engine)
+        db.create_all()
 
 from datetime import datetime, timedelta
 import bcrypt
