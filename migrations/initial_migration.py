@@ -10,9 +10,13 @@ from models.ai_agent import AIAgent, PlayerBehavior, AIRecommendation
 from models.economy import GamblingRecord, ReferralRecord, LoyaltyRecord
 
 def initialize_database():
+    # Clean up existing metadata
+    db.metadata.clear()
+    
     # Drop all tables and recreate
     db.drop_all()
     db.create_all()
+
 
     
     # Create initial admin user
