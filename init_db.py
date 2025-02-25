@@ -87,29 +87,6 @@ def initialize_database():
             "FOREIGN KEY (user_id) REFERENCES users(id)"
         ))
         
-        # Create remaining tables
-        tables = [
-            Announcement.__table__,
-            Guild.__table__,
-            Party.__table__,
-            Gate.__table__,
-            MagicBeast.__table__,
-            InventoryItem.__table__,
-            Item.__table__,
-            Mount.__table__,
-            Pet.__table__,
-            Skill.__table__,
-            Quest.__table__,
-            GuildQuest.__table__,
-            Achievement.__table__,
-            Transaction.__table__
-        ]
-        
-        # Create remaining tables
-        for table in tables:
-            logger.info(f"Creating table: {table.name}")
-            table.create(bind=db.engine)
-        
         # Verify all tables were created
         inspector = inspect(db.engine)
         required_tables = ['users', 'wallets', 'announcements', 'guilds', 
@@ -121,7 +98,6 @@ def initialize_database():
             if not inspector.has_table(table_name):
                 raise Exception(f"Failed to create table: {table_name}")
 
-        
         logger.info("Database initialized successfully")
 
 if __name__ == '__main__':
