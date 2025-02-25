@@ -13,9 +13,23 @@ def initialize_database():
     # Clean up existing metadata
     db.metadata.clear()
     
-    # Drop all tables and recreate
+    # Drop all tables
     db.drop_all()
+    
+    # Create tables in explicit dependency order
+    from models.user import User
+    from models.currency import Wallet
+    from models.player import PlayerCharacter
+    from models.announcement import Announcement
+    
+    User.__table__.create(bind=db.engine, checkfirst=True)
+    Wallet.__table__.create(bind=db.engine, checkfirst=True)
+    PlayerCharacter.__table__.create(bind=db.engine, checkfirst=True)
+    Announcement.__table__.create(bind=db.engine, checkfirst=True)
+    
+    # Create remaining tables
     db.create_all()
+
 
 
     
