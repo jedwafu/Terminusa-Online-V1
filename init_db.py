@@ -1,13 +1,20 @@
-from web_app import create_app
-from models import db
+"""
+Database initialization script for Terminusa Online
+"""
+from app import create_app
+from models import db, init_models
 
-def initialize_database():
+def init_database():
     """Initialize the database"""
     app = create_app()
     with app.app_context():
+        # Create all tables
         db.create_all()
-        print("[INFO] Database initialized successfully")
+        
+        # Initialize model relationships
+        init_models()
+        
+        print("Database initialized successfully")
 
-if __name__ == '__main__':
-    print("[INFO] Initializing database...")
-    initialize_database()
+if __name__ == "__main__":
+    init_database()
