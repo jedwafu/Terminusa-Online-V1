@@ -22,8 +22,26 @@ class JobType(Enum):
     MERCHANT = "merchant"
     HUNTER = "hunter"
 
+class PlayerCharacter(db.Model):
+    """Player character model"""
+    __tablename__ = 'player_characters'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    level = db.Column(db.Integer, default=1)
+    experience = db.Column(db.Integer, default=0)
+    class_id = db.Column(db.Integer, db.ForeignKey('player_classes.id'))
+    job_id = db.Column(db.Integer, db.ForeignKey('job_types.id'))
+    
+    # Relationships
+    user = db.relationship('User', back_populates='characters')
+    player_class = db.relationship('PlayerClass')
+    job = db.relationship('JobType')
+
 class Player(db.Model):
     __tablename__ = 'players'
+
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
