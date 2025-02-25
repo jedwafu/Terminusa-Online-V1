@@ -28,66 +28,48 @@ def initialize_database():
             Transaction
         )
         
-        # Create tables using raw SQL commands with explicit transaction
-        with db.engine.connect() as connection:
-            with connection.begin():
-                # Create users table
-                connection.execute("""
-                    CREATE TABLE IF NOT EXISTS users (
-                        id SERIAL PRIMARY KEY,
-                        username VARCHAR(80) UNIQUE NOT NULL,
-                        email VARCHAR(120) UNIQUE NOT NULL,
-                        password_hash VARCHAR(128),
-                        web3_wallet VARCHAR(64),
-                        role VARCHAR(20) DEFAULT 'user',
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                        last_login TIMESTAMP
-                    )
-                """)
-                
-                # Verify users table exists
-                result = connection.execute("""
-                    SELECT EXISTS (
-                        SELECT 1 
-                        FROM information_schema.tables 
-                        WHERE table_name = 'users'
-                    )
-                """)
-                if not result.scalar():
-                    raise Exception("Failed to create users table")
-                
-                # Create wallets table without foreign key first
-                connection.execute("""
-                    CREATE TABLE IF NOT EXISTS wallets (
-                        id SERIAL PRIMARY KEY,
-                        user_id INTEGER,
-                        solana_address VARCHAR(64),
-                        solana_balance FLOAT DEFAULT 0.0,
-                        exons_balance FLOAT DEFAULT 0.0,
-                        is_blockchain BOOLEAN DEFAULT TRUE,
-                        max_supply BIGINT,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                """)
-                
-                # Verify wallets table exists
-                result = connection.execute("""
-                    SELECT EXISTS (
-                        SELECT 1 
-                        FROM information_schema.tables 
-                        WHERE table_name = 'wallets'
-                    )
-                """)
-                if not result.scalar():
-                    raise Exception("Failed to create wallets table")
-                
-                # Add foreign key constraint after both tables exist
-                connection.execute("""
-                    ALTER TABLE wallets 
-                    ADD CONSTRAINT fk_wallets_users 
-                    FOREIGN KEY (user_id) 
-                    REFERENCES users(id)
-                """)
+        # Create tables in specific order with explicit checks
+        from sqlalchemy import inspect
+        
+        # Create users table first
+        User.__table__.create(db.engine)
+        if not inspect(db.engine).has_table('users'):
+            raise Exception("Failed to create users table")
+        
+        # Create remaining tables
+        tables = [
+            Wallet.__table__,
+            Announcement.__table__,
+            Guild.__table__,
+            Party.__table__,
+            Gate.__table__,
+            MagicBeast.__table__,
+            InventoryItem.__table__,
+            Item.__table__,
+            Mount.__table__,
+            Pet.__table__,
+            Skill.__table__,
+            Quest.__table__,
+            GuildQuest.__table__,
+            Achievement.__table__,
+            Transaction.__table__
+        ]
+        
+        # Create tables with foreign key constraints
+        for table in tables:
+            table.create(bind=db.engine)
+        
+        # Verify all tables were created
+        inspector = inspect(db.engine)
+        required_tables = ['users', 'wallets', 'announcements', 'guilds', 
+                          'parties', 'gates', 'magic_beasts', 'inventory_items',
+                          'items', 'mounts', 'pets', 'skills', 'quests',
+                          'guild_quests', 'achievements', 'transactions']
+        
+        for table_name in required_tables:
+            if not inspector.has_table(table_name):
+                raise Exception(f"Failed to create table: {table_name}")
+
         
         print("[INFO] Database initialized successfully")
 
