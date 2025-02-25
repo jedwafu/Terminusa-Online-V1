@@ -28,6 +28,7 @@ def create_app():
 
 
 
+
     login_manager = LoginManager(app)
     login_manager.login_view = 'auth.login'
     CORS(app)
