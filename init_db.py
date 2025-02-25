@@ -1,20 +1,19 @@
-"""
-Database initialization script for Terminusa Online
-"""
 from web_app import create_app
-from models import db, init_models
+from models import db
 
-def init_database():
+def initialize_database():
     """Initialize the database"""
     app = create_app()
     with app.app_context():
-        # Create all tables
-        db.create_all()
-        
-        # Initialize model relationships
-        init_models()
-        
-        print("Database initialized successfully")
+        # Create tables in specific order to handle dependencies
+        db.metadata.create_all(bind=db.engine, tables=[
+            db.metadata.tables['users'],
+            db.metadata.tables['player_characters'],
+            db.metadata.tables['wallets'],
+            db.metadata.tables['announcements']
+        ])
+        print("[INFO] Database initialized successfully")
 
-if __name__ == "__main__":
-    init_database()
+if __name__ == '__main__':
+    print("[INFO] Initializing database...")
+    initialize_database()
