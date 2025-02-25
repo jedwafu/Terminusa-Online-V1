@@ -8,7 +8,8 @@ db = SQLAlchemy()
 
 # Import all models
 from .user import User
-from .player import Player, PlayerClass, JobType
+from .player import Player, PlayerClass, JobType, PlayerCharacter
+
 from .inventory import Inventory, ItemType, ItemRarity
 from .item import Item
 
