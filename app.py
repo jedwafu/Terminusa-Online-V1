@@ -22,9 +22,10 @@ def create_app():
     # Initialize database
     from models import db
     db.init_app(app)
-    app.app_context().push()
-    db.create_all()
+    with app.app_context():
+        db.create_all()
     migrate = Migrate(app, db)
+
 
 
 
