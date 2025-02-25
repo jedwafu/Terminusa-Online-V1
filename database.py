@@ -21,4 +21,4 @@ def init_db(app):
             PlayerCharacter.__table__,
             Wallet.__table__,
             Announcement.__table__
-        ])
+        ], checkfirst=True)
