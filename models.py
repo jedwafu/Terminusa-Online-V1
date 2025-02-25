@@ -54,6 +54,20 @@ class HealthStatus(Enum):
     DECAPITATED = "Decapitated"
     SHADOW = "Shadow"
 
+class CurrencyType(Enum):
+    SOLANA = "solana"
+    EXONS = "exons"
+    CRYSTALS = "crystals"
+
+class Element(Enum):
+    NEUTRAL = "neutral"
+    HOLY = "holy"
+    FIRE = "fire"
+    WATER = "water"
+    LIGHTNING = "lightning"
+    EARTH = "earth"
+    SHADOW = "shadow"
+
 class User(db.Model):
     __tablename__ = 'users'
     
@@ -221,6 +235,7 @@ class Item(db.Model):
     description = db.Column(db.Text)
     type = db.Column(db.String(50))  # equipment, potion, etc.
     rarity = db.Column(db.Enum(ItemRarity))
+    element = db.Column(db.Enum(Element), default=Element.NEUTRAL)
     level_requirement = db.Column(db.Integer, default=1)
     price_crystals = db.Column(db.Integer)
     price_exons = db.Column(db.Float)
@@ -255,6 +270,7 @@ class Skill(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
+    element = db.Column(db.Enum(Element), default=Element.NEUTRAL)
     level = db.Column(db.Integer, default=1)
     mp_cost = db.Column(db.Integer)
     cooldown = db.Column(db.Integer)  # in seconds
@@ -310,6 +326,8 @@ class Wallet(db.Model):
     solana_balance = db.Column(db.Float, default=0.0)
     exons_balance = db.Column(db.Float, default=0.0)
     crystals_balance = db.Column(db.Integer, default=0)
+    is_blockchain = db.Column(db.Boolean, default=True)
+    max_supply = db.Column(db.BigInteger)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
