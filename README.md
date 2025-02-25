@@ -3,8 +3,6 @@
 
 Terminusa Online is a Teminal-based Dungeon Hunter inspired MMORPG with AI-driven mechanics and a robust economy system.
 
-A web-based MMORPG inspired by Solo Leveling, featuring AI-driven game mechanics, Web3 integration, and a dynamic economy system.
-
 ## Key Features
 
 - **Gate System**: Dynamic dungeon system with AI-generated content and difficulty scaling
