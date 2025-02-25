@@ -28,36 +28,44 @@ def initialize_database():
             Transaction
         )
         
-        # Create all tables without foreign key constraints first
-        tables = [
-            User.__table__,
-            Wallet.__table__,
-            Announcement.__table__,
-            Guild.__table__,
-            Party.__table__,
-            Gate.__table__,
-            MagicBeast.__table__,
-            InventoryItem.__table__,
-            Item.__table__,
-            Mount.__table__,
-            Pet.__table__,
-            Skill.__table__,
-            Quest.__table__,
-            GuildQuest.__table__,
-            Achievement.__table__,
-            Transaction.__table__
-        ]
-        
-        # Create tables without foreign key constraints
-        for table in tables:
-            table.create(bind=db.engine, checkfirst=False)
-        
-        # Add foreign key constraints after all tables exist
-        from sqlalchemy import DDL
-        db.engine.execute(DDL(
-            "ALTER TABLE wallets ADD CONSTRAINT fk_wallets_users "
-            "FOREIGN KEY (user_id) REFERENCES users (id)"
-        ))
+        # Create tables using raw SQL commands
+        with db.engine.connect() as connection:
+            # Create users table
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id SERIAL PRIMARY KEY,
+                    username VARCHAR(80) UNIQUE NOT NULL,
+                    email VARCHAR(120) UNIQUE NOT NULL,
+                    password_hash VARCHAR(128),
+                    web3_wallet VARCHAR(64),
+                    role VARCHAR(20) DEFAULT 'user',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    last_login TIMESTAMP
+                )
+            """)
+            
+            # Create wallets table without foreign key first
+            connection.execute("""
+                CREATE TABLE IF NOT EXISTS wallets (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER,
+                    solana_address VARCHAR(64),
+                    solana_balance FLOAT DEFAULT 0.0,
+                    exons_balance FLOAT DEFAULT 0.0,
+                    crystals_balance INTEGER DEFAULT 0,
+                    is_blockchain BOOLEAN DEFAULT TRUE,
+                    max_supply BIGINT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            
+            # Add foreign key constraint after both tables exist
+            connection.execute("""
+                ALTER TABLE wallets 
+                ADD CONSTRAINT fk_wallets_users 
+                FOREIGN KEY (user_id) 
+                REFERENCES users(id)
+            """)
         
         print("[INFO] Database initialized successfully")
 
