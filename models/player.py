@@ -32,12 +32,12 @@ class PlayerCharacter(db.Model):
     level = db.Column(db.Integer, default=1)
     experience = db.Column(db.Integer, default=0)
     class_id = db.Column(db.Integer, db.ForeignKey('player_classes.id'))
-    job_id = db.Column(db.Integer, db.ForeignKey('job_types.id'))
+    job_type = db.Column(db.Enum(JobType), nullable=True)
     
     # Relationships
     user = db.relationship('User', back_populates='characters')
     player_class = db.relationship('PlayerClass')
-    job = db.relationship('JobType')
+
 
 class Player(db.Model):
     __tablename__ = 'players'
