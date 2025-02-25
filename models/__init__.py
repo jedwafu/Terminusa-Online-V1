@@ -2,6 +2,7 @@
 Database models initialization for Terminusa Online
 """
 from flask_sqlalchemy import SQLAlchemy
+from .base import BaseModel
 
 # Initialize SQLAlchemy
 db = SQLAlchemy()
@@ -9,7 +10,6 @@ db = SQLAlchemy()
 # Import all models
 from .user import User
 from .player import Player, PlayerClass, JobType, PlayerCharacter
-
 from .inventory import Inventory, ItemType, ItemRarity
 from .item import Item
 
@@ -20,10 +20,23 @@ from .gate import Gate
 from .guild import Guild, GuildMember, GuildQuest
 from .mount_pet import Mount, Pet
 from .transaction import Transaction
-from .currency import Currency, Wallet
-
+from .currency import Currency
 from .social import Friend, BlockedUser
 from .progression import PlayerProgress, ClassProgress, JobProgress
+
+# Wallet model
+class Wallet(BaseModel):
+    """Wallet model for storing player currency"""
+    __tablename__ = 'wallets'
+    
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    gold = db.Column(db.Integer, default=0)
+    silver = db.Column(db.Integer, default=0)
+    bronze = db.Column(db.Integer, default=0)
+    crystals = db.Column(db.Integer, default=0)
+    
+    # Relationships
+    user = db.relationship('User', back_populates='wallet')
 
 # Setup model relationships
 def init_models():
