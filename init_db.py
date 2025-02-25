@@ -54,16 +54,33 @@ def initialize_database():
         if not inspect(db.engine).has_table('users'):
             logger.error("Failed to create users table")
             raise Exception("Failed to create users table")
-        
-        # Create wallets table without foreign key first
-        logger.info("Creating wallets table without foreign key")
-        Wallet.__table__.create(db.engine, checkfirst=False)
-        if not inspect(db.engine).has_table('wallets'):
-            logger.error("Failed to create wallets table")
-            raise Exception("Failed to create wallets table")
             
-        # Add foreign key constraint after both tables exist
-        logger.info("Adding foreign key constraint to wallets table")
+        # Create remaining tables without foreign keys first
+        tables = [
+            Wallet.__table__,
+            Announcement.__table__,
+            Guild.__table__,
+            Party.__table__,
+            Gate.__table__,
+            MagicBeast.__table__,
+            InventoryItem.__table__,
+            Item.__table__,
+            Mount.__table__,
+            Pet.__table__,
+            Skill.__table__,
+            Quest.__table__,
+            GuildQuest.__table__,
+            Achievement.__table__,
+            Transaction.__table__
+        ]
+        
+        logger.info("Creating tables without foreign keys")
+        for table in tables:
+            logger.info(f"Creating table: {table.name}")
+            table.create(bind=db.engine, checkfirst=False)
+            
+        # Add foreign key constraints after all tables exist
+        logger.info("Adding foreign key constraints")
         from sqlalchemy import DDL
         db.engine.execute(DDL(
             "ALTER TABLE wallets ADD CONSTRAINT fk_wallets_users "
