@@ -12,10 +12,13 @@ def init_db(app):
         from models import Wallet
         from models.announcement import Announcement
         
+        # Ensure all models are registered first
+        from models import User, PlayerCharacter, Wallet, Announcement
+        
         # Create tables in specific order to handle dependencies
         db.metadata.create_all(bind=db.engine, tables=[
-            db.metadata.tables['users'],
-            db.metadata.tables['player_characters'],
-            db.metadata.tables['wallets'],
-            db.metadata.tables['announcements']
+            User.__table__,
+            PlayerCharacter.__table__,
+            Wallet.__table__,
+            Announcement.__table__
         ])
