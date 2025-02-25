@@ -22,10 +22,14 @@ def initialize_database():
     from models.player import PlayerCharacter
     from models.announcement import Announcement
     
+    # Create core tables first
     User.__table__.create(bind=db.engine, checkfirst=True)
+    # Ensure users table exists before creating wallets
+    db.session.commit()
     Wallet.__table__.create(bind=db.engine, checkfirst=True)
     PlayerCharacter.__table__.create(bind=db.engine, checkfirst=True)
     Announcement.__table__.create(bind=db.engine, checkfirst=True)
+
     
     # Create remaining tables
     db.create_all()
