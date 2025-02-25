@@ -38,19 +38,7 @@ class Wallet(BaseModel):
 from .social import Friend, BlockedUser
 from .progression import PlayerProgress, ClassProgress, JobProgress
 
-# Wallet model
-class Wallet(BaseModel):
-    """Wallet model for storing player currency"""
-    __tablename__ = 'wallets'
-    
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
-    gold = db.Column(db.Integer, default=0)
-    silver = db.Column(db.Integer, default=0)
-    bronze = db.Column(db.Integer, default=0)
-    crystals = db.Column(db.Integer, default=0)
-    
-    # Relationships
-    user = db.relationship('User', back_populates='wallet')
+
 
 # Setup model relationships
 def init_models():
