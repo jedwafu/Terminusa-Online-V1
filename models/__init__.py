@@ -21,6 +21,20 @@ from .guild import Guild, GuildMember, GuildQuest
 from .mount_pet import Mount, Pet
 from .transaction import Transaction
 from .currency import Currency
+
+class Wallet(BaseModel):
+    """Wallet model for storing player currency"""
+    __tablename__ = 'wallets'
+    
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
+    gold = db.Column(db.Integer, default=0)
+    silver = db.Column(db.Integer, default=0)
+    bronze = db.Column(db.Integer, default=0)
+    crystals = db.Column(db.Integer, default=0)
+    
+    # Relationships
+    user = db.relationship('User', back_populates='wallet')
+
 from .social import Friend, BlockedUser
 from .progression import PlayerProgress, ClassProgress, JobProgress
 
