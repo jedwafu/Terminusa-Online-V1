@@ -25,6 +25,8 @@ class Party(db.Model):
 
 class PartyMember(db.Model):
     __tablename__ = 'party_members'
+    __table_args__ = {'extend_existing': True}
+
     
     id = db.Column(db.Integer, primary_key=True)
     party_id = db.Column(db.Integer, db.ForeignKey('parties.id'))
@@ -39,6 +41,8 @@ class PartyMember(db.Model):
 
 class PartyQuest(db.Model):
     __tablename__ = 'party_quests'
+    __table_args__ = {'extend_existing': True}
+
     
     id = db.Column(db.Integer, primary_key=True)
     party_id = db.Column(db.Integer, db.ForeignKey('parties.id'))
