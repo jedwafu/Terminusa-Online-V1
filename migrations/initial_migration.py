@@ -10,14 +10,16 @@ from models.ai_agent import AIAgent, PlayerBehavior, AIRecommendation
 from models.economy import GamblingRecord, ReferralRecord, LoyaltyRecord
 
 def initialize_database():
-    # Create all tables
+    # Drop all tables and recreate
+    db.drop_all()
     db.create_all()
+
     
     # Create initial admin user
     admin = User(
         username='adminbb',
         email='admin@terminusa.online',
-        password_hash=b'initial_password_hash'  # Should be hashed properly
+        password_hash=b'admin123'  # Should be hashed properly
     )
     db.session.add(admin)
     
