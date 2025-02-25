@@ -31,18 +31,19 @@
             </div>
             <div class="nav-links">
                 <a href="{{ url_for('pages.index') }}" class="nav-link">Home</a>
-                <a href="{{ url_for('pages.features') }}" class="nav-link">Features</a>
-                {% if current_user.is_authenticated %}
-                <a href="{{ url_for('pages.marketplace') }}" class="nav-link">Marketplace</a>
+                <a href="https://terminusa-online.gitbook.io/terminusa-online-whitepaper" class="nav-link" target="_blank">Whitepaper</a>
                 <a href="{{ url_for('pages.leaderboard') }}" class="nav-link">Leaderboard</a>
+                <a href="{{ url_for('pages.marketplace') }}" class="nav-link">Marketplace</a>
+                <a href="{{ url_for('pages.swapper') }}" class="nav-link">Buy Exons</a>
+                {% if current_user.is_authenticated %}
                 <a href="{{ url_for('pages.play') }}" class="nav-button">Play Now</a>
                 <a href="{{ url_for('auth.logout') }}" class="nav-link">Logout</a>
                 {% else %}
                 <a href="{{ url_for('auth.login') }}" class="nav-link">Login</a>
                 <a href="{{ url_for('auth.register') }}" class="nav-button glow">Sign Up</a>
-
                 {% endif %}
             </div>
+
         </nav>
     </header>
 

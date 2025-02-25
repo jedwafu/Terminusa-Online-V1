@@ -6,7 +6,8 @@
 <div class="hero-section">
     <div class="hero-content">
         <h1 class="hero-title welcome-text">Welcome to Terminusa Online</h1>
-        <p class="hero-subtitle">Enter a world of cybernetic adventure</p>
+        <p class="hero-subtitle">A Terminal-based Dungeon Hunter MMORPG with AI-driven mechanics</p>
+
         {% if not current_user.is_authenticated %}
         <div class="hero-actions">
             <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-glow nav-button">Get Started</a>
@@ -25,26 +26,27 @@
     <div class="feature-grid">
         <div class="feature-card">
             <div class="feature-icon">⚔️</div>
-            <h3>Epic Combat</h3>
-            <p>Engage in tactical battles with unique combat mechanics</p>
+            <h3>Gate System</h3>
+            <p>Conquer dynamic dungeons with AI-powered challenges</p>
         </div>
         <div class="feature-card">
-            <div class="feature-icon">🌍</div>
-            <h3>Vast World</h3>
-            <p>Explore a rich, dynamic world filled with mysteries</p>
+            <div class="feature-icon">💎</div>
+            <h3>Economy</h3>
+            <p>Trade and swap Solana, Exons, and Crystals in our marketplace</p>
         </div>
         <div class="feature-card">
-            <div class="feature-icon">🤝</div>
-            <h3>Community</h3>
-            <p>Join guilds and make allies in your journey</p>
+            <div class="feature-icon">🤖</div>
+            <h3>AI Agent</h3>
+            <p>Experience personalized quests and content tailored to your playstyle</p>
         </div>
         <div class="feature-card">
-            <div class="feature-icon">📈</div>
-            <h3>Progress</h3>
-            <p>Level up and customize your character's abilities</p>
+            <div class="feature-icon">🏆</div>
+            <h3>Progression</h3>
+            <p>Level up through the Hunter ranks and unlock powerful skills</p>
         </div>
     </div>
 </div>
+
 
 <style>
 .hero-section {
@@ -151,7 +153,18 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     text-shadow: var(--neon-shadow);
+    animation: iconFloat 3s infinite ease-in-out;
 }
+
+@keyframes iconFloat {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
 
 .feature-card h3 {
     color: var(--neon-blue);

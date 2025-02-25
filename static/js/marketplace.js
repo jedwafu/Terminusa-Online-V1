@@ -25,6 +25,52 @@ document.querySelectorAll('.nav-btn').forEach(button => {
     });
 });
 
+// Swapper Functions
+function openSwapper(currency) {
+    const modal = document.getElementById('swapper-modal');
+    const fromCurrency = document.getElementById('from-currency');
+    const toCurrency = document.getElementById('to-currency');
+    
+    // Set initial currencies based on clicked button
+    fromCurrency.value = currency;
+    toCurrency.value = currency === 'solana' ? 'exons' : 'solana';
+    
+    modal.style.display = 'block';
+}
+
+function closeSwapper() {
+    document.getElementById('swapper-modal').style.display = 'none';
+}
+
+async function handleSwap(event) {
+    event.preventDefault();
+    
+    const fromCurrency = document.getElementById('from-currency').value;
+    const fromAmount = parseFloat(document.getElementById('from-amount').value);
+    const toCurrency = document.getElementById('to-currency').value;
+    
+    try {
+        const result = await api.post('/api/currency/swap', {
+            from_currency: fromCurrency,
+            to_currency: toCurrency,
+            amount: fromAmount
+        });
+        
+        if (result.success) {
+            showSuccess('Swap successful!');
+            updateCurrencyDisplay();
+            closeSwapper();
+        } else {
+            showError(result.message);
+        }
+    } catch (error) {
+        showError('Failed to process swap');
+    }
+}
+
+// Initialize swapper form
+document.getElementById('swapper-form').addEventListener('submit', handleSwap);
+
 // API Handlers
 const api = {
     async get(endpoint) {
@@ -303,6 +349,24 @@ function openModal(modalId) {
 function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
 }
+
+// Currency Conversion
+function updateConversion() {
+    const fromCurrency = document.getElementById('from-currency').value;
+    const fromAmount = parseFloat(document.getElementById('from-amount').value) || 0;
+    const toCurrency = document.getElementById('to-currency').value;
+    
+    // Simple conversion rate (1 SOL = 100 EXON)
+    const rate = fromCurrency === 'solana' ? 100 : 0.01;
+    const toAmount = fromAmount * rate * 0.99; // Apply 1% fee
+    
+    document.getElementById('to-amount').value = toAmount.toFixed(2);
+}
+
+// Initialize currency conversion listeners
+document.getElementById('from-currency').addEventListener('change', updateConversion);
+document.getElementById('to-currency').addEventListener('change', updateConversion);
+document.getElementById('from-amount').addEventListener('input', updateConversion);
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
