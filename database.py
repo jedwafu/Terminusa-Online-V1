@@ -6,10 +6,11 @@ def init_db(app):
     """Initialize the database"""
     db.init_app(app)
     with app.app_context():
-        # Create tables in dependency order
-        db.metadata.create_all(bind=db.engine, tables=[
-            db.metadata.tables['users'],
-            db.metadata.tables['player_characters'],
-            db.metadata.tables['wallets'],
-            db.metadata.tables['announcements']
-        ])
+        # Import all models to ensure they're registered
+        from models.user import User
+        from models.player import PlayerCharacter
+        from models.currency import Wallet
+        from models.announcement import Announcement
+        
+        # Create all tables
+        db.create_all()
