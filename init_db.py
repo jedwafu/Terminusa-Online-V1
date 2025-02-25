@@ -6,8 +6,9 @@ def initialize_database():
     app = create_app()
     with app.app_context():
         # Create tables in specific order to handle dependencies
-        # Create all tables in correct order
+        # Drop all existing tables and create new ones
         from models import User, PlayerCharacter, Wallet, Announcement
+        db.drop_all()
         db.create_all()
         print("[INFO] Database initialized successfully")
 
