@@ -567,7 +567,7 @@ start_services() {
         if ! screen -list | grep -q "$screen_name"; then
             case $service in
                 "flask")
-                    start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python app.py > logs/flask.log 2>&1"
+                    start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python web_app.py > logs/flask.log 2>&1"
                     ;;
                 "terminal")
                     start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python terminal_server.py > logs/terminal.log 2>&1"
