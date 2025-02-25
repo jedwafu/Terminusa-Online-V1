@@ -28,41 +28,36 @@ def initialize_database():
             Transaction
         )
         
-        # Create tables in specific order
-        User.__table__.create(db.engine)
+        # Create all tables without foreign key constraints first
+        tables = [
+            User.__table__,
+            Wallet.__table__,
+            Announcement.__table__,
+            Guild.__table__,
+            Party.__table__,
+            Gate.__table__,
+            MagicBeast.__table__,
+            InventoryItem.__table__,
+            Item.__table__,
+            Mount.__table__,
+            Pet.__table__,
+            Skill.__table__,
+            Quest.__table__,
+            GuildQuest.__table__,
+            Achievement.__table__,
+            Transaction.__table__
+        ]
         
-        # Verify users table exists before creating dependent tables
-        if db.engine.has_table('users'):
-            tables = [
-                Wallet.__table__,
-                Announcement.__table__,
-                Guild.__table__,
-                Party.__table__,
-                Gate.__table__,
-                MagicBeast.__table__,
-                InventoryItem.__table__,
-                Item.__table__,
-                Mount.__table__,
-                Pet.__table__,
-                Skill.__table__,
-                Quest.__table__,
-                GuildQuest.__table__,
-                Achievement.__table__,
-                Transaction.__table__
-            ]
-            
-            # Create remaining tables
-            for table in tables:
-                table.create(bind=db.engine, checkfirst=False)
-            
-            # Add foreign key constraints
-            from sqlalchemy import DDL
-            db.engine.execute(DDL(
-                "ALTER TABLE wallets ADD CONSTRAINT fk_wallets_users "
-                "FOREIGN KEY (user_id) REFERENCES users (id)"
-            ))
-        else:
-            raise Exception("Failed to create users table")
+        # Create tables without foreign key constraints
+        for table in tables:
+            table.create(bind=db.engine, checkfirst=False)
+        
+        # Add foreign key constraints after all tables exist
+        from sqlalchemy import DDL
+        db.engine.execute(DDL(
+            "ALTER TABLE wallets ADD CONSTRAINT fk_wallets_users "
+            "FOREIGN KEY (user_id) REFERENCES users (id)"
+        ))
         
         print("[INFO] Database initialized successfully")
 
