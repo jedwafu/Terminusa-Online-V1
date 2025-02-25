@@ -20,7 +20,8 @@ from .gate import Gate
 from .guild import Guild, GuildMember, GuildQuest
 from .mount_pet import Mount, Pet
 from .transaction import Transaction
-from .currency import Currency
+from .currency import Currency, Wallet
+
 from .social import Friend, BlockedUser
 from .progression import PlayerProgress, ClassProgress, JobProgress
 
