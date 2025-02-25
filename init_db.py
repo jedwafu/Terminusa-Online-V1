@@ -28,25 +28,36 @@ def initialize_database():
             Transaction
         )
         
-        # Create tables without foreign keys first
-        User.__table__.create(db.engine)
+        # Create all tables without foreign keys first
+        tables = [
+            User.__table__,
+            Wallet.__table__,
+            Announcement.__table__,
+            Guild.__table__,
+            Party.__table__,
+            Gate.__table__,
+            MagicBeast.__table__,
+            InventoryItem.__table__,
+            Item.__table__,
+            Mount.__table__,
+            Pet.__table__,
+            Skill.__table__,
+            Quest.__table__,
+            GuildQuest.__table__,
+            Achievement.__table__,
+            Transaction.__table__
+        ]
         
-        # Create tables with foreign keys
-        Wallet.__table__.create(db.engine)
-        Announcement.__table__.create(db.engine)
-        Guild.__table__.create(db.engine)
-        Party.__table__.create(db.engine)
-        Gate.__table__.create(db.engine)
-        MagicBeast.__table__.create(db.engine)
-        InventoryItem.__table__.create(db.engine)
-        Item.__table__.create(db.engine)
-        Mount.__table__.create(db.engine)
-        Pet.__table__.create(db.engine)
-        Skill.__table__.create(db.engine)
-        Quest.__table__.create(db.engine)
-        GuildQuest.__table__.create(db.engine)
-        Achievement.__table__.create(db.engine)
-        Transaction.__table__.create(db.engine)
+        # Create tables without foreign key constraints
+        for table in tables:
+            table.create(bind=db.engine, checkfirst=False)
+        
+        # Add foreign key constraints
+        from sqlalchemy import DDL
+        db.engine.execute(DDL(
+            "ALTER TABLE wallets ADD CONSTRAINT fk_wallets_users "
+            "FOREIGN KEY (user_id) REFERENCES users (id)"
+        ))
         
         print("[INFO] Database initialized successfully")
 
