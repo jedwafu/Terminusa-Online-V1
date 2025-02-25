@@ -68,6 +68,33 @@ class Element(Enum):
     EARTH = "earth"
     SHADOW = "shadow"
 
+class ElementRelations:
+    WEAKNESSES = {
+        Element.HOLY: Element.SHADOW,
+        Element.SHADOW: Element.HOLY,
+        Element.FIRE: Element.WATER,
+        Element.WATER: Element.LIGHTNING,
+        Element.LIGHTNING: Element.EARTH,
+        Element.EARTH: Element.FIRE
+    }
+    
+    STRENGTHS = {
+        Element.HOLY: Element.SHADOW,
+        Element.SHADOW: Element.HOLY,
+        Element.FIRE: Element.EARTH,
+        Element.WATER: Element.FIRE,
+        Element.LIGHTNING: Element.WATER,
+        Element.EARTH: Element.LIGHTNING
+    }
+
+    @classmethod
+    def get_damage_multiplier(cls, attacker_element, defender_element):
+        if cls.WEAKNESSES.get(attacker_element) == defender_element:
+            return 1.5  # Strong against
+        elif cls.STRENGTHS.get(attacker_element) == defender_element:
+            return 0.5  # Weak against
+        return 1.0  # Neutral
+
 class User(db.Model):
     __tablename__ = 'users'
     
