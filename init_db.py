@@ -79,13 +79,23 @@ def initialize_database():
             logger.info(f"Creating table: {table.name}")
             table.create(bind=db.engine, checkfirst=False)
             
+        # Verify users table exists before adding foreign key
+        if not inspect(db.engine).has_table('users'):
+            logger.error("Users table not found")
+            raise Exception("Users table not found")
+            
         # Add foreign key constraints after all tables exist
         logger.info("Adding foreign key constraints")
         from sqlalchemy import DDL
-        db.engine.execute(DDL(
-            "ALTER TABLE wallets ADD CONSTRAINT fk_wallets_users "
-            "FOREIGN KEY (user_id) REFERENCES users(id)"
-        ))
+        try:
+            db.engine.execute(DDL(
+                "ALTER TABLE wallets ADD CONSTRAINT fk_wallets_users "
+                "FOREIGN KEY (user_id) REFERENCES users(id)"
+            ))
+            logger.info("Foreign key constraint added successfully")
+        except Exception as e:
+            logger.error(f"Failed to add foreign key constraint: {str(e)}")
+            raise Exception(f"Failed to add foreign key constraint: {str(e)}")
         
         # Verify all tables were created
         inspector = inspect(db.engine)
