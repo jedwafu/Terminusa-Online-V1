@@ -1,7 +1,7 @@
 """
 Database initialization script for Terminusa Online
 """
-from app import create_app
+from web_app import create_app
 from models import db, init_models
 
 def init_database():
