@@ -1,6 +1,16 @@
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import create_engine
+from sqlalchemy.orm import scoped_session, sessionmaker
 
 db = SQLAlchemy()
+
+def init_db(app):
+    """Initialize the database connection"""
+    engine = create_engine(app.config['SQLALCHEMY_DATABASE_URI'])
+    db.session = scoped_session(sessionmaker(autocommit=False,
+                                            autoflush=False,
+                                            bind=engine))
+    db.Model.metadata.create_all(bind=engine)
 
 def init_db(app):
     """Initialize the database"""

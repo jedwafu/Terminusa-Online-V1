@@ -55,10 +55,16 @@ class User(db.Model):
     guild_id = db.Column(db.Integer, db.ForeignKey('guilds.id', deferrable=True, initially='DEFERRED'), nullable=True)
     guild_rank = db.Column(db.String(20), nullable=True)
     
-    # Wallet
+    # Wallet System
     solana_balance = db.Column(db.Numeric(precision=18, scale=9), default=0)
     exons_balance = db.Column(db.Numeric(precision=18, scale=9), default=0)
     crystals = db.Column(db.BigInteger, default=0)
+    total_deposited = db.Column(db.Numeric(precision=18, scale=9), default=0)
+    total_withdrawn = db.Column(db.Numeric(precision=18, scale=9), default=0)
+    referral_count = db.Column(db.Integer, default=0)
+    referral_code = db.Column(db.String(12), unique=True)
+    loyalty_points = db.Column(db.Integer, default=0)
+
     
     # Timestamps
     registered_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -74,6 +80,12 @@ class User(db.Model):
                                           backref='recipient')
     achievements = db.relationship('Achievement', backref='user')
     inventory = db.relationship('Inventory', backref='user', uselist=False)
+    guild_membership = db.relationship('GuildMember', backref='user')
+    party_membership = db.relationship('PartyMember', backref='user')
+    mounts = db.relationship('Mount', backref='owner')
+    pets = db.relationship('Pet', backref='owner')
+    quests = db.relationship('QuestProgress', backref='user')
+
 
     def __init__(self, username: str, email: str, password_hash: bytes):
         self.username = username
@@ -194,11 +206,17 @@ class User(db.Model):
             'wallet': {
                 'solana': str(self.solana_balance),
                 'exons': str(self.exons_balance),
-                'crystals': self.crystals
+                'crystals': self.crystals,
+                'total_deposited': str(self.total_deposited),
+                'total_withdrawn': str(self.total_withdrawn),
+                'referral_count': self.referral_count,
+                'loyalty_points': self.loyalty_points
             },
             'registered_at': self.registered_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
+            'updated_at': self.updated_at.isoformat(),
+            'referral_code': self.referral_code
         }
+
 
     def to_public_dict(self) -> Dict:
         """Convert user data to public dictionary (less sensitive info)"""
