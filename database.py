@@ -9,7 +9,7 @@ def init_db(app):
         # Import all models to ensure they're registered
         from models.user import User
         from models.player import PlayerCharacter
-        from models.currency import Wallet
+        from models import Wallet
         from models.announcement import Announcement
         
         # Create all tables
