@@ -6,12 +6,9 @@ def initialize_database():
     app = create_app()
     with app.app_context():
         # Create tables in specific order to handle dependencies
-        db.metadata.create_all(bind=db.engine, tables=[
-            db.metadata.tables['users'],
-            db.metadata.tables['player_characters'],
-            db.metadata.tables['wallets'],
-            db.metadata.tables['announcements']
-        ])
+        # Create all tables in correct order
+        from models import User, PlayerCharacter, Wallet, Announcement
+        db.create_all()
         print("[INFO] Database initialized successfully")
 
 if __name__ == '__main__':
