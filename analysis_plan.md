@@ -1,46 +1,88 @@
-# Analysis Plan for Terminusa Online
+# Terminusa Online Implementation Plan
 
-## Information Gathered
-1. **Application Structure**:
-   - The project is structured using Flask, with a clear separation of concerns through models, routes, and templates.
-   - Environment variables are used for configuration, ensuring sensitive information is not hard-coded.
+## Database Models Required
 
-2. **Database Models**:
-   - Multiple models represent different entities (e.g., User, PlayerCharacter, Item, Announcement) with relationships defined for data integrity.
-   - Enums are used to categorize various types of data, enhancing code readability.
+### Currency System
+- Wallet (Solana, Exons, Crystals)
+- Transaction History
+- Token Swapper System
+- Tax System (13% + 2% for guild)
 
-3. **Routing and Functionality**:
-   - Routes are defined to handle user interactions, including authentication and content management.
-   - JWT is used for secure access control, ensuring only authorized users can perform certain actions.
+### Character System
+- Player Profile
+- Hunter Class (F to S)
+- Job System (5 basic classes)
+- Stats and Levels
+- Skills and Abilities
+- Equipment and Durability
+- Health Status System
 
-4. **Error Handling and Logging**:
-   - Comprehensive error handling is implemented across routes, providing meaningful feedback to users.
-   - Logging is utilized to track application behavior and errors, aiding in debugging.
+### Game Systems
+- Gate System (Solo/Party)
+- Quest System (AI-powered)
+- Combat System
+- Loot System
+- Achievement System
+- Guild System
+- Party System
+- Marketplace System
+- Trading System
+- Gacha System (Mounts/Pets)
+- Gambling System
+- Referral System
+- Loyalty System
 
-## Plan
-1. **Code Review**:
-   - Review all Python files for coding standards, best practices, and potential improvements.
-   - Identify any areas for refactoring or optimization.
+### Shop System
+- Hunter Shop
+- Remote Shop
+- Item Categories
+- Currency Requirements
 
-2. **Testing**:
-   - Ensure that all routes and models are covered by unit tests.
-   - Review existing tests in the `tests` directory and add tests for any uncovered functionality.
+## Implementation Priority
 
-3. **Documentation**:
-   - Update or create documentation for the project, including setup instructions, API endpoints, and usage examples.
+1. Core Systems
+   - User Authentication
+   - Character Creation
+   - Basic Currency System
+   - Basic Inventory System
 
-4. **Deployment**:
-   - Review deployment scripts and configurations (e.g., `nginx`, `.env`) to ensure they are set up correctly for production.
+2. Game Mechanics
+   - Combat System
+   - Gate System
+   - Job System
+   - Skill System
 
-5. **Future Enhancements**:
-   - Identify potential features or improvements based on the current functionality and user feedback.
+3. Economic Systems
+   - Marketplace
+   - Trading
+   - Token Swapper
+   - Tax System
 
-## Dependent Files to be Edited
-- `README.md` for project documentation.
-- `requirements.txt` for dependency management.
-- Any relevant route or model files that require updates based on the review.
+4. Social Systems
+   - Guild System
+   - Party System
+   - Referral System
+   - Leaderboards
 
-## Follow-up Steps
-- Execute the code review and testing phases.
-- Document findings and proposed changes.
-- Implement changes and enhancements as needed.
+5. Additional Features
+   - Gacha System
+   - Achievement System
+   - Loyalty System
+   - Gambling System
+
+## AI Integration Points
+- Quest Generation
+- Gate Difficulty
+- Gacha Rates
+- Gambling System
+- Achievement System
+- Player Behavior Analysis
+- Class Upgrade System
+
+## Website Structure
+- Home
+- Whitepaper
+- Leaderboards
+- Marketplace
+- Buy Exons
+- Login/Register
