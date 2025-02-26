@@ -1,13 +1,10 @@
-from models import db
-from models.user import User
-from models.guild import Guild
-from models.party import Party
-from models.mount_pet import Mount, Pet
-from models.quest import Quest, QuestProgress
-from models.combat import CombatResult, CombatLog
-from models.marketplace import MarketplaceListing, TradeOffer
-from models.ai_agent import AIAgent, PlayerBehavior, AIRecommendation
-from models.economy import GamblingRecord, ReferralRecord, LoyaltyRecord
+from models import (
+    db, User, Guild, Party, Mount, Pet, Quest, GuildQuest, Achievement,
+    MagicBeast, InventoryItem, Item, Skill, Wallet, Transaction, 
+    SwapTransaction, MarketplaceListing, GachaRoll, GamblingSession,
+    Referral, LoyaltyReward, EquipmentUpgrade, TaxConfig, AIAgentData
+)
+
 
 def initialize_database():
     # Clean up existing metadata
@@ -17,24 +14,20 @@ def initialize_database():
     db.drop_all()
     
     # Create tables in explicit dependency order
-    from models.user import User
-    from models.currency import Wallet
-    from models.player import PlayerCharacter
-    from models.announcement import Announcement
+    tables = [
+        User, Announcement, Guild, Party, Gate, MagicBeast,
+        InventoryItem, Item, Mount, Pet, Skill, Quest, GuildQuest,
+        Achievement, Wallet, Transaction, SwapTransaction,
+        MarketplaceListing, GachaRoll, GamblingSession,
+        Referral, LoyaltyReward, EquipmentUpgrade, TaxConfig,
+        AIAgentData
+    ]
     
-    # Create users table first and commit
-    User.__table__.create(bind=db.engine, checkfirst=True)
-    db.session.commit()
-    
-    # Create remaining tables
-    Wallet.__table__.create(bind=db.engine, checkfirst=True)
-    PlayerCharacter.__table__.create(bind=db.engine, checkfirst=True)
-    Announcement.__table__.create(bind=db.engine, checkfirst=True)
+    # Create tables in order
+    for table in tables:
+        table.__table__.create(bind=db.engine, checkfirst=True)
+        db.session.commit()
 
-
-    
-    # Create remaining tables
-    db.create_all()
 
 
 
@@ -43,17 +36,30 @@ def initialize_database():
     admin = User(
         username='adminbb',
         email='admin@terminusa.online',
-        password_hash=b'admin123'  # Should be hashed properly
+        password_hash=b'admin123',  # Should be hashed properly
+        role='admin',
+        web3_wallet='FNEdD3PWMLwbNKxtaHy3W2NVfRJ7wqDNx4M9je8Xc6Mw'
     )
     db.session.add(admin)
     
-    # Create initial AI agents
-    agents = [
-        AIAgent(agent_type='quest', parameters={'learning_rate': 0.01}),
-        AIAgent(agent_type='gacha', parameters={'learning_rate': 0.02}),
-        AIAgent(agent_type='gambling', parameters={'learning_rate': 0.03}),
+    # Create initial tax configuration
+    tax_configs = [
+        TaxConfig(
+            currency_type='crystals',
+            base_tax=0.13,
+            guild_tax=0.02,
+            admin_wallet='FNEdD3PWMLwbNKxtaHy3W2NVfRJ7wqDNx4M9je8Xc6Mw',
+            admin_account='adminbb'
+        ),
+        TaxConfig(
+            currency_type='exons',
+            base_tax=0.13,
+            guild_tax=0.02,
+            admin_wallet='FNEdD3PWMLwbNKxtaHy3W2NVfRJ7wqDNx4M9je8Xc6Mw',
+            admin_account='adminbb'
+        )
     ]
-    db.session.add_all(agents)
+    db.session.add_all(tax_configs)
     
     db.session.commit()
     print("Database initialized successfully!")

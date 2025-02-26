@@ -356,9 +356,12 @@ class Wallet(db.Model):
     is_blockchain = db.Column(db.Boolean, default=True)
     max_supply = db.Column(db.BigInteger)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    swap_fee = db.Column(db.Float, default=0.02)  # 2% swap fee
+    swap_history = db.Column(db.JSON)  # Stores swap transactions
     
     # Relationships
     user = db.relationship('User', backref='wallet', uselist=False)
+    swap_transactions = db.relationship('SwapTransaction', backref='wallet', lazy=True)
 
 class Transaction(db.Model):
     __tablename__ = 'transactions'
@@ -372,6 +375,112 @@ class Transaction(db.Model):
     transaction_type = db.Column(db.String(50))  # trade, shop, gate_reward, etc.
     transaction_hash = db.Column(db.String(100))  # for blockchain transactions
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_swap = db.Column(db.Boolean, default=False)  # Indicates if this is a swap transaction
+    swap_details = db.Column(db.JSON)  # Stores swap rate and currencies involved
+
+class SwapTransaction(db.Model):
+    __tablename__ = 'swap_transactions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    wallet_id = db.Column(db.Integer, db.ForeignKey('wallets.id'))
+    from_currency = db.Column(db.String(20))
+    to_currency = db.Column(db.String(20))
+    amount = db.Column(db.Float)
+    rate = db.Column(db.Float)
+    fee = db.Column(db.Float)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), default='pending')
+
+class MarketplaceListing(db.Model):
+    __tablename__ = 'marketplace_listings'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    seller_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    item_id = db.Column(db.Integer, db.ForeignKey('items.id'))
+    price_crystals = db.Column(db.Integer)
+    price_exons = db.Column(db.Float)
+    quantity = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Relationships
+    seller = db.relationship('User', backref='listings', lazy=True)
+    item = db.relationship('Item', backref='listings', lazy=True)
+
+class GachaRoll(db.Model):
+    __tablename__ = 'gacha_rolls'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    roll_type = db.Column(db.String(20))  # mount or pet
+    result_rarity = db.Column(db.Enum(MountPetRarity))
+    result_id = db.Column(db.Integer)  # mount_id or pet_id
+    cost_exons = db.Column(db.Float)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+class GamblingSession(db.Model):
+    __tablename__ = 'gambling_sessions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    game_type = db.Column(db.String(20))  # flip_coin, etc.
+    bet_amount = db.Column(db.Integer)  # in crystals
+    result = db.Column(db.Boolean)  # win/lose
+    payout = db.Column(db.Integer)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+class Referral(db.Model):
+    __tablename__ = 'referrals'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    referrer_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    referred_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    referral_date = db.Column(db.DateTime, default=datetime.utcnow)
+    reward_crystals = db.Column(db.Integer)
+    is_reward_claimed = db.Column(db.Boolean, default=False)
+
+class LoyaltyReward(db.Model):
+    __tablename__ = 'loyalty_rewards'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    month = db.Column(db.Integer)
+    year = db.Column(db.Integer)
+    exons_held = db.Column(db.Float)
+    crystals_held = db.Column(db.Integer)
+    reward_amount = db.Column(db.Integer)
+    is_claimed = db.Column(db.Boolean, default=False)
+
+class EquipmentUpgrade(db.Model):
+    __tablename__ = 'equipment_upgrades'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    item_id = db.Column(db.Integer, db.ForeignKey('items.id'))
+    level_before = db.Column(db.Integer)
+    level_after = db.Column(db.Integer)
+    cost_crystals = db.Column(db.Integer)
+    success = db.Column(db.Boolean)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+class TaxConfig(db.Model):
+    __tablename__ = 'tax_configs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    currency_type = db.Column(db.String(20))  # crystals, exons
+    base_tax = db.Column(db.Float)  # 13%
+    guild_tax = db.Column(db.Float)  # 2%
+    admin_wallet = db.Column(db.String(64))
+    admin_account = db.Column(db.String(50))
+
+class AIAgentData(db.Model):
+    __tablename__ = 'ai_agent_data'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    activity_data = db.Column(db.JSON)  # Stores player activity patterns
+    preferences = db.Column(db.JSON)  # Stores player preferences
+    last_updated = db.Column(db.DateTime, default=datetime.utcnow)
 
 def init_db(app):
     """Initialize database with Flask app context"""
