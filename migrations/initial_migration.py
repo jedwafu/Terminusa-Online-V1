@@ -5,12 +5,6 @@ from models import (
     Referral, LoyaltyReward, EquipmentUpgrade, TaxConfig, AIAgentData
 )
 
-# Ensure User table is created before Wallet
-User.__table__.create(bind=db.engine, checkfirst=True)
-Wallet.__table__.create(bind=db.engine, checkfirst=True)
-
-
-
 def initialize_database():
     # Clean up existing metadata
     db.metadata.clear()
@@ -19,7 +13,10 @@ def initialize_database():
     db.drop_all()
     
     # Create tables in explicit dependency order
+    User.__table__.create(bind=db.engine, checkfirst=True)
+    Wallet.__table__.create(bind=db.engine, checkfirst=True)
     db.create_all()
+
 
 
 
