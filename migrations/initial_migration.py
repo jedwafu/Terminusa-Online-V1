@@ -5,6 +5,11 @@ from models import (
     Referral, LoyaltyReward, EquipmentUpgrade, TaxConfig, AIAgentData
 )
 
+# Ensure User table is created before Wallet
+User.__table__.create(bind=db.engine, checkfirst=True)
+Wallet.__table__.create(bind=db.engine, checkfirst=True)
+
+
 
 def initialize_database():
     # Clean up existing metadata
@@ -14,19 +19,8 @@ def initialize_database():
     db.drop_all()
     
     # Create tables in explicit dependency order
-    tables = [
-        User, Announcement, Guild, Party, Gate, MagicBeast,
-        InventoryItem, Item, Mount, Pet, Skill, Quest, GuildQuest,
-        Achievement, Wallet, Transaction, SwapTransaction,
-        MarketplaceListing, GachaRoll, GamblingSession,
-        Referral, LoyaltyReward, EquipmentUpgrade, TaxConfig,
-        AIAgentData
-    ]
-    
-    # Create tables in order
-    for table in tables:
-        table.__table__.create(bind=db.engine, checkfirst=True)
-        db.session.commit()
+    db.create_all()
+
 
 
 
