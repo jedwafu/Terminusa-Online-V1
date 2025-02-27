@@ -263,39 +263,20 @@ setup_database() {
     
     # Initialize database
     info_log "Initializing database..."
-    python init_db.py || {
+    python migrations/initial_migration.py || {
         error_log "Database initialization failed!"
         return 1
     }
     
     # Run migrations
-    info_log "Running database migrations..."
-    if [ ! -d "migrations" ]; then
-        flask db init || {
-            error_log "Migration initialization failed!"
-            return 1
-        }
-    fi
-    
-    # Stamp the database with the current head
-    flask db stamp head || {
-        error_log "Migration stamp failed!"
-        return 1
-    }
-    
-    # Create new migration
-    flask db migrate -m "Database update $(date +%Y%m%d_%H%M%S)" || {
-        error_log "Migration creation failed!"
-        return 1
-    }
-    
-    # Apply migrations
+    info_log "Running database migrations"
     flask db upgrade || {
         error_log "Migration upgrade failed!"
         return 1
     }
     
     success_log "Database setup completed"
+
     return 0
 }
 
