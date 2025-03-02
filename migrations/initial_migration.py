@@ -14,9 +14,8 @@ def initialize_database():
     
     # Create tables in explicit dependency order
     User.__table__.create(bind=db.engine, checkfirst=True)
-    db.create_all()  # Create all tables after User
     Wallet.__table__.create(bind=db.engine, checkfirst=True)
-
+    db.create_all()
 
     # Create initial admin user
     admin = User(
