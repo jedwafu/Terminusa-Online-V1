@@ -21,6 +21,8 @@ from .guild import Guild, GuildMember, GuildQuest
 from .mount_pet import Mount, Pet
 from .transaction import Transaction
 from .currency import Currency
+from .party import Party  # Added import for Party model
+
 
 class Wallet(BaseModel):
     """Wallet model for storing player currency"""

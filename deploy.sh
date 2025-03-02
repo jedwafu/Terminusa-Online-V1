@@ -278,6 +278,7 @@ setup_database() {
     success_log "Database setup completed"
 
 
+
     return 0
 }
 
