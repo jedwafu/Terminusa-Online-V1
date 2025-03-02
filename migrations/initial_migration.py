@@ -1,4 +1,5 @@
-from ..models import (
+from models import (
+
 
     db, User, Guild, Party, Mount, Pet, Quest, GuildQuest, Achievement,
     MagicBeast, InventoryItem, Item, Skill, Wallet, Transaction, 
