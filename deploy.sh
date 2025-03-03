@@ -443,12 +443,23 @@ show_menu() {
                     return 1
                 fi
 
-                # Check for npm and install if needed
-                info_log "Checking for npm..."
-                if ! command -v npm &> /dev/null; then
+                # Install system dependencies
+                info_log "Installing system dependencies..."
+                if ! command -v npm &> /dev/null || ! command -v node &> /dev/null; then
                     info_log "Installing Node.js and npm..."
-                    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-                    sudo apt-get install -y nodejs
+                    if [ -f /etc/debian_version ]; then
+                        # Debian/Ubuntu
+                        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+                        sudo apt-get install -y nodejs build-essential
+                    elif [ -f /etc/redhat-release ]; then
+                        # RHEL/CentOS
+                        curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo -E bash -
+                        sudo yum install -y nodejs gcc-c++ make
+                    else
+                        error_log "Unsupported distribution"
+                        read -p "Press Enter to continue..."
+                        return 1
+                    fi
                     
                     if ! command -v npm &> /dev/null; then
                         error_log "Failed to install npm"
@@ -457,16 +468,20 @@ show_menu() {
                     fi
                     success_log "Node.js and npm installed successfully"
                 else
-                    success_log "npm is already installed"
+                    success_log "Node.js and npm are already installed"
                 fi
 
-                # Set up client directory permissions
-                info_log "Setting up client directory..."
+                # Set up directories and permissions
+                info_log "Setting up directories..."
+                sudo mkdir -p /var/www/terminusa/{static,templates,logs}
                 sudo mkdir -p client/node_modules
+                sudo chown -R terminusa:terminusa /var/www/terminusa
                 sudo chown -R terminusa:terminusa client
+                sudo chmod -R 755 /var/www/terminusa
                 sudo chmod -R 755 client
 
-                # Run static files setup with proper permissions
+                # Make setup script executable and run it
+                info_log "Running static files setup..."
                 chmod +x setup_static_files.sh
                 if sudo -u terminusa bash setup_static_files.sh; then
                     success_log "Static files setup completed"
