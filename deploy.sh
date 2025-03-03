@@ -499,25 +499,32 @@ show_menu() {
                 info_log "Running static files setup..."
                 chmod +x setup_static_files.sh
 
-                # Ensure script directory is accessible
-                info_log "Preparing setup environment..."
-                SCRIPT_DIR=$(pwd)
-                sudo chown -R terminusa:terminusa "$SCRIPT_DIR"
-                sudo chmod -R 755 "$SCRIPT_DIR"
+                # Install Node.js and npm
+                info_log "Installing Node.js and npm..."
+                if ! command -v node > /dev/null || ! command -v npm > /dev/null; then
+                    sudo apt-get update
+                    sudo apt-get install -y nodejs npm build-essential
+                fi
 
-                # Create and set permissions for npm directories
-                sudo -u terminusa mkdir -p /home/terminusa/.npm/{cache,global}
-                sudo chown -R terminusa:terminusa /home/terminusa/.npm
-                sudo chmod -R 755 /home/terminusa/.npm
+                # Set up directories
+                info_log "Setting up directories..."
+                INSTALL_DIR="/var/www/terminusa"
+                sudo mkdir -p "$INSTALL_DIR"
+                sudo mkdir -p /home/terminusa
 
-                # Run setup script with proper environment
+                # Copy files
+                info_log "Copying files..."
+                sudo cp -r . "$INSTALL_DIR/"
+
+                # Set permissions
+                info_log "Setting permissions..."
+                sudo chown -R terminusa:terminusa "$INSTALL_DIR"
+                sudo chown -R terminusa:terminusa /home/terminusa
+                sudo chmod +x "$INSTALL_DIR/setup_static_files.sh"
+
+                # Run setup script
                 info_log "Running setup script..."
-                if sudo -u terminusa \
-                    HOME=/home/terminusa \
-                    NPM_CONFIG_PREFIX=/home/terminusa/.npm/global \
-                    NPM_CONFIG_CACHE=/home/terminusa/.npm/cache \
-                    PATH="/usr/local/bin:/usr/bin:/bin:$PATH" \
-                    bash -c "cd '$SCRIPT_DIR' && ./setup_static_files.sh"; then
+                if sudo -u terminusa bash -c "cd $INSTALL_DIR && HOME=/home/terminusa ./setup_static_files.sh"; then
                     success_log "Static files setup completed"
                 else
                     error_log "Static files setup failed"
