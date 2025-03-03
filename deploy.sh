@@ -471,19 +471,53 @@ show_menu() {
                     success_log "Node.js and npm are already installed"
                 fi
 
-                # Set up directories and permissions
+                # Set up terminusa user with proper home directory
+                info_log "Setting up terminusa user..."
+                if ! id -u terminusa >/dev/null 2>&1; then
+                    sudo useradd -m -d /home/terminusa -s /bin/bash terminusa
+                fi
+
+                # Set up project directories
                 info_log "Setting up directories..."
                 sudo mkdir -p /var/www/terminusa/{static,templates,logs}
+                sudo mkdir -p /home/terminusa/.npm
                 sudo mkdir -p client/node_modules
-                sudo chown -R terminusa:terminusa /var/www/terminusa
-                sudo chown -R terminusa:terminusa client
-                sudo chmod -R 755 /var/www/terminusa
-                sudo chmod -R 755 client
+                sudo mkdir -p logs
 
-                # Make setup script executable and run it
+                # Set proper ownership and permissions
+                info_log "Setting permissions..."
+                sudo chown -R terminusa:terminusa /var/www/terminusa
+                sudo chown -R terminusa:terminusa /home/terminusa
+                sudo chown -R terminusa:terminusa client
+                sudo chown -R terminusa:terminusa logs
+                sudo chmod -R 755 /var/www/terminusa
+                sudo chmod -R 755 /home/terminusa
+                sudo chmod -R 755 client
+                sudo chmod -R 755 logs
+
+                # Make setup script executable
                 info_log "Running static files setup..."
                 chmod +x setup_static_files.sh
-                if sudo -u terminusa bash setup_static_files.sh; then
+
+                # Ensure script directory is accessible
+                info_log "Preparing setup environment..."
+                SCRIPT_DIR=$(pwd)
+                sudo chown -R terminusa:terminusa "$SCRIPT_DIR"
+                sudo chmod -R 755 "$SCRIPT_DIR"
+
+                # Create and set permissions for npm directories
+                sudo -u terminusa mkdir -p /home/terminusa/.npm/{cache,global}
+                sudo chown -R terminusa:terminusa /home/terminusa/.npm
+                sudo chmod -R 755 /home/terminusa/.npm
+
+                # Run setup script with proper environment
+                info_log "Running setup script..."
+                if sudo -u terminusa \
+                    HOME=/home/terminusa \
+                    NPM_CONFIG_PREFIX=/home/terminusa/.npm/global \
+                    NPM_CONFIG_CACHE=/home/terminusa/.npm/cache \
+                    PATH="/usr/local/bin:/usr/bin:/bin:$PATH" \
+                    bash -c "cd '$SCRIPT_DIR' && ./setup_static_files.sh"; then
                     success_log "Static files setup completed"
                 else
                     error_log "Static files setup failed"
