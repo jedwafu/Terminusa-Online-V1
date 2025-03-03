@@ -506,15 +506,22 @@ show_menu() {
                     sudo apt-get install -y nodejs npm build-essential
                 fi
 
-                # Set up directories
-                info_log "Setting up directories..."
+                # Create directories
+                info_log "Creating directories..."
                 INSTALL_DIR="/var/www/terminusa"
                 sudo mkdir -p "$INSTALL_DIR"
                 sudo mkdir -p /home/terminusa
 
+                # Create user if not exists
+                info_log "Creating user..."
+                if ! id -u terminusa &>/dev/null; then
+                    sudo useradd -m -d /home/terminusa -s /bin/bash terminusa
+                fi
+
                 # Copy files
                 info_log "Copying files..."
                 sudo cp -r . "$INSTALL_DIR/"
+                sudo rm -rf "$INSTALL_DIR/node_modules" || true
 
                 # Set permissions
                 info_log "Setting permissions..."
@@ -524,7 +531,13 @@ show_menu() {
 
                 # Run setup script
                 info_log "Running setup script..."
-                if sudo -u terminusa bash -c "cd $INSTALL_DIR && HOME=/home/terminusa ./setup_static_files.sh"; then
+                if sudo -u terminusa bash -c "
+                    cd '$INSTALL_DIR' || exit 1
+                    export HOME=/home/terminusa
+                    export npm_config_cache=/home/terminusa/.npm
+                    export npm_config_prefix=/home/terminusa/.npm
+                    ./setup_static_files.sh
+                " 2>&1; then
                     success_log "Static files setup completed"
                 else
                     error_log "Static files setup failed"
