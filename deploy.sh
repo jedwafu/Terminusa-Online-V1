@@ -443,6 +443,29 @@ show_menu() {
                     return 1
                 fi
 
+                # Check for npm and install if needed
+                info_log "Checking for npm..."
+                if ! command -v npm &> /dev/null; then
+                    info_log "Installing Node.js and npm..."
+                    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+                    sudo apt-get install -y nodejs
+                    
+                    if ! command -v npm &> /dev/null; then
+                        error_log "Failed to install npm"
+                        read -p "Press Enter to continue..."
+                        return 1
+                    fi
+                    success_log "Node.js and npm installed successfully"
+                else
+                    success_log "npm is already installed"
+                fi
+
+                # Set up client directory permissions
+                info_log "Setting up client directory..."
+                sudo mkdir -p client/node_modules
+                sudo chown -R terminusa:terminusa client
+                sudo chmod -R 755 client
+
                 # Run static files setup with proper permissions
                 chmod +x setup_static_files.sh
                 if sudo -u terminusa bash setup_static_files.sh; then
