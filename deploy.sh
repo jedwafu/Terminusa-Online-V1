@@ -407,7 +407,40 @@ show_menu() {
         
         case $choice in
             1)
-                setup_static_files && setup_database && setup_nginx
+                info_log "Initializing system..."
+                
+                # Run static files setup
+                if ./setup_static_files.sh; then
+                    success_log "Static files setup completed"
+                else
+                    error_log "Static files setup failed"
+                    read -p "Press Enter to continue..."
+                    return 1
+                fi
+                
+                # Setup database
+                info_log "Setting up database..."
+                source venv/bin/activate
+                if python init_db.py; then
+                    success_log "Database setup completed"
+                else
+                    error_log "Database setup failed"
+                    read -p "Press Enter to continue..."
+                    return 1
+                fi
+                
+                # Setup nginx
+                info_log "Setting up nginx..."
+                if [ -f /etc/nginx/sites-available/terminusa ]; then
+                    success_log "Nginx already configured"
+                else
+                    sudo cp nginx/terminusa.conf /etc/nginx/sites-available/terminusa
+                    sudo ln -sf /etc/nginx/sites-available/terminusa /etc/nginx/sites-enabled/
+                    sudo nginx -t && sudo systemctl restart nginx
+                    success_log "Nginx setup completed"
+                fi
+                
+                success_log "System initialization completed"
                 ;;
             2)
                 start_services
