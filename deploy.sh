@@ -409,8 +409,43 @@ show_menu() {
             1)
                 info_log "Initializing system..."
                 
-                # Run static files setup
-                if ./setup_static_files.sh; then
+                # Create terminusa user if it doesn't exist
+                if ! id -u terminusa >/dev/null 2>&1; then
+                    info_log "Creating terminusa user..."
+                    sudo useradd -r -s /bin/false terminusa
+                fi
+
+                # Create necessary directories with proper permissions
+                info_log "Creating directories..."
+                sudo mkdir -p /var/www/terminusa
+                sudo mkdir -p /var/log/terminusa
+                sudo mkdir -p static/css static/js static/fonts
+                sudo mkdir -p templates
+                
+                # Set proper ownership and permissions
+                sudo chown -R terminusa:terminusa /var/www/terminusa
+                sudo chown -R terminusa:terminusa /var/log/terminusa
+                sudo chown -R terminusa:terminusa static templates
+                sudo chmod -R 755 /var/www/terminusa
+                sudo chmod -R 755 /var/log/terminusa
+                sudo chmod -R 755 static templates
+
+                # Install systemd service
+                info_log "Installing systemd service..."
+                if [ -f services/terminusa-terminal.service ]; then
+                    sudo cp services/terminusa-terminal.service /etc/systemd/system/
+                    sudo systemctl daemon-reload
+                    sudo systemctl enable terminusa-terminal.service
+                    success_log "Systemd service installed"
+                else
+                    error_log "Service file not found in services directory"
+                    read -p "Press Enter to continue..."
+                    return 1
+                fi
+
+                # Run static files setup with proper permissions
+                chmod +x setup_static_files.sh
+                if sudo -u terminusa bash setup_static_files.sh; then
                     success_log "Static files setup completed"
                 else
                     error_log "Static files setup failed"

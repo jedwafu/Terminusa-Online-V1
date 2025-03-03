@@ -62,10 +62,44 @@ cp .env.example .env
 # Edit .env with your configuration
 ```
 
-5. Initialize the database:
+5. Initialize the system:
 ```bash
-flask db upgrade
-python init_db.py
+# This will:
+# - Create the terminusa user
+# - Set up directories and permissions
+# - Install systemd service
+# - Initialize the database
+# - Set up static files
+./deploy.sh
+# Select option 1 from the menu
+```
+
+### Service Management
+
+The terminal server runs as a systemd service for reliability. Service file is located in:
+```
+services/terminusa-terminal.service
+```
+
+Service commands:
+```bash
+# Start the service
+sudo systemctl start terminusa-terminal
+
+# Stop the service
+sudo systemctl stop terminusa-terminal
+
+# Check status
+sudo systemctl status terminusa-terminal
+
+# View logs
+sudo journalctl -u terminusa-terminal
+```
+
+Or use the deploy script menu:
+```bash
+./deploy.sh
+# Options 2-4 for service management
 ```
 
 ### Client Setup
