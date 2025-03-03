@@ -1,243 +1,302 @@
 """
-Game Configuration Settings
+Game configuration settings for Terminusa Online
 """
+from decimal import Decimal
 
-# Admin Account Settings
+# Currency Configuration
+MAX_CRYSTAL_SUPPLY = 100_000_000
+CRYSTAL_TAX_RATE = Decimal('0.13')  # 13%
+EXON_TAX_RATE = Decimal('0.13')     # 13%
+GUILD_CRYSTAL_TAX_RATE = Decimal('0.02')  # Additional 2%
+GUILD_EXON_TAX_RATE = Decimal('0.02')     # Additional 2%
+
+# Admin Configuration
 ADMIN_USERNAME = "adminbb"
 ADMIN_WALLET = "FNEdD3PWMLwbNKxtaHy3W2NVfRJ7wqDNx4M9je8Xc6Mw"
 
-# Currency Settings
-CRYSTAL_MAX_SUPPLY = 100_000_000
-CRYSTAL_INITIAL_AMOUNT = 100  # Given to new players
-EXON_MAX_SUPPLY = 100_000_000  # Define max supply for Exons
-EXON_INITIAL_AMOUNT = 100  # Given to new players
-SOLANA_MAX_SUPPLY = 100_000_000  # Define max supply for Solana
-SOLANA_INITIAL_AMOUNT = 100  # Given to new players
+# Inventory Configuration
+INVENTORY_INITIAL_SIZE = 20
+INVENTORY_EXPANSION_SIZE = 10
+INVENTORY_EXPANSION_COST = 100  # Crystals
 
-# Tax Settings
-CRYSTAL_TAX_RATE = 0.13  # 13%
-EXON_TAX_RATE = 0.13    # 13%
-SOLANA_TAX_RATE = 0.13  # 13% for Solana
-GUILD_CRYSTAL_TAX_RATE = 0.02  # Additional 2%
-GUILD_EXON_TAX_RATE = 0.02     # Additional 2%
+# License Costs
+RENAME_LICENSE_COST = 100        # Crystals
+JOB_RESET_COST = 100            # Exons
+JOB_LICENSE_COST = 200          # Exons
+HUNTER_CLASS_UPGRADE_COST = 500  # Exons
+REMOTE_SHOP_LICENSE_COST = 300   # Exons
 
-# Player Settings
-INITIAL_STATS = {
-    'strength': 10,
-    'agility': 10,
-    'intelligence': 10,
-    'vitality': 10,
-    'luck': 10,
-    'hp': 100,
-    'mp': 100
+# Resurrection Costs
+BASIC_RESURRECTION_COST = 100     # Exons
+HIGHER_RESURRECTION_COST = 300    # Exons
+
+# Job System Configuration
+JOB_CLASSES = {
+    'Fighter': {
+        'base_hp': 120,
+        'base_mp': 50,
+        'base_attack': 10,
+        'base_defense': 8,
+        'hp_per_level': 12,
+        'mp_per_level': 5
+    },
+    'Mage': {
+        'base_hp': 80,
+        'base_mp': 100,
+        'base_attack': 5,
+        'base_defense': 4,
+        'hp_per_level': 8,
+        'mp_per_level': 10
+    },
+    'Assassin': {
+        'base_hp': 90,
+        'base_mp': 60,
+        'base_attack': 12,
+        'base_defense': 5,
+        'hp_per_level': 9,
+        'mp_per_level': 6
+    },
+    'Archer': {
+        'base_hp': 85,
+        'base_mp': 70,
+        'base_attack': 11,
+        'base_defense': 4,
+        'hp_per_level': 8.5,
+        'mp_per_level': 7
+    },
+    'Healer': {
+        'base_hp': 95,
+        'base_mp': 90,
+        'base_attack': 4,
+        'base_defense': 6,
+        'hp_per_level': 9.5,
+        'mp_per_level': 9
+    }
 }
 
-INITIAL_INVENTORY_SLOTS = 20
-INVENTORY_SLOT_EXPANSION = 10  # Slots added when purchasing expansion
-
-# Level Settings
-LEVEL_EXP_MULTIPLIER = 1.5  # Each level requires 1.5x more exp than previous
-BASE_LEVEL_EXP = 1000      # Base exp required for level 2
-
-# Job System Settings
-BASIC_JOBS = ['Fighter', 'Mage', 'Assassin', 'Archer', 'Healer']
-JOB_RANK_LEVEL_REQUIREMENT = 50  # Levels needed for job rank up
-
-# Hunter Class Settings
+# Hunter Classes
 HUNTER_CLASSES = ['F', 'E', 'D', 'C', 'B', 'A', 'S']
-CLASS_UPGRADE_REQUIREMENTS = {
-    'E': {'level': 10, 'gates_cleared': 5},
-    'D': {'level': 20, 'gates_cleared': 15},
-    'C': {'level': 30, 'gates_cleared': 30},
-    'B': {'level': 40, 'gates_cleared': 50},
-    'A': {'level': 50, 'gates_cleared': 75},
-    'S': {'level': 60, 'gates_cleared': 100}
-}
 
-# Gate Settings
-GATE_RANKS = ['E', 'D', 'C', 'B', 'A', 'S', 'Monarch']
-GATE_CRYSTAL_REWARDS = {
-    'E': {'min': 10, 'max': 50},
-    'D': {'min': 40, 'max': 200},
-    'C': {'min': 150, 'max': 750},
-    'B': {'min': 500, 'max': 2500},
-    'A': {'min': 2000, 'max': 10000},
-    'S': {'min': 8000, 'max': 40000},
-    'Monarch': {'min': 30000, 'max': 150000}
-}
-
-# Party Settings
-PARTY_REWARD_MULTIPLIERS = {
-    1: 1.0,      # Solo
-    2: 0.6,      # 2 players
-    3: 0.4,      # 3 players
-    4: 0.3,      # 4 players
-    5: 0.25      # 5+ players
-}
-
-# Item Settings
-ITEM_RARITIES = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary', 'Immortal']
-ITEM_RARITY_DROP_RATES = {
-    'Common': 0.50,     # 50%
-    'Uncommon': 0.25,   # 25%
-    'Rare': 0.15,       # 15%
-    'Epic': 0.07,       # 7%
-    'Legendary': 0.025, # 2.5%
-    'Immortal': 0.005   # 0.5%
-}
-
-# Mount and Pet Settings
-MOUNT_PET_RARITIES = ['Basic', 'Intermediate', 'Excellent', 'Legendary', 'Immortal']
-MOUNT_PET_GACHA_RATES = {
-    'Basic': 0.45,        # 45%
-    'Intermediate': 0.30, # 30%
-    'Excellent': 0.15,    # 15%
-    'Legendary': 0.08,    # 8%
-    'Immortal': 0.02      # 2%
-}
-
-# Shop Items
-SHOP_ITEMS = {
-    'inventory_expansion': {
-        'name': '10 Slot Inventory Expansion',
-        'price_crystals': 1000,
-        'description': 'Increases inventory capacity by 10 slots'
+# Element System
+ELEMENTS = {
+    'neutral': {
+        'strengths': [],
+        'weaknesses': []
     },
-    'rename_license': {
-        'name': 'Rename License',
-        'price_crystals': 500,
-        'description': 'Allows you to change your character name'
+    'holy': {
+        'strengths': ['shadow'],
+        'weaknesses': []
     },
-    'job_reset': {
-        'name': 'Job Reset License',
-        'price_exons': 10,
-        'description': 'Reset your job class and return to level 1'
+    'fire': {
+        'strengths': ['earth'],
+        'weaknesses': ['water']
     },
-    'job_license': {
-        'name': 'Job Change License',
-        'price_exons': 20,
-        'description': 'Required for job change quests'
+    'water': {
+        'strengths': ['fire'],
+        'weaknesses': ['lightning']
     },
-    'hunter_upgrade_license': {
-        'name': 'Hunter Class Upgrade License',
-        'price_exons': 50,
-        'description': 'Required for hunter class upgrade'
+    'lightning': {
+        'strengths': ['water'],
+        'weaknesses': ['earth']
     },
-    'remote_shop': {
-        'name': 'Remote Shop License',
-        'price_exons': 30,
-        'description': 'Access shop anywhere, including inside gates'
+    'earth': {
+        'strengths': ['lightning'],
+        'weaknesses': ['fire']
     },
-    'basic_resurrection': {
-        'name': 'Basic Resurrection Potion',
-        'price_exons': 5,
-        'description': 'Revive with 50% HP'
-    },
-    'advanced_resurrection': {
-        'name': 'Advanced Resurrection Potion',
-        'price_exons': 15,
-        'description': 'Revive with 100% HP, works on decapitated status'
+    'shadow': {
+        'strengths': [],
+        'weaknesses': ['holy']
     }
 }
 
-# Potion Settings
-POTIONS = {
-    'health_potion': {
-        'name': 'Health Potion',
-        'heal': 50,
-        'price_crystals': 100
+# Element Damage Modifiers
+ELEMENT_DAMAGE_BONUS = Decimal('0.5')    # 50% more damage
+ELEMENT_DAMAGE_PENALTY = Decimal('0.25')  # 25% less damage
+
+# Status Effects
+STATUS_EFFECTS = {
+    'burn': {
+        'duration': 5,  # turns
+        'damage_per_turn': 5,
+        'cure': 'Chill Antidote'
     },
-    'mana_potion': {
-        'name': 'Mana Potion',
-        'restore': 50,
-        'price_crystals': 100
+    'poisoned': {
+        'duration': 8,
+        'damage_per_turn': 3,
+        'cure': 'Cleansing Antidote'
     },
-    'high_health_potion': {
-        'name': 'High Health Potion',
-        'heal': 200,
-        'price_crystals': 300
+    'frozen': {
+        'duration': 3,
+        'damage_per_turn': 0,
+        'movement_penalty': True,
+        'cure': 'Flame Antidote'
     },
-    'high_mana_potion': {
-        'name': 'High Mana Potion',
-        'restore': 200,
-        'price_crystals': 300
+    'feared': {
+        'duration': 4,
+        'accuracy_penalty': 0.5,  # 50% accuracy reduction
+        'cure': 'Shilajit Antidote'
+    },
+    'confused': {
+        'duration': 3,
+        'friendly_fire_chance': 0.3,  # 30% chance to hit allies
+        'cure': 'Shilajit Antidote'
+    },
+    'dismembered': {
+        'duration': -1,  # permanent until cured
+        'damage_penalty': 0.5,  # 50% damage reduction
+        'cure': 'Regenerate Skill'
+    },
+    'decapitated': {
+        'duration': -1,  # permanent until cured
+        'instant_death': True,
+        'cure': 'Higher Resurrection Potion'
+    },
+    'shadow': {
+        'duration': -1,  # permanent until cured
+        'no_actions': True,
+        'cure': 'Higher Resurrection Potion'
     }
 }
 
-# Antidote Settings
-ANTIDOTES = {
-    'chill_antidote': {
-        'name': 'Chill Antidote',
-        'cures': ['Burned'],
-        'price_crystals': 150
+# Gate System
+GATE_GRADES = {
+    'F': {
+        'min_level': 1,
+        'max_level': 10,
+        'crystal_reward_range': (10, 50),
+        'equipment_drop_rate': 0.1  # 10%
     },
-    'cleansing_antidote': {
-        'name': 'Cleansing Antidote',
-        'cures': ['Poisoned'],
-        'price_crystals': 150
+    'E': {
+        'min_level': 10,
+        'max_level': 25,
+        'crystal_reward_range': (40, 100),
+        'equipment_drop_rate': 0.15
     },
-    'flame_antidote': {
-        'name': 'Flame Antidote',
-        'cures': ['Frozen'],
-        'price_crystals': 150
+    'D': {
+        'min_level': 25,
+        'max_level': 50,
+        'crystal_reward_range': (90, 200),
+        'equipment_drop_rate': 0.2
     },
-    'shilajit_antidote': {
-        'name': 'Shilajit Antidote',
-        'cures': ['Feared', 'Confused'],
-        'price_crystals': 200
+    'C': {
+        'min_level': 50,
+        'max_level': 100,
+        'crystal_reward_range': (180, 400),
+        'equipment_drop_rate': 0.25
+    },
+    'B': {
+        'min_level': 100,
+        'max_level': 200,
+        'crystal_reward_range': (350, 800),
+        'equipment_drop_rate': 0.3
+    },
+    'A': {
+        'min_level': 200,
+        'max_level': 400,
+        'crystal_reward_range': (700, 1500),
+        'equipment_drop_rate': 0.35
+    },
+    'S': {
+        'min_level': 400,
+        'max_level': 999,
+        'crystal_reward_range': (1400, 3000),
+        'equipment_drop_rate': 0.4
     }
 }
 
-# Guild Settings
-GUILD_CREATION_COST = {
-    'exons': 100,
-    'crystals': 10000
+# Party System
+PARTY_CONFIG = {
+    'max_members': 10,
+    'reward_scaling': {
+        1: 1.0,      # Solo player gets 100%
+        2: 0.9,      # 2 players get 90% each
+        3: 0.85,     # 3 players get 85% each
+        4: 0.8,      # etc.
+        5: 0.75,
+        6: 0.7,
+        7: 0.65,
+        8: 0.6,
+        9: 0.55,
+        10: 0.5
+    }
+}
+
+# Equipment System
+EQUIPMENT_GRADES = {
+    'Basic': {
+        'upgrade_success_rate': 0.9,     # 90%
+        'upgrade_cost_multiplier': 1.0
+    },
+    'Intermediate': {
+        'upgrade_success_rate': 0.7,
+        'upgrade_cost_multiplier': 1.5
+    },
+    'Excellent': {
+        'upgrade_success_rate': 0.5,
+        'upgrade_cost_multiplier': 2.0
+    },
+    'Legendary': {
+        'upgrade_success_rate': 0.3,
+        'upgrade_cost_multiplier': 3.0
+    },
+    'Immortal': {
+        'upgrade_success_rate': 0.1,
+        'upgrade_cost_multiplier': 5.0
+    }
+}
+
+# Equipment Durability
+DURABILITY_CONFIG = {
+    'max_durability': 100,
+    'damage_loss_rate': 0.1,     # 0.1 durability lost per 1% HP lost
+    'mana_loss_rate': 0.05,      # 0.05 durability lost per 1% MP used
+    'time_loss_rate': 0.1,       # 0.1 durability lost per minute in gate
+    'repair_cost_rate': 1        # 1 Crystal per 1 durability point
+}
+
+# Guild System
+GUILD_CONFIG = {
+    'creation_cost': {
+        'crystals': 10000,
+        'exons': 100
+    },
+    'max_members': 100,
+    'quest_reward_multiplier': 1.2,  # 20% bonus rewards
+    'quest_tax_rate': Decimal('0.15')  # 15% tax on guild quest rewards
 }
 
 # Referral System
 REFERRAL_REWARDS = {
-    100: 1000,    # 1,000 crystals for 100 referrals
-    200: 2500,    # 2,500 crystals for 200 referrals
-    300: 5000,    # 5,000 crystals for 300 referrals
-    400: 10000,   # 10,000 crystals for 400 referrals
-    500: 20000    # 20,000 crystals for 500 referrals
+    100: 1000,    # 1000 Crystals for 100 referrals
+    200: 2500,    # 2500 Crystals for 200 referrals
+    300: 5000,    # etc.
+    400: 10000,
+    500: 20000
 }
-REFERRAL_LEVEL_REQUIREMENT = 50  # Referred players must reach this level
+
+# Loyalty System
+LOYALTY_REWARDS = {
+    'exons': {
+        1000: Decimal('0.01'),    # 1% monthly reward for holding 1000 EXON
+        5000: Decimal('0.015'),   # 1.5% for 5000 EXON
+        10000: Decimal('0.02'),   # etc.
+        50000: Decimal('0.025'),
+        100000: Decimal('0.03')
+    },
+    'crystals': {
+        10000: Decimal('0.02'),   # 2% monthly reward for holding 10000 Crystals
+        50000: Decimal('0.025'),  # etc.
+        100000: Decimal('0.03'),
+        500000: Decimal('0.035'),
+        1000000: Decimal('0.04')
+    }
+}
 
 # Gambling System
-FLIP_COIN_MIN_BET = 100    # Minimum crystal bet
-FLIP_COIN_MAX_BET = 10000  # Maximum crystal bet
-
-# Combat Settings
-EQUIPMENT_DURABILITY_LOSS = {
-    'damage_taken': 0.01,  # 0.1% per 1% HP lost
-    'mana_used': 0.005,    # 0.05% per 1% MP used
-    'time_factor': 0.1     # 0.1% per minute in gate
+GAMBLING_CONFIG = {
+    'min_bet': 100,              # Minimum bet in Crystals
+    'max_bet': 10000,            # Maximum bet in Crystals
+    'base_win_chance': 0.48,     # Base 48% chance to win
+    'max_daily_bets': 100,       # Maximum bets per day
+    'win_multiplier': Decimal('2.0')  # Double your bet on win
 }
-
-# Status Effect Chances
-STATUS_EFFECT_CHANCES = {
-    'burn': 0.15,
-    'poison': 0.15,
-    'freeze': 0.15,
-    'fear': 0.10,
-    'confuse': 0.10,
-    'dismember': 0.05,
-    'decapitate': 0.02
-}
-
-# AI Agent Settings
-AI_CONSIDERATION_FACTORS = [
-    'activity_history',
-    'job_class',
-    'hunter_class',
-    'level',
-    'stats',
-    'equipment',
-    'achievements',
-    'quest_history',
-    'combat_style',
-    'party_preference',
-    'gambling_frequency',
-    'market_activity'
-]

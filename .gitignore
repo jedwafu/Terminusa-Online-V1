@@ -19,6 +19,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
 # Virtual Environment
 venv/
@@ -26,8 +27,7 @@ env/
 ENV/
 .env
 .venv
-.env.local
-.env.*.local
+.python-version
 
 # IDE
 .idea/
@@ -36,32 +36,32 @@ ENV/
 *.swo
 *~
 .project
+.pydevproject
 .settings/
-.classpath
+.vs/
 
-# Logs and databases
+# Logs and Databases
 *.log
 *.sqlite
 *.db
+*.rdb
 logs/
 *.pid
-*.seed
-*.pid.lock
+*.sock
 
-# Testing
-.coverage
-.tox/
-.pytest_cache/
-htmlcov/
-.coverage.*
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
+# Environment Variables
+.env
+.env.*
+!.env.example
+!.env.test
 
-# Distribution / packaging
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Distribution / Packaging
 .Python
-env/
 build/
 develop-eggs/
 dist/
@@ -78,94 +78,131 @@ wheels/
 .installed.cfg
 *.egg
 
-# Flask
+# Testing
+.coverage
+htmlcov/
+.tox/
+.nox/
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+test-reports/
+
+# Documentation
+docs/_build/
+site/
+
+# Backup Files
+*.bak
+*.backup
+*~
+*.swp
+
+# System Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Game-specific
 instance/
-.webassets-cache
+backups/
+data/
+static/uploads/
+media/
+temp/
+
+# Blockchain
+.solana/
+.anchor/
+target/
+keypairs/
+wallets/
+
+# Monitoring
+prometheus/
+grafana/
+*.prom
+
+# SSL Certificates
+*.pem
+*.key
+*.crt
+*.cer
+*.der
+*.priv
+
+# Compiled files
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.dll
+*.dylib
+
+# Database migrations
+migrations/versions/*
+!migrations/versions/.gitkeep
+
+# Local development
+*.local
+local_settings.py
+docker-compose.override.yml
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Redis
+dump.rdb
+*.rdb
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
 
 # Jupyter Notebook
 .ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# celery beat schedule file
-celerybeat-schedule
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
+*.ipynb
 
 # mypy
 .mypy_cache/
 .dmypy.json
 dmypy.json
 
-# Node
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnp/
-.pnp.js
+# Profiling
+*.prof
+*.lprof
+*.mprof
 
-# Redis
-*.rdb
-dump.rdb
+# Crash logs
+crash-*
 
-# System Files
-.DS_Store
-Thumbs.db
-ehthumbs.db
-Desktop.ini
-$RECYCLE.BIN/
+# AI Models
+models/ai/*.h5
+models/ai/*.pkl
+models/ai/*.pt
+models/ai/*.pth
+models/ai/*.onnx
+models/ai/*.pb
 
-# Project specific
-static/downloads/
-data/market/*
-data/combat/*
-data/social/*
-data/ai/*
-!data/market/.gitkeep
-!data/combat/.gitkeep
-!data/social/.gitkeep
-!data/ai/.gitkeep
-instance/
-test-reports/
-.blackboxrules
+# Game Assets
+assets/temp/
+assets/uploads/
+assets/cache/
 
-# SSL
-*.pem
-*.key
-*.crt
-*.csr
-*.srl
+# Configuration overrides
+config.local.py
+config.prod.py
+config.dev.py
 
-# Backup files
-*.bak
-*.swp
-*.tmp
-*~
-*.old
-*.orig
-
-# Local development
-docker-compose.override.yml
-.docker/
+# Deployment
+deploy/local/
+deploy/staging/
+deploy/prod/

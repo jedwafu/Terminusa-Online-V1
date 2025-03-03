@@ -1,457 +1,382 @@
-from typing import Dict, List, Optional, Tuple
-from dataclasses import dataclass
-from datetime import datetime
-import json
+"""
+Game Manager for Terminusa Online
+"""
+from typing import Dict, Optional
 import logging
+from models import db, User
+from game_systems.combat_manager import CombatManager
+from game_systems.gate_system import GateSystem
+from game_systems.currency_system import CurrencySystem
+from game_systems.job_system import JobSystem
+from game_systems.guild_system import GuildSystem
+from game_systems.party_system import PartySystem
+from game_systems.equipment_system import EquipmentSystem
+from game_systems.achievement_system import AchievementSystem
+from game_systems.gambling_system import GamblingSystem
+from game_systems.gacha_system import GachaSystem
+from game_systems.hunter_shop import HunterShop
+from game_systems.ai_agent import AIAgent
 
-from game_systems import GameManager
-from models import User, Wallet, Inventory, InventoryItem, Item, Gate, MagicBeast, Guild, GuildMember
-from db_setup import db
-
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-@dataclass
-class GameState:
-    active_gates: Dict[int, Dict]  # gate_id -> gate_state
-    active_parties: Dict[int, Dict]  # party_id -> party_state
-    active_trades: Dict[int, Dict]  # trade_id -> trade_state
-    active_guild_quests: Dict[int, Dict]  # quest_id -> quest_state
-
-class MainGameManager:
+class GameManager:
+    """Coordinates game systems and manages overall game state"""
+    
     def __init__(self):
-        self.game_systems = GameManager()
-        self.game_state = GameState(
-            active_gates={},
-            active_parties={},
-            active_trades={},
-            active_guild_quests={}
-        )
+        # Initialize all game systems
+        self.combat_manager = CombatManager()
+        self.gate_system = GateSystem()
+        self.currency_system = CurrencySystem()
+        self.job_system = JobSystem()
+        self.guild_system = GuildSystem()
+        self.party_system = PartySystem()
+        self.equipment_system = EquipmentSystem()
+        self.achievement_system = AchievementSystem()
+        self.gambling_system = GamblingSystem()
+        self.gacha_system = GachaSystem()
+        self.hunter_shop = HunterShop()
+        self.ai_agent = AIAgent()
 
-    def process_command(self, command: str, user_id: int, params: Dict) -> Dict:
-        """Process a game command from a user"""
+    def process_user_action(self, user: User, action: str, params: Dict) -> Dict:
+        """Process user action and coordinate between systems"""
         try:
-            logger.debug(f"Processing command '{command}' for user {user_id} with params: {params}")
+            # Update achievements first to track any potential progress
+            self.achievement_system.check_achievements(user)
             
-            # Get user from database
-            user = User.query.get(user_id)
-            if not user:
-                return {'status': 'error', 'message': 'User not found'}
-            
-            # Route command to appropriate handler
-            if command.startswith('gate_'):
-                return self._handle_gate_command(command, user, params)
-            elif command.startswith('party_'):
-                return self._handle_party_command(command, user, params)
-            elif command.startswith('trade_'):
-                return self._handle_trade_command(command, user, params)
-            elif command.startswith('guild_'):
-                return self._handle_guild_command(command, user, params)
-            elif command.startswith('shop_'):
-                return self._handle_shop_command(command, user, params)
-            elif command.startswith('gacha_'):
-                return self._handle_gacha_command(command, user, params)
-            elif command.startswith('token_'):
-                return self._handle_token_command(command, user, params)
+            # Process action based on type
+            if action.startswith('combat_'):
+                return self._handle_combat_action(user, action, params)
+            elif action.startswith('gate_'):
+                return self._handle_gate_action(user, action, params)
+            elif action.startswith('currency_'):
+                return self._handle_currency_action(user, action, params)
+            elif action.startswith('job_'):
+                return self._handle_job_action(user, action, params)
+            elif action.startswith('guild_'):
+                return self._handle_guild_action(user, action, params)
+            elif action.startswith('party_'):
+                return self._handle_party_action(user, action, params)
+            elif action.startswith('equipment_'):
+                return self._handle_equipment_action(user, action, params)
+            elif action.startswith('gamble_'):
+                return self._handle_gambling_action(user, action, params)
+            elif action.startswith('gacha_'):
+                return self._handle_gacha_action(user, action, params)
+            elif action.startswith('shop_'):
+                return self._handle_shop_action(user, action, params)
             else:
-                return {'status': 'error', 'message': 'Unknown command'}
-                
-        except Exception as e:
-            logger.error(f"Error processing command: {str(e)}", exc_info=True)
-            return {'status': 'error', 'message': 'Internal error'}
-
-    def _handle_gate_command(self, command: str, user: User, params: Dict) -> Dict:
-        """Handle gate-related commands"""
-        try:
-            if command == 'gate_enter':
-                gate_id = params.get('gate_id')
-                party_id = params.get('party_id')
-                
-                gate = Gate.query.get(gate_id)
-                if not gate:
-                    return {'status': 'error', 'message': 'Gate not found'}
-                
-                # Get party members if in party
-                party_members = []
-                if party_id:
-                    party_members = self._get_party_members(party_id, user.id)
-                
-                # Process gate entry
-                result = self.game_systems.process_gate_entry(user, gate, party_members)
-                
-                if result['status'] == 'success':
-                    # Update game state
-                    gate_state = {
-                        'gate_id': gate_id,
-                        'party_id': party_id,
-                        'start_time': datetime.utcnow(),
-                        'players': [user.id] + [m.id for m in party_members],
-                        'monsters': result['combat_results'].get('monsters', [])
-                    }
-                    self.game_state.active_gates[gate_id] = gate_state
-                    
-                    # Commit changes to database
-                    db.session.commit()
-                
-                return result
-                
-            elif command == 'gate_exit':
-                gate_id = params.get('gate_id')
-                
-                if gate_id not in self.game_state.active_gates:
-                    return {'status': 'error', 'message': 'Gate not active'}
-                
-                # Clean up gate state
-                del self.game_state.active_gates[gate_id]
-                
-                return {'status': 'success', 'message': 'Exited gate successfully'}
-                
-            else:
-                return {'status': 'error', 'message': 'Unknown gate command'}
-                
-        except Exception as e:
-            logger.error(f"Error handling gate command: {str(e)}", exc_info=True)
-            return {'status': 'error', 'message': 'Internal error'}
-
-    def _handle_party_command(self, command: str, user: User, params: Dict) -> Dict:
-        """Handle party-related commands"""
-        try:
-            if command == 'party_create':
-                name = params.get('name', f"{user.username}'s Party")
-                max_members = params.get('max_members', 10)
-                
-                # Create new party
-                party = {
-                    'id': len(self.game_state.active_parties) + 1,
-                    'name': name,
-                    'leader_id': user.id,
-                    'members': [user.id],
-                    'max_members': max_members,
-                    'status': 'recruiting'
-                }
-                self.game_state.active_parties[party['id']] = party
-                
                 return {
-                    'status': 'success',
-                    'party_id': party['id'],
-                    'message': 'Party created successfully'
+                    "success": False,
+                    "message": "Invalid action"
                 }
-                
-            elif command == 'party_invite':
-                party_id = params.get('party_id')
-                target_user_id = params.get('user_id')
-                
-                party = self.game_state.active_parties.get(party_id)
-                if not party:
-                    return {'status': 'error', 'message': 'Party not found'}
-                
-                if party['leader_id'] != user.id:
-                    return {'status': 'error', 'message': 'Only party leader can invite'}
-                
-                if len(party['members']) >= party['max_members']:
-                    return {'status': 'error', 'message': 'Party is full'}
-                
-                # Add member to party
-                party['members'].append(target_user_id)
-                
-                return {'status': 'success', 'message': 'Player invited successfully'}
-                
-            elif command == 'party_leave':
-                party_id = params.get('party_id')
-                
-                party = self.game_state.active_parties.get(party_id)
-                if not party:
-                    return {'status': 'error', 'message': 'Party not found'}
-                
-                if user.id not in party['members']:
-                    return {'status': 'error', 'message': 'Not in party'}
-                
-                # Remove from party
-                party['members'].remove(user.id)
-                
-                # If leader leaves, assign new leader or disband
-                if user.id == party['leader_id']:
-                    if party['members']:
-                        party['leader_id'] = party['members'][0]
-                    else:
-                        del self.game_state.active_parties[party_id]
-                
-                return {'status': 'success', 'message': 'Left party successfully'}
-                
-            else:
-                return {'status': 'error', 'message': 'Unknown party command'}
-                
-        except Exception as e:
-            logger.error(f"Error handling party command: {str(e)}", exc_info=True)
-            return {'status': 'error', 'message': 'Internal error'}
 
-    def _handle_trade_command(self, command: str, user: User, params: Dict) -> Dict:
-        """Handle trade-related commands"""
-        try:
-            if command == 'trade_create':
-                item_id = params.get('item_id')
-                quantity = params.get('quantity', 1)
-                price = params.get('price')
-                currency = params.get('currency')
-                
-                result = self.game_systems.process_marketplace_action(
-                    'create_listing',
-                    user,
-                    item_id=item_id,
-                    quantity=quantity,
-                    price=price,
-                    currency=currency
-                )
-                
-                if result['status'] == 'success':
-                    # Update game state
-                    trade_id = result['listing_id']
-                    self.game_state.active_trades[trade_id] = {
-                        'seller_id': user.id,
-                        'item_id': item_id,
-                        'quantity': quantity,
-                        'price': price,
-                        'currency': currency,
-                        'status': 'active'
-                    }
-                
-                return result
-                
-            elif command == 'trade_accept':
-                trade_id = params.get('trade_id')
-                
-                result = self.game_systems.process_marketplace_action(
-                    'purchase',
-                    user,
-                    listing_id=trade_id
-                )
-                
-                if result['status'] == 'success':
-                    # Update trade state
-                    if trade_id in self.game_state.active_trades:
-                        self.game_state.active_trades[trade_id]['status'] = 'completed'
-                
-                return result
-                
-            else:
-                return {'status': 'error', 'message': 'Unknown trade command'}
-                
         except Exception as e:
-            logger.error(f"Error handling trade command: {str(e)}", exc_info=True)
-            return {'status': 'error', 'message': 'Internal error'}
+            logger.error(f"Failed to process action {action}: {str(e)}")
+            return {
+                "success": False,
+                "message": "Failed to process action"
+            }
 
-    def _handle_guild_command(self, command: str, user: User, params: Dict) -> Dict:
-        """Handle guild-related commands"""
+    def _handle_combat_action(self, user: User, action: str, params: Dict) -> Dict:
+        """Handle combat-related actions"""
         try:
-            if command == 'guild_create':
-                name = params.get('name')
-                
-                # Check if user has enough currency
-                wallet = Wallet.query.filter_by(user_id=user.id).first()
-                if not wallet:
-                    return {'status': 'error', 'message': 'Wallet not found'}
-                
-                required_exons = 1000
-                required_crystals = 1000
-                
-                if wallet.exons < required_exons or wallet.crystals < required_crystals:
-                    return {
-                        'status': 'error',
-                        'message': f'Insufficient funds. Required: {required_exons} Exons and {required_crystals} Crystals'
-                    }
-                
-                # Create guild
-                guild = Guild(
-                    name=name,
-                    leader_id=user.id,
-                    level=1,
-                    exons_balance=0,
-                    crystals_balance=0
+            if action == 'combat_attack':
+                return self.combat_manager.process_combat_round(params['battle_id'])
+            elif action == 'combat_use_skill':
+                return self.combat_manager.use_skill(
+                    params['battle_id'],
+                    params['skill_id']
                 )
-                db.session.add(guild)
-                
-                # Create guild membership
-                membership = GuildMember(
-                    guild=guild,
-                    user=user,
-                    role='leader'
+            elif action == 'combat_use_item':
+                return self.combat_manager.use_item(
+                    params['battle_id'],
+                    params['item_id']
                 )
-                db.session.add(membership)
-                
-                # Deduct currency
-                wallet.exons -= required_exons
-                wallet.crystals -= required_crystals
-                
-                db.session.commit()
-                
-                return {
-                    'status': 'success',
-                    'guild_id': guild.id,
-                    'message': 'Guild created successfully'
+            return {
+                "success": False,
+                "message": "Invalid combat action"
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to handle combat action: {str(e)}")
+            return {
+                "success": False,
+                "message": "Failed to handle combat action"
+            }
+
+    def _handle_gate_action(self, user: User, action: str, params: Dict) -> Dict:
+        """Handle gate-related actions"""
+        try:
+            if action == 'gate_enter':
+                return self.gate_system.enter_gate(
+                    user,
+                    params['gate_id'],
+                    params.get('party')
+                )
+            elif action == 'gate_leave':
+                return self.gate_system.leave_gate(user, params['gate_id'])
+            return {
+                "success": False,
+                "message": "Invalid gate action"
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to handle gate action: {str(e)}")
+            return {
+                "success": False,
+                "message": "Failed to handle gate action"
+            }
+
+    def _handle_currency_action(self, user: User, action: str, params: Dict) -> Dict:
+        """Handle currency-related actions"""
+        try:
+            if action == 'currency_transfer':
+                return self.currency_system.transfer_currency(
+                    user,
+                    params['recipient_id'],
+                    params['currency'],
+                    params['amount']
+                )
+            elif action == 'currency_swap':
+                return self.currency_system.swap_currency(
+                    user,
+                    params['from_currency'],
+                    params['to_currency'],
+                    params['amount']
+                )
+            return {
+                "success": False,
+                "message": "Invalid currency action"
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to handle currency action: {str(e)}")
+            return {
+                "success": False,
+                "message": "Failed to handle currency action"
+            }
+
+    def _handle_job_action(self, user: User, action: str, params: Dict) -> Dict:
+        """Handle job-related actions"""
+        try:
+            if action == 'job_change':
+                return self.job_system.change_job(user, params['new_job'])
+            elif action == 'job_reset':
+                return self.job_system.reset_job(user)
+            return {
+                "success": False,
+                "message": "Invalid job action"
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to handle job action: {str(e)}")
+            return {
+                "success": False,
+                "message": "Failed to handle job action"
+            }
+
+    def _handle_guild_action(self, user: User, action: str, params: Dict) -> Dict:
+        """Handle guild-related actions"""
+        try:
+            if action == 'guild_create':
+                return self.guild_system.create_guild(
+                    user,
+                    params['name'],
+                    params['description']
+                )
+            elif action == 'guild_join':
+                return self.guild_system.join_guild(user, params['guild_id'])
+            elif action == 'guild_leave':
+                return self.guild_system.leave_guild(user)
+            return {
+                "success": False,
+                "message": "Invalid guild action"
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to handle guild action: {str(e)}")
+            return {
+                "success": False,
+                "message": "Failed to handle guild action"
+            }
+
+    def _handle_party_action(self, user: User, action: str, params: Dict) -> Dict:
+        """Handle party-related actions"""
+        try:
+            if action == 'party_create':
+                return self.party_system.create_party(user, params['name'])
+            elif action == 'party_join':
+                return self.party_system.join_party(user, params['party_id'])
+            elif action == 'party_leave':
+                return self.party_system.leave_party(user)
+            elif action == 'party_ready':
+                return self.party_system.set_ready_status(
+                    user,
+                    params['is_ready']
+                )
+            return {
+                "success": False,
+                "message": "Invalid party action"
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to handle party action: {str(e)}")
+            return {
+                "success": False,
+                "message": "Failed to handle party action"
+            }
+
+    def _handle_equipment_action(self, user: User, action: str, params: Dict) -> Dict:
+        """Handle equipment-related actions"""
+        try:
+            if action == 'equipment_equip':
+                return self.equipment_system.equip_item(
+                    user,
+                    params['equipment_id']
+                )
+            elif action == 'equipment_unequip':
+                return self.equipment_system.unequip_item(
+                    user,
+                    params['equipment_id']
+                )
+            elif action == 'equipment_upgrade':
+                return self.equipment_system.upgrade_equipment(
+                    user,
+                    params['equipment_id']
+                )
+            elif action == 'equipment_repair':
+                return self.equipment_system.repair_equipment(
+                    user,
+                    params['equipment_id']
+                )
+            return {
+                "success": False,
+                "message": "Invalid equipment action"
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to handle equipment action: {str(e)}")
+            return {
+                "success": False,
+                "message": "Failed to handle equipment action"
+            }
+
+    def _handle_gambling_action(self, user: User, action: str, params: Dict) -> Dict:
+        """Handle gambling-related actions"""
+        try:
+            if action == 'gamble_flip_coin':
+                return self.gambling_system.flip_coin(user, params['bet_amount'])
+            return {
+                "success": False,
+                "message": "Invalid gambling action"
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to handle gambling action: {str(e)}")
+            return {
+                "success": False,
+                "message": "Failed to handle gambling action"
+            }
+
+    def _handle_gacha_action(self, user: User, action: str, params: Dict) -> Dict:
+        """Handle gacha-related actions"""
+        try:
+            if action == 'gacha_summon_mount':
+                return self.gacha_system.summon_mount(user)
+            elif action == 'gacha_summon_pet':
+                return self.gacha_system.summon_pet(user)
+            return {
+                "success": False,
+                "message": "Invalid gacha action"
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to handle gacha action: {str(e)}")
+            return {
+                "success": False,
+                "message": "Failed to handle gacha action"
+            }
+
+    def _handle_shop_action(self, user: User, action: str, params: Dict) -> Dict:
+        """Handle shop-related actions"""
+        try:
+            if action == 'shop_purchase':
+                return self.hunter_shop.purchase_item(
+                    user,
+                    params['item_id'],
+                    params.get('quantity', 1)
+                )
+            return {
+                "success": False,
+                "message": "Invalid shop action"
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to handle shop action: {str(e)}")
+            return {
+                "success": False,
+                "message": "Failed to handle shop action"
+            }
+
+    def get_user_state(self, user: User) -> Dict:
+        """Get comprehensive user state"""
+        try:
+            # Get AI insights
+            profile = self.ai_agent.analyze_player(user)
+
+            return {
+                "success": True,
+                "state": {
+                    "user": {
+                        "id": user.id,
+                        "username": user.username,
+                        "level": user.level,
+                        "experience": user.experience,
+                        "job_class": user.job_class,
+                        "job_level": user.job_level,
+                        "crystals": user.crystals,
+                        "exons_balance": user.exons_balance
+                    },
+                    "stats": {
+                        "hp": user.hp,
+                        "max_hp": user.max_hp,
+                        "mp": user.mp,
+                        "max_mp": user.max_mp,
+                        "attack": user.attack,
+                        "defense": user.defense,
+                        "magic_attack": user.magic_attack,
+                        "magic_defense": user.magic_defense
+                    },
+                    "equipment": self.equipment_system._get_equipment_stats(user),
+                    "party": self._get_party_state(user),
+                    "guild": self._get_guild_state(user),
+                    "achievements": self.achievement_system.get_achievements(user),
+                    "ai_insights": profile if profile else {}
                 }
-                
-            elif command == 'guild_join':
-                guild_id = params.get('guild_id')
-                
-                guild = Guild.query.get(guild_id)
-                if not guild:
-                    return {'status': 'error', 'message': 'Guild not found'}
-                
-                if user.guild_membership:
-                    return {'status': 'error', 'message': 'Already in a guild'}
-                
-                # Create membership
-                membership = GuildMember(
-                    guild=guild,
-                    user=user,
-                    role='member'
-                )
-                db.session.add(membership)
-                db.session.commit()
-                
-                return {'status': 'success', 'message': 'Joined guild successfully'}
-                
-            else:
-                return {'status': 'error', 'message': 'Unknown guild command'}
-                
-        except Exception as e:
-            logger.error(f"Error handling guild command: {str(e)}", exc_info=True)
-            return {'status': 'error', 'message': 'Internal error'}
+            }
 
-    def _handle_shop_command(self, command: str, user: User, params: Dict) -> Dict:
-        """Handle shop-related commands"""
+        except Exception as e:
+            logger.error(f"Failed to get user state: {str(e)}")
+            return {
+                "success": False,
+                "message": "Failed to get user state"
+            }
+
+    def _get_party_state(self, user: User) -> Optional[Dict]:
+        """Get user's party state"""
         try:
-            if command == 'shop_buy':
-                item_key = params.get('item_key')
-                quantity = params.get('quantity', 1)
-                
-                result = self.game_systems.shop_system.purchase_item(
-                    user,
-                    item_key,
-                    quantity
-                )
-                
-                if result['status'] == 'success':
-                    # Update inventory (actual implementation would handle this)
-                    pass
-                
-                return result
-                
-            else:
-                return {'status': 'error', 'message': 'Unknown shop command'}
-                
-        except Exception as e:
-            logger.error(f"Error handling shop command: {str(e)}", exc_info=True)
-            return {'status': 'error', 'message': 'Internal error'}
+            party = self.party_system._get_user_party(user)
+            if party:
+                return self.party_system.get_party_info(party.id)["party"]
+            return None
+        except Exception:
+            return None
 
-    def _handle_gacha_command(self, command: str, user: User, params: Dict) -> Dict:
-        """Handle gacha-related commands"""
+    def _get_guild_state(self, user: User) -> Optional[Dict]:
+        """Get user's guild state"""
         try:
-            if command == 'gacha_pull':
-                gacha_type = params.get('type')
-                pulls = params.get('pulls', 1)
-                
-                result = self.game_systems.process_gacha_pull(
-                    user,
-                    gacha_type,
-                    pulls
-                )
-                
-                if result['status'] == 'success':
-                    # Update inventory with obtained items
-                    pass
-                
-                return result
-                
-            else:
-                return {'status': 'error', 'message': 'Unknown gacha command'}
-                
-        except Exception as e:
-            logger.error(f"Error handling gacha command: {str(e)}", exc_info=True)
-            return {'status': 'error', 'message': 'Internal error'}
-
-    def _handle_token_command(self, command: str, user: User, params: Dict) -> Dict:
-        """Handle token-related commands"""
-        try:
-            if command == 'token_swap':
-                from_currency = params.get('from_currency')
-                to_currency = params.get('to_currency')
-                amount = params.get('amount')
-                
-                result = self.game_systems.process_token_swap(
-                    user,
-                    from_currency,
-                    to_currency,
-                    amount
-                )
-                
-                if result['status'] == 'success':
-                    # Update wallet balances
-                    wallet = Wallet.query.filter_by(user_id=user.id).first()
-                    if not wallet:
-                        return {'status': 'error', 'message': 'Wallet not found'}
-                    
-                    # Apply the swap (actual implementation would handle blockchain transactions)
-                    if from_currency == 'SOLANA':
-                        wallet.sol_balance -= amount
-                        wallet.exons += result['to_amount']
-                    elif from_currency == 'EXON':
-                        wallet.exons -= amount
-                        wallet.crystals += result['to_amount']
-                    
-                    db.session.commit()
-                
-                return result
-                
-            else:
-                return {'status': 'error', 'message': 'Unknown token command'}
-                
-        except Exception as e:
-            logger.error(f"Error handling token command: {str(e)}", exc_info=True)
-            return {'status': 'error', 'message': 'Internal error'}
-
-    def _get_party_members(self, party_id: int, exclude_user_id: int) -> List[User]:
-        """Get all party members except the specified user"""
-        party = self.game_state.active_parties.get(party_id)
-        if not party:
-            return []
-            
-        member_ids = [mid for mid in party['members'] if mid != exclude_user_id]
-        return User.query.filter(User.id.in_(member_ids)).all()
-
-    def update_game_state(self):
-        """Update global game state (called periodically)"""
-        try:
-            current_time = datetime.utcnow()
-            
-            # Clean up expired gates
-            expired_gates = []
-            for gate_id, gate_state in self.game_state.active_gates.items():
-                if (current_time - gate_state['start_time']).total_seconds() > 3600:  # 1 hour timeout
-                    expired_gates.append(gate_id)
-            
-            for gate_id in expired_gates:
-                del self.game_state.active_gates[gate_id]
-            
-            # Clean up inactive parties
-            inactive_parties = []
-            for party_id, party_state in self.game_state.active_parties.items():
-                if not party_state['members']:
-                    inactive_parties.append(party_id)
-            
-            for party_id in inactive_parties:
-                del self.game_state.active_parties[party_id]
-            
-            # Clean up completed trades
-            completed_trades = []
-            for trade_id, trade_state in self.game_state.active_trades.items():
-                if trade_state['status'] == 'completed':
-                    completed_trades.append(trade_id)
-            
-            for trade_id in completed_trades:
-                del self.game_state.active_trades[trade_id]
-            
-            logger.debug("Game state updated successfully")
-            
-        except Exception as e:
-            logger.error(f"Error updating game state: {str(e)}", exc_info=True)
+            if user.guild_id:
+                return self.guild_system.get_guild_info(user.guild_id)["guild"]
+            return None
+        except Exception:
+            return None

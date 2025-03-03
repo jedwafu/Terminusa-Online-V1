@@ -1,0 +1,175 @@
+/* Terminal Styles */
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #1a1a1a;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: monospace;
+    overflow: hidden;
+}
+
+#terminal-container {
+    width: 90vw;
+    height: 90vh;
+    background-color: #000;
+    border-radius: 5px;
+    padding: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    position: relative;
+}
+
+/* Terminal Theme */
+.xterm-viewport {
+    background-color: #000 !important;
+}
+
+.xterm-screen {
+    background-color: transparent !important;
+}
+
+/* Custom Scrollbar */
+.xterm-viewport::-webkit-scrollbar {
+    width: 10px;
+}
+
+.xterm-viewport::-webkit-scrollbar-track {
+    background: #1a1a1a;
+}
+
+.xterm-viewport::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 5px;
+}
+
+.xterm-viewport::-webkit-scrollbar-thumb:hover {
+    background: #444;
+}
+
+/* Loading State */
+.loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-size: 1.2em;
+    text-align: center;
+}
+
+.loading::after {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    animation: loading-dots 1.5s infinite;
+}
+
+@keyframes loading-dots {
+    0% { content: '.'; }
+    33% { content: '..'; }
+    66% { content: '...'; }
+}
+
+/* Message Types */
+.error-message {
+    color: #ff3333;
+    background-color: rgba(255, 0, 0, 0.1);
+    padding: 5px 10px;
+    border-radius: 3px;
+    margin: 5px 0;
+    border-left: 3px solid #ff3333;
+}
+
+.success-message {
+    color: #33ff33;
+    background-color: rgba(0, 255, 0, 0.1);
+    padding: 5px 10px;
+    border-radius: 3px;
+    margin: 5px 0;
+    border-left: 3px solid #33ff33;
+}
+
+.info-message {
+    color: #3399ff;
+    background-color: rgba(0, 153, 255, 0.1);
+    padding: 5px 10px;
+    border-radius: 3px;
+    margin: 5px 0;
+    border-left: 3px solid #3399ff;
+}
+
+.warning-message {
+    color: #ffcc00;
+    background-color: rgba(255, 204, 0, 0.1);
+    padding: 5px 10px;
+    border-radius: 3px;
+    margin: 5px 0;
+    border-left: 3px solid #ffcc00;
+}
+
+/* Connection Status */
+#connection-status {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 5px 10px;
+    border-radius: 3px;
+    font-size: 0.8em;
+    z-index: 1000;
+}
+
+.connected {
+    background-color: rgba(0, 255, 0, 0.2);
+    color: #33ff33;
+}
+
+.disconnected {
+    background-color: rgba(255, 0, 0, 0.2);
+    color: #ff3333;
+}
+
+.connecting {
+    background-color: rgba(255, 204, 0, 0.2);
+    color: #ffcc00;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    #terminal-container {
+        width: 100vw;
+        height: 100vh;
+        border-radius: 0;
+        padding: 5px;
+    }
+    
+    .xterm {
+        font-size: 14px;
+    }
+}
+
+/* Focus Styles */
+.xterm:focus {
+    outline: none;
+}
+
+/* Selection Styles */
+.xterm-selection {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Cursor Styles */
+.xterm-cursor {
+    background-color: #fff;
+    border-color: #fff;
+}
+
+.xterm-cursor.xterm-cursor-blink {
+    animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}

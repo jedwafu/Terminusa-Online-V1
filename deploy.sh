@@ -22,7 +22,7 @@ error_log() {
 
 success_log() {
     echo -e "${GREEN}[SUCCESS] $(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
-    echo "[SUCCESS] $(date '+%Y-%m-%d %H:%M:%S') -$1" >> logs/deploy.log
+    echo "[SUCCESS] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> logs/deploy.log
 }
 
 info_log() {
@@ -72,10 +72,6 @@ done
 # Debug mode flag
 DEBUG=false
 
-# Error handling
-set -e
-trap 'echo -e "${RED}Deployment failed${NC}"; exit 1' ERR
-
 # Service configurations
 declare -A SERVICE_PORTS=(
     ["postgresql"]="5432"
@@ -121,344 +117,6 @@ declare -A SERVICE_SCREENS=(
     ["marketplace"]="terminusa-marketplace"
     ["gacha"]="terminusa-gacha"
 )
-
-# Logging functions
-debug_log() {
-    if [ "$DEBUG" = true ]; then
-        echo -e "${BLUE}[DEBUG] $(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
-    fi
-}
-
-error_log() {
-    echo -e "${RED}[ERROR] $(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
-    echo "[ERROR] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> logs/deploy.log
-}
-
-success_log() {
-    echo -e "${GREEN}[SUCCESS] $(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
-    echo "[SUCCESS] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> logs/deploy.log
-}
-
-info_log() {
-    echo -e "${YELLOW}[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $1${NC}"
-    echo "[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> logs/deploy.log
-}
-
-# Enhanced setup_static_files with better error handling and update functionality
-setup_static_files() {
-    info_log "Setting up static files..."
-    
-    # Load environment variables
-    if [ -f .env ]; then
-        set -a
-        source .env
-        set +a
-    else
-        error_log ".env file not found"
-        return 1
-    fi
-
-    # Define directories
-    STATIC_DIR="${MAIN_STATIC_DIR:-/var/www/terminusa-web/static}"
-    SOURCE_DIR="${SOURCE_DIR:-./static}"
-    NGINX_ROOT="$MAIN_APP_DIR"
-    NGINX_STATIC_DIR="$STATIC_DIR"
-    PROJECT_ROOT=$(pwd)
-    BACKUP_DIR="$NGINX_ROOT/static_backup_$(date +%Y%m%d_%H%M%S)"
-    
-    # Create directories with error handling
-    info_log "Creating static directories..."
-    sudo mkdir -p "$NGINX_STATIC_DIR/css" || { error_log "Failed to create CSS directory"; return 1; }
-    sudo mkdir -p "$NGINX_STATIC_DIR/js" || { error_log "Failed to create JS directory"; return 1; }
-    sudo mkdir -p "$NGINX_STATIC_DIR/images" || { error_log "Failed to create images directory"; return 1; }
-    
-    # Verify source directories exist
-    [ -d "$SOURCE_DIR/css" ] || { error_log "Source CSS directory not found"; return 1; }
-    [ -d "$SOURCE_DIR/js" ] || { error_log "Source JS directory not found"; return 1; }
-
-    # Backup existing files if they exist
-    if [ -d "$NGINX_STATIC_DIR" ]; then
-        info_log "Backing up existing static files..."
-        sudo cp -r "$NGINX_STATIC_DIR" "$BACKUP_DIR" || { error_log "Failed to create backup"; return 1; }
-    fi
-    
-    # Copy files with error handling
-    info_log "Copying static files..."
-    
-    # Copy CSS files
-    info_log "Copying CSS files..."
-    sudo cp -r "$SOURCE_DIR/css/"* "$NGINX_STATIC_DIR/css/" || { error_log "Failed to copy CSS files"; return 1; }
-    
-    # Copy JS files
-    info_log "Copying JavaScript files..."
-    sudo cp -r "$SOURCE_DIR/js/"* "$NGINX_STATIC_DIR/js/" || { error_log "Failed to copy JS files"; return 1; }
-    
-    # Copy images
-    info_log "Copying image files..."
-    sudo cp -r "$SOURCE_DIR/images/"* "$NGINX_STATIC_DIR/images/" 2>/dev/null || info_log "No images found"
-    
-    # Set permissions
-    info_log "Setting permissions..."
-    sudo chown -R www-data:www-data "$NGINX_ROOT" || { error_log "Failed to set ownership"; return 1; }
-    sudo chmod -R 755 "$NGINX_ROOT" || { error_log "Failed to set permissions"; return 1; }
-    sudo find "$NGINX_STATIC_DIR" -type f -exec chmod 644 {} \;
-    
-    # Verify nginx directory exists
-    if [ ! -d "/var/www/terminusa-web" ]; then
-        error_log "Nginx directory /var/www/terminusa-web not found"
-        return 1
-    fi
-
-    # Create symbolic link
-    ln -sfn "$NGINX_STATIC_DIR" "/var/www/terminusa/static" || { error_log "Failed to create symbolic link"; return 1; }
-
-    # Clear nginx cache and restart
-    info_log "Clearing nginx cache and restarting..."
-    sudo rm -rf /var/cache/nginx/*
-    sudo systemctl restart nginx
-    
-    # Verify nginx configuration and restart
-    info_log "Verifying nginx configuration and restarting..."
-    if ! sudo nginx -t; then
-        error_log "Nginx configuration test failed!"
-        if [ -d "$BACKUP_DIR" ]; then
-            info_log "Restoring from backup..."
-            sudo rm -rf $NGINX_STATIC_DIR
-            sudo cp -r $BACKUP_DIR/* $NGINX_STATIC_DIR/
-        fi
-        return 1
-    fi
-    
-    # Reload nginx
-    info_log "Reloading nginx..."
-    sudo systemctl reload nginx
-    
-    # Verify file access
-    info_log "Verifying file access..."
-    if ! sudo -u www-data test -r "$NGINX_STATIC_DIR/css/style.css"; then
-        error_log "www-data cannot read style.css"
-        return 1
-    fi
-    
-    success_log "Static files setup completed successfully"
-    return 0
-}
-
-# Enhanced database setup
-setup_database() {
-    info_log "Setting up database..."
-    
-    # Check if PostgreSQL is running
-    if ! systemctl is-active --quiet postgresql; then
-        error_log "PostgreSQL is not running!"
-        return 1
-    fi
-    
-    # Activate virtual environment
-    source venv/bin/activate
-    
-    # Set environment variables
-    export FLASK_APP=init_db.py
-    export PYTHONPATH=$PWD
-    
-    # Initialize database
-    info_log "Initializing database..."
-    python migrations/initial_migration.py || {
-        error_log "Database initialization failed!"
-        return 1
-    }
-    
-    # Run migrations
-    info_log "Running database migrations"
-    flask db upgrade || {
-        error_log "Migration upgrade failed!"
-        return 1
-    }
-    
-    success_log "Database setup completed"
-
-
-
-
-    return 0
-}
-
-# Enhanced nginx setup with configuration installer
-setup_nginx() {
-    info_log "Setting up nginx..."
-
-    # Backup existing configuration if it exists
-    if [ -f /etc/nginx/sites-available/terminusa.conf ]; then
-        backup_file="/etc/nginx/sites-available/terminusa.conf.backup_$(date +%Y%m%d_%H%M%S)"
-        info_log "Backing up existing nginx config to $backup_file"
-        sudo cp /etc/nginx/sites-available/terminusa.conf "$backup_file"
-    fi
-
-    # Update nginx user
-    sudo sed -i 's/user root/user www-data/' /etc/nginx/nginx.conf
-
-    # Create nginx configuration
-    info_log "Creating nginx configuration..."
-    sudo tee /etc/nginx/sites-available/terminusa.conf > /dev/null << 'EOL'
-server {
-    listen 80;
-    server_name terminusa.online;
-
-    # SSL configuration
-    listen 443 ssl;
-    ssl_certificate /etc/letsencrypt/live/terminusa.online/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/terminusa.online/privkey.pem;
-
-    # Root directory
-    root /var/www/terminusa;
-
-    # Static files
-    location /static/ {
-        alias /var/www/terminusa/static/;
-        expires 30d;
-        add_header Cache-Control "public, no-transform";
-        
-        # Enable gzip compression
-        gzip on;
-        gzip_vary on;
-        gzip_min_length 10240;
-        gzip_proxied expired no-cache no-store private auth;
-        gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml;
-        gzip_disable "MSIE [1-6]\.";
-        
-        # Proper MIME type handling
-        include /etc/nginx/mime.types;
-        default_type application/octet-stream;
-        
-        # Specific MIME types for web files
-        types {
-            text/css css;
-            text/javascript js;
-            image/svg+xml svg svgz;
-            image/png png;
-            image/jpeg jpg jpeg;
-            image/gif gif;
-            image/x-icon ico;
-            font/woff woff;
-            font/woff2 woff2;
-            application/font-woff woff;
-            application/font-woff2 woff2;
-        }
-        
-        # Try to serve the exact file, then directory index, then 404
-        try_files \$uri \$uri/ =404;
-        
-        # Add CORS headers
-        add_header 'Access-Control-Allow-Origin' '*';
-        add_header 'Access-Control-Allow-Methods' 'GET, OPTIONS';
-        add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';
-        
-        # Cache settings
-        add_header Cache-Control "public, max-age=2592000";
-        etag on;
-        
-        # Security headers
-        add_header X-Content-Type-Options "nosniff";
-        add_header X-Frame-Options "SAMEORIGIN";
-        add_header X-XSS-Protection "1; mode=block";
-    }
-
-    # Proxy to Flask application
-    location / {
-        proxy_pass http://127.0.0.1:5000;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        
-        # WebSocket support
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        
-        # Timeouts
-        proxy_connect_timeout 60s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
-    }
-
-    # Error pages
-    error_page 404 /404.html;
-    error_page 500 502 503 504 /50x.html;
-    location = /50x.html {
-        root /usr/share/nginx/html;
-    }
-
-    # Additional security headers
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-
-    # Client caching for common file types
-    location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg)\$ {
-        expires 30d;
-        add_header Cache-Control "public, no-transform";
-        
-        # Ensure CSS files are served with correct MIME type
-        location ~* \.css$ {
-            add_header Content-Type text/css;
-            add_header X-Content-Type-Options nosniff;
-        }
-        
-        # Ensure JS files are served with correct MIME type
-        location ~* \.js$ {
-            add_header Content-Type application/javascript;
-            add_header X-Content-Type-Options nosniff;
-        }
-    }
-}
-EOL
-
-    # Enable site
-    info_log "Enabling nginx site..."
-    sudo ln -sf /etc/nginx/sites-available/terminusa.conf /etc/nginx/sites-enabled/
-    sudo rm -f /etc/nginx/sites-enabled/default
-
-    # Test configuration
-    info_log "Testing nginx configuration..."
-    if ! sudo nginx -t; then
-        error_log "Nginx configuration test failed!"
-        if [ -f "$backup_file" ]; then
-            info_log "Restoring backup configuration..."
-            sudo cp "$backup_file" /etc/nginx/sites-available/terminusa.conf
-            sudo nginx -t && sudo systemctl restart nginx
-        fi
-        return 1
-    fi
-
-    # Restart nginx
-    info_log "Restarting nginx..."
-    if ! sudo systemctl restart nginx; then
-        error_log "Failed to restart nginx!"
-        if [ -f "$backup_file" ]; then
-            info_log "Restoring backup configuration..."
-            sudo cp "$backup_file" /etc/nginx/sites-available/terminusa.conf
-            sudo nginx -t && sudo systemctl restart nginx
-        fi
-        return 1
-    fi
-
-    # Verify nginx is running
-    if ! systemctl is-active --quiet nginx; then
-        error_log "Nginx is not running after configuration update!"
-        if [ -f "$backup_file" ]; then
-            info_log "Restoring backup configuration..."
-            sudo cp "$backup_file" /etc/nginx/sites-available/terminusa.conf
-            sudo nginx -t && sudo systemctl restart nginx
-        fi
-        return 1
-    fi
-
-    success_log "Nginx setup completed successfully"
-    return 0
-}
 
 # Stop services
 stop_services() {
@@ -568,13 +226,13 @@ start_services() {
                 "game")
                     start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python game_server.py > logs/game.log 2>&1"
                     ;;
-            "currency")
+                "currency")
                     start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python currency_system.py > logs/currency.log 2>&1"
                     ;;
-            "marketplace")
+                "marketplace")
                     start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python marketplace_system.py > logs/marketplace.log 2>&1"
                     ;;
-            "gacha")
+                "gacha")
                     start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python gacha_system.py > logs/gacha.log 2>&1"
                     ;;
                 *)
@@ -591,173 +249,6 @@ start_services() {
     show_system_status
     
     success_log "All services started"
-}
-
-# Function to save status to JSON
-save_status_json() {
-    mkdir -p logs
-    local status_file="logs/service_status.json"
-    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-    
-    # Start JSON object
-    cat > "$status_file" << EOF
-{
-    "timestamp": "$timestamp",
-    "system": {
-        "cpu_usage": "$(top -bn1 | grep "Cpu(s)" | awk '{print $2}')%",
-        "memory_usage": "$(free -m | awk 'NR==2{printf "%.2f", $3*100/$2}')%",
-        "disk_usage": "$(df -h / | awk 'NR==2{print $5}')"
-    },
-    "services": {
-        "system_services": {
-            "postgresql": "$(systemctl is-active postgresql)",
-            "redis": "$(systemctl is-active redis-server)",
-            "nginx": "$(systemctl is-active nginx)",
-            "postfix": "$(systemctl is-active postfix)"
-        },
-        "application_services": {
-            "flask": "$(screen -list | grep -q "terminusa-flask" && echo "running" || echo "stopped")",
-            "terminal": "$(screen -list | grep -q "terminusa-terminal" && echo "running" || echo "stopped")",
-            "game": "$(screen -list | grep -q "terminusa-game" && echo "running" || echo "stopped")",
-            "email_monitor": "$(screen -list | grep -q "terminusa-email" && echo "running" || echo "stopped")",
-            "ai_manager": "$(screen -list | grep -q "terminusa-ai" && echo "running" || echo "stopped")",
-            "combat_manager": "$(screen -list | grep -q "terminusa-combat" && echo "running" || echo "stopped")",
-            "economy_systems": "$(screen -list | grep -q "terminusa-economy" && echo "running" || echo "stopped")",
-            "game_mechanics": "$(screen -list | grep -q "terminusa-mechanics" && echo "running" || echo "stopped")",
-            "currency": "$(screen -list | grep -q "terminusa-currency" && echo "running" || echo "stopped")",
-            "marketplace": "$(screen -list | grep -q "terminusa-marketplace" && echo "running" || echo "stopped")",
-            "gacha": "$(screen -list | grep -q "terminusa-gacha" && echo "running" || echo "stopped")"
-        }
-    }
-}
-EOF
-}
-
-# Enhanced production deployment
-deploy_production() {
-    info_log "Preparing for production deployment..."
-    
-    # Test SSH connection
-    info_log "Testing SSH connection..."
-    if ! ssh -q $PROD_USER@$PROD_SERVER exit; then
-        error_log "SSH connection failed. Please check your SSH key setup."
-        return 1
-    fi
-    
-    # Create backups
-    info_log "Creating backups..."
-    if ! ssh $PROD_USER@$PROD_SERVER "mkdir -p $BACKUP_DIR"; then
-        error_log "Failed to create backup directory"
-        return 1
-    fi
-    
-    if ! ssh $PROD_USER@$PROD_SERVER "
-        if [ -d $MAIN_APP_DIR ]; then 
-            tar -czf $BACKUP_DIR/terminusa-web_$TIMESTAMP.tar.gz -C $MAIN_APP_DIR .;
-        fi;
-        if [ -d $GAME_APP_DIR ]; then 
-            tar -czf $BACKUP_DIR/terminusa-game_$TIMESTAMP.tar.gz -C $GAME_APP_DIR .;
-        fi
-    "; then
-        error_log "Failed to create backups"
-        return 1
-    fi
-    
-    # Create deployment packages
-    info_log "Creating deployment packages..."
-    
-    # Create deployment package
-    info_log "Creating deployment package..."
-    if [ "$DEBUG" = true ]; then
-        debug_log "Current directory: $(pwd)"
-        debug_log "Directory contents: $(ls -la)"
-    fi
-    
-    tar -czvf deploy.tar.gz \
-        --exclude='*.pyc' \
-        --exclude='__pycache__' \
-        --exclude='.git' \
-        --exclude='.env' \
-        --exclude='node_modules' \
-        --exclude='tests' \
-        --exclude='*.log' \
-        --exclude='pytest.ini' \
-        . || {
-            error_log "Failed to create deployment package"
-            return 1
-        }
-    
-    if [ ! -f deploy.tar.gz ]; then
-        error_log "Deployment package was not created"
-        return 1
-    fi
-    
-    info_log "Deployment package created successfully"
-    
-    # Upload and deploy
-    info_log "Uploading deployment package..."
-    if ! scp deploy.tar.gz $PROD_USER@$PROD_SERVER:/tmp/; then
-        error_log "Failed to upload deployment package"
-        return 1
-    fi
-    
-    info_log "Deploying to main website directory..."
-    if ! ssh $PROD_USER@$PROD_SERVER "
-        set -e
-        systemctl stop terminusa-web || true
-        rm -rf $MAIN_APP_DIR/*
-        mkdir -p $MAIN_APP_DIR
-        cd $MAIN_APP_DIR
-        tar -xzf /tmp/deploy.tar.gz
-        chown -R www-data:www-data .
-        chmod -R 755 .
-        python3 -m venv venv
-        source venv/bin/activate
-        pip install -r requirements.txt
-        flask db upgrade
-        systemctl start terminusa-web
-    "; then
-        error_log "Failed to deploy main website"
-        return 1
-    fi
-    success_log "Main website deployed successfully"
-    
-    info_log "Deploying to game application directory..."
-    if ! ssh $PROD_USER@$PROD_SERVER "
-        set -e
-        systemctl stop terminusa-game terminusa-terminal || true
-        rm -rf $GAME_APP_DIR/*
-        mkdir -p $GAME_APP_DIR
-        cd $GAME_APP_DIR
-        tar -xzf /tmp/deploy.tar.gz
-        chown -R www-data:www-data .
-        chmod -R 755 .
-        python3 -m venv venv
-        source venv/bin/activate
-        pip install -r requirements.txt
-        flask db upgrade
-        systemctl start terminusa-game terminusa-terminal
-        rm -f /tmp/deploy.tar.gz
-    "; then
-        error_log "Failed to deploy game application"
-        return 1
-    fi
-    success_log "Game application deployed successfully"
-    
-    # Verify deployment
-    info_log "Verifying deployment..."
-    curl -s https://terminusa.online/health | grep -q "ok" && \
-        success_log "Main website is up" || \
-        error_log "Main website verification failed"
-    
-    curl -s https://play.terminusa.online/health | grep -q "ok" && \
-        success_log "Game server is up" || \
-        error_log "Game server verification failed"
-    
-    # Cleanup local files
-    rm -f deploy.tar.gz
-    
-    success_log "Production deployment completed successfully"
 }
 
 # Enhanced system status monitoring
@@ -799,9 +290,6 @@ show_system_status() {
     echo
     echo -e "${YELLOW}Screen Sessions:${NC}"
     screen -list | grep -v "There are screens" || echo "No active screens"
-    
-    # Save status to JSON
-    save_status_json
 }
 
 # Show logs menu
@@ -819,7 +307,7 @@ show_logs_menu() {
     echo "10) Nginx Access Log"
     echo "11) PostgreSQL Log"
     echo "12) Redis Log"
-    echo "13) Service Status Log"
+    echo "13) Mail Log"
     echo "0) Back to main menu"
     
     read -p "Select log to view: " log_choice
@@ -836,7 +324,7 @@ show_logs_menu() {
         10) tail -f /var/log/nginx/access.log ;;
         11) tail -f /var/log/postgresql/postgresql-main.log ;;
         12) tail -f /var/log/redis/redis-server.log ;;
-        13) cat logs/service_status.json | python3 -m json.tool ;;
+        13) tail -f /var/log/mail.log ;;
         0) return ;;
         *) error_log "Invalid option" ;;
     esac
@@ -880,17 +368,12 @@ show_database_menu() {
         3)
             info_log "Running database migrations"
             source venv/bin/activate
-            flask db stamp head  # Reset migration head
-            flask db migrate     # Generate new migrations
-            flask db upgrade     # Apply migrations
+            flask db upgrade
             success_log "Database migrations completed"
             ;;
         4)
             info_log "Initializing database"
             source venv/bin/activate
-            # Create database if it doesn't exist
-            PGPASSWORD=${POSTGRES_PASSWORD} psql -h localhost -U ${POSTGRES_USER} -d postgres -c "CREATE DATABASE ${POSTGRES_DB};" 2>/dev/null || true
-            # Initialize database schema
             python init_db.py
             if [ $? -eq 0 ]; then
                 success_log "Database initialized successfully"
@@ -968,10 +451,3 @@ show_menu() {
 # Initialize
 mkdir -p logs
 show_menu
- <environment_details>
-# VSCode Visible Files
-deploy.sh
-
-# VSCode Open Tabs
-deploy.sh
-</environment_details>
