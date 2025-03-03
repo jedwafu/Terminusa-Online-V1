@@ -124,7 +124,8 @@ class BlockedUser(db.Model):
 
 class Party(db.Model):
     __tablename__ = 'parties'
-
+    __table_args__ = {'extend_existing': True}
+    
     id = db.Column(db.Integer, primary_key=True)
     leader_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     
