@@ -5,7 +5,7 @@ from flask import Flask, render_template, jsonify, request, redirect, url_for
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, verify_jwt_in_request
 from dotenv import load_dotenv
-from database import db, init_db
+from database import db
 from models import User, PlayerCharacter, Wallet, Inventory, Transaction, Gate, Guild, Item
 import os
 import bcrypt
@@ -16,7 +16,33 @@ import smtplib
 import email.utils
 from email.mime.text import MIMEText
 
-app = Flask(__name__)
+def create_app():
+    """Create and configure the Flask application"""
+    app = Flask(__name__, 
+                static_url_path='/static',
+                static_folder='static')
+    CORS(app)
+
+    # Load environment variables
+    load_dotenv()
+
+    # Configure app
+    app.config.update(
+        SEND_FILE_MAX_AGE_DEFAULT=0,  # Disable caching during development
+        SECRET_KEY=os.getenv('FLASK_SECRET_KEY', 'dev-key-please-change'),
+        JWT_SECRET_KEY=os.getenv('JWT_SECRET_KEY', 'jwt-key-please-change'),
+        SQLALCHEMY_DATABASE_URI=os.getenv('DATABASE_URL'),
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        JWT_ACCESS_TOKEN_EXPIRES=3600  # 1 hour
+    )
+
+    # Initialize extensions
+    jwt = JWTManager(app)
+    db.init_app(app)
+
+    return app
+
+app = create_app()
 
 # Configure logging
 os.makedirs('logs', exist_ok=True)  # Ensure logs directory exists
