@@ -76,7 +76,7 @@ app.config.update(
 
 # Initialize extensions
 jwt = JWTManager(app)
-init_db(app)
+db.init_app(app)
 
 @app.route('/')
 @app.route('/index')
