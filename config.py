@@ -135,7 +135,7 @@ class Config:
     # Development Configuration
     if DEBUG:
         # Override settings for development
-        SQLALCHEMY_DATABASE_URI = 'postgresql://localhost/terminusa_dev'
+        # Keep using the DATABASE_URL from environment
         REDIS_URL = 'redis://localhost:6379/0'
         MAIL_SUPPRESS_SEND = True
         WTF_CSRF_ENABLED = False
