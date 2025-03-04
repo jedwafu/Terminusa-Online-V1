@@ -3,6 +3,9 @@ Game configuration settings for Terminusa Online
 """
 from decimal import Decimal
 
+# AI Configuration
+AI_CONFIDENCE_THRESHOLD = 0.85  # 85% confidence threshold for AI decisions
+
 # Currency Configuration
 MAX_CRYSTAL_SUPPLY = 100_000_000
 CRYSTAL_TAX_RATE = Decimal('0.13')  # 13%
