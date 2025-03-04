@@ -17,7 +17,11 @@ class Announcement(BaseModel, TimestampMixin):
     
     # Author relationship
     author_id = Column(Integer, ForeignKey('users.id'), nullable=True)
-    author = relationship('User', foreign_keys=[author_id], backref=backref('authored_announcements', lazy='dynamic'))
+    # Defer the relationship to avoid circular imports
+    @property
+    def author(self):
+        from models.user import User
+        return User.query.get(self.author_id)
 
 
     def __repr__(self):
