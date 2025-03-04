@@ -12,6 +12,7 @@ from .user import User
 from .player import Player, PlayerClass, JobType, PlayerCharacter
 from .inventory import Inventory, ItemType, ItemRarity
 from .item import Item
+from .equipment import Equipment
 
 # Import game-related models
 from .announcement import Announcement
@@ -42,6 +43,7 @@ def init_models():
     User.progress = db.relationship('PlayerProgress', backref='user', uselist=False)
     User.announcements = db.relationship('Announcement', backref=db.backref('author', lazy='joined'), lazy='dynamic')
     User.quests = db.relationship('QuestProgress', back_populates='user')
+    User.equipment = db.relationship('Equipment', backref='user', lazy='dynamic')
     User.friends = db.relationship('Friend',
         foreign_keys=[Friend.user_id],
         backref=db.backref('user', lazy='joined'),
