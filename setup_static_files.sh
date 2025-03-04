@@ -79,44 +79,49 @@ export NPM_CONFIG_CACHE="$HOME/.npm/cache"
 
 # Install dependencies
 log_info "Installing dependencies"
-cd client || { log_error "client directory not found"; exit 1; }
 
 # Clean up previous installations
 log_info "Cleaning up previous installations"
-rm -rf node_modules package-lock.json
+rm -rf "${CLIENT_DIR}/node_modules" "${CLIENT_DIR}/package-lock.json"
 
 # Install packages with error handling
 log_info "Installing npm packages"
-npm install --no-bin-links xterm@5.3.0 || { log_error "Failed to install xterm"; exit 1; }
-npm install --no-bin-links xterm-addon-fit@0.8.0 || { log_error "Failed to install xterm-addon-fit"; exit 1; }
-npm install --no-bin-links xterm-addon-web-links@0.9.0 || { log_error "Failed to install xterm-addon-web-links"; exit 1; }
-npm install --no-bin-links xterm-addon-webgl@0.16.0 || { log_error "Failed to install xterm-addon-webgl"; exit 1; }
+(cd "${CLIENT_DIR}" && \
+npm install --no-bin-links xterm@5.3.0 && \
+npm install --no-bin-links xterm-addon-fit@0.8.0 && \
+npm install --no-bin-links xterm-addon-web-links@0.9.0 && \
+npm install --no-bin-links xterm-addon-webgl@0.16.0) || { log_error "Failed to install npm packages"; exit 1; }
 
 # Check installation
-if [ ! -d "node_modules/xterm" ]; then
+if [ ! -d "${CLIENT_DIR}/node_modules/xterm" ]; then
     log_error "Error: npm install failed, xterm module not found"
     exit 1
 fi
 
+# Get absolute paths
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+STATIC_DIR="${SCRIPT_DIR}/static"
+TEMPLATES_DIR="${SCRIPT_DIR}/templates"
+CLIENT_DIR="${SCRIPT_DIR}/client"
+
 # Copy files with validation
 log_info "Copying files to static directories"
-copy_file "node_modules/xterm/css/xterm.css" "../static/css/"
-copy_file "node_modules/xterm/lib/xterm.js" "../static/js/"
-copy_file "node_modules/xterm-addon-fit/lib/xterm-addon-fit.js" "../static/js/"
-copy_file "node_modules/xterm-addon-web-links/lib/xterm-addon-web-links.js" "../static/js/"
-copy_file "node_modules/xterm-addon-webgl/lib/xterm-addon-webgl.js" "../static/js/"
+copy_file "${CLIENT_DIR}/node_modules/xterm/css/xterm.css" "${STATIC_DIR}/css/xterm.css"
+copy_file "${CLIENT_DIR}/node_modules/xterm/lib/xterm.js" "${STATIC_DIR}/js/xterm.js"
+copy_file "${CLIENT_DIR}/node_modules/xterm-addon-fit/lib/xterm-addon-fit.js" "${STATIC_DIR}/js/xterm-addon-fit.js"
+copy_file "${CLIENT_DIR}/node_modules/xterm-addon-web-links/lib/xterm-addon-web-links.js" "${STATIC_DIR}/js/xterm-addon-web-links.js"
+copy_file "${CLIENT_DIR}/node_modules/xterm-addon-webgl/lib/xterm-addon-webgl.js" "${STATIC_DIR}/js/xterm-addon-webgl.js"
 
-copy_file "css/style.css" "../static/css/"
-copy_file "js/terminal.js" "../static/js/"
-copy_file "index.html" "../templates/"
+copy_file "${CLIENT_DIR}/css/style.css" "${STATIC_DIR}/css/style.css"
+copy_file "${CLIENT_DIR}/js/terminal.js" "${STATIC_DIR}/js/terminal.js"
+copy_file "${CLIENT_DIR}/index.html" "${TEMPLATES_DIR}/index.html"
 
 # Create symlinks with validation
 log_info "Creating symlinks in templates directory"
-cd ../templates || { log_error "templates directory not found"; exit 1; }
-create_symlink "../static/css/xterm.css" "xterm.css"
-create_symlink "../static/js/xterm.js" "xterm.js"
-create_symlink "../static/js/xterm-addon-fit.js" "xterm-addon-fit.js"
-create_symlink "../static/js/xterm-addon-web-links.js" "xterm-addon-web-links.js"
-create_symlink "../static/js/xterm-addon-webgl.js" "xterm-addon-webgl.js"
+create_symlink "${STATIC_DIR}/css/xterm.css" "${TEMPLATES_DIR}/xterm.css"
+create_symlink "${STATIC_DIR}/js/xterm.js" "${TEMPLATES_DIR}/xterm.js"
+create_symlink "${STATIC_DIR}/js/xterm-addon-fit.js" "${TEMPLATES_DIR}/xterm-addon-fit.js"
+create_symlink "${STATIC_DIR}/js/xterm-addon-web-links.js" "${TEMPLATES_DIR}/xterm-addon-web-links.js"
+create_symlink "${STATIC_DIR}/js/xterm-addon-webgl.js" "${TEMPLATES_DIR}/xterm-addon-webgl.js"
 
 log_success "Static files setup completed successfully"
