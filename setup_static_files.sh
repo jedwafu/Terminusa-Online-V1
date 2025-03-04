@@ -1,34 +1,25 @@
 #!/bin/bash
-
-# Exit on error and print commands
-set -ex
+set -e
 
 # Create directories
 mkdir -p static/css static/js static/fonts templates
+
+# Set up npm
+mkdir -p "$HOME/.npm"
+export NPM_CONFIG_PREFIX="$HOME/.npm"
+export NPM_CONFIG_CACHE="$HOME/.npm/cache"
 
 # Install dependencies
 cd client
 rm -rf node_modules package-lock.json
 
-# Create package.json
-cat > package.json << 'EOL'
-{
-  "name": "terminusa-client",
-  "version": "1.0.0",
-  "private": true,
-  "dependencies": {
-    "xterm": "5.3.0",
-    "xterm-addon-fit": "0.8.0",
-    "xterm-addon-web-links": "0.9.0",
-    "xterm-addon-webgl": "0.16.0"
-  }
-}
-EOL
-
 # Install packages
-npm install --no-bin-links --no-package-lock
+npm install --no-bin-links xterm@5.3.0
+npm install --no-bin-links xterm-addon-fit@0.8.0
+npm install --no-bin-links xterm-addon-web-links@0.9.0
+npm install --no-bin-links xterm-addon-webgl@0.16.0
 
-# Verify installation
+# Check installation
 if [ ! -d "node_modules/xterm" ]; then
     echo "Error: npm install failed"
     exit 1
