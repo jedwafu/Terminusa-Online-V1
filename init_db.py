@@ -75,28 +75,40 @@ def initialize_database():
             logger.error(f"Failed to add foreign key constraint: {str(e)}")
             raise Exception(f"Failed to add foreign key constraint: {str(e)}")
             
-        # Create remaining tables
-        tables = [
-            Announcement.__table__,
-            Guild.__table__,
-            Party.__table__,
-            Gate.__table__,
-            MagicBeast.__table__,
-            InventoryItem.__table__,
-            Item.__table__,
-            Mount.__table__,
-            Pet.__table__,
-            Skill.__table__,
-            Quest.__table__,
-            GuildQuest.__table__,
-            Achievement.__table__,
-            Transaction.__table__
-        ]
-        
+        # Create tables in dependency order
         logger.info("Creating remaining tables")
-        for table in tables:
-            logger.info(f"Creating table: {table.name}")
-            table.create(bind=db.engine)
+        
+        # Create base tables first
+        logger.info("Creating base tables")
+        Item.__table__.create(bind=db.engine, checkfirst=True)
+        Skill.__table__.create(bind=db.engine, checkfirst=True)
+        
+        # Create guild table
+        logger.info("Creating guild table")
+        Guild.__table__.create(bind=db.engine, checkfirst=True)
+        
+        # Create tables that depend on users and guilds
+        logger.info("Creating dependent tables")
+        Announcement.__table__.create(bind=db.engine, checkfirst=True)
+        Party.__table__.create(bind=db.engine, checkfirst=True)
+        Gate.__table__.create(bind=db.engine, checkfirst=True)
+        MagicBeast.__table__.create(bind=db.engine, checkfirst=True)
+        Mount.__table__.create(bind=db.engine, checkfirst=True)
+        Pet.__table__.create(bind=db.engine, checkfirst=True)
+        
+        # Create inventory items after items table exists
+        logger.info("Creating inventory related tables")
+        InventoryItem.__table__.create(bind=db.engine, checkfirst=True)
+        
+        # Create quest related tables
+        logger.info("Creating quest related tables")
+        Quest.__table__.create(bind=db.engine, checkfirst=True)
+        GuildQuest.__table__.create(bind=db.engine, checkfirst=True)
+        
+        # Create achievement and transaction tables last
+        logger.info("Creating achievement and transaction tables")
+        Achievement.__table__.create(bind=db.engine, checkfirst=True)
+        Transaction.__table__.create(bind=db.engine, checkfirst=True)
         
         # Verify all tables were created
         inspector = inspect(db.engine)
