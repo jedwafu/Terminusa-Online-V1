@@ -19,12 +19,14 @@ from .achievement import Achievement
 from .gate import Gate
 from .guild import Guild, GuildMember, GuildQuest
 from .mount_pet import Mount, Pet
-from .transaction import Transaction, TransactionType, TransactionStatus
-from .wallet import Wallet, SwapTransaction, TaxConfig
 from .currency import Currency
 from .party import Party
 from .social import Friend, BlockedUser
 from .progression import PlayerProgress, ClassProgress, JobProgress
+
+# Import transaction-related models
+from .transaction import Transaction, TransactionType, TransactionStatus
+from .wallet import Wallet, SwapTransaction, TaxConfig
 
 # Setup model relationships
 def init_models():
