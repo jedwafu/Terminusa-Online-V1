@@ -19,6 +19,7 @@ class PartyRole(Enum):
 
 class Friend(db.Model):
     __tablename__ = 'friends'
+    __table_args__ = {'extend_existing': True}
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -105,6 +106,7 @@ class Friend(db.Model):
 
 class BlockedUser(db.Model):
     __tablename__ = 'blocked_users'
+    __table_args__ = {'extend_existing': True}
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
@@ -223,6 +225,7 @@ class Party(db.Model):
 
 class PartyMember(db.Model):
     __tablename__ = 'party_members'
+    __table_args__ = {'extend_existing': True}
 
     id = db.Column(db.Integer, primary_key=True)
     party_id = db.Column(db.Integer, db.ForeignKey('parties.id'), nullable=False)
