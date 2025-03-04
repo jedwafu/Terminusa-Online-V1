@@ -4,7 +4,6 @@ from .base import BaseModel, TimestampMixin
 from database import db
 from sqlalchemy import Column, String, Text, Integer, Boolean, ForeignKey
 from sqlalchemy.orm import relationship, backref
-from .user import User
 
 
 class Announcement(BaseModel, TimestampMixin):
@@ -18,7 +17,7 @@ class Announcement(BaseModel, TimestampMixin):
     
     # Author relationship
     author_id = Column(Integer, ForeignKey('users.id'), nullable=True)
-    author = relationship(User, foreign_keys=[author_id], backref=backref('authored_announcements', lazy='dynamic'))
+    author = relationship('User', foreign_keys=[author_id], backref=backref('authored_announcements', lazy='dynamic'))
 
 
     def __repr__(self):
