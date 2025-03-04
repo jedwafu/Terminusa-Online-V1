@@ -116,7 +116,7 @@ def index():
             Announcement.created_at.desc()
         ).limit(3).all()
 
-        return render_template('index_new.html', 
+        return render_template('index.html', 
                              title='Home',
                              latest_announcements=latest_announcements)
     except Exception as e:
