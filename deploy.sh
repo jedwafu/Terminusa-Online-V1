@@ -702,14 +702,27 @@ initialize_system() {
             systemctl enable terminusa-terminal.service
         fi
 
-        # Install nginx configuration
+        # Install nginx configuration and error pages
         info_log "Setting up nginx configuration..."
         if [ -f nginx/terminusa.conf ]; then
+            # Copy nginx configuration
             cp nginx/terminusa.conf /etc/nginx/sites-available/
             ln -sf /etc/nginx/sites-available/terminusa.conf /etc/nginx/sites-enabled/
             rm -f /etc/nginx/sites-enabled/default  # Remove default site
+            
+            # Create error pages directory
+            mkdir -p /var/www/terminusa/nginx/error_pages
+            
+            # Copy error pages
+            cp -r nginx/error_pages/* /var/www/terminusa/nginx/error_pages/
+            
+            # Set proper permissions
+            chown -R www-data:www-data /var/www/terminusa/nginx
+            chmod -R 755 /var/www/terminusa/nginx
+            
+            # Test and restart nginx
             nginx -t && systemctl restart nginx
-            success_log "Nginx configuration installed and service restarted"
+            success_log "Nginx configuration and error pages installed and service restarted"
         else
             error_log "Nginx configuration file not found"
         fi
