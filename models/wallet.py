@@ -19,7 +19,10 @@ class Wallet(db.Model):
     crystals_balance = db.Column(db.Integer, default=0)  # Crystals are whole numbers
     
     # Transaction History
-    transactions = relationship('Transaction', backref='wallet', lazy='dynamic')
+    transactions = relationship('Transaction', 
+                              foreign_keys='Transaction.wallet_id',
+                              backref='wallet', 
+                              lazy='dynamic')
     swap_transactions = relationship('SwapTransaction', backref='wallet', lazy='dynamic')
     
     # Timestamps
@@ -103,44 +106,6 @@ class Wallet(db.Model):
                 'created': self.created_at.isoformat(),
                 'updated': self.updated_at.isoformat(),
                 'last_transaction': self.last_transaction.isoformat() if self.last_transaction else None
-            }
-        }
-
-class Transaction(db.Model):
-    __tablename__ = 'transactions'
-
-    id = db.Column(db.Integer, primary_key=True)
-    wallet_id = db.Column(db.Integer, db.ForeignKey('wallets.id'), nullable=False)
-    recipient_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    
-    type = db.Column(db.String(20), nullable=False)  # 'transfer', 'reward', 'purchase', etc.
-    currency = db.Column(db.String(10), nullable=False)
-    amount = db.Column(db.Numeric(precision=36, scale=18), nullable=False)
-    net_amount = db.Column(db.Numeric(precision=36, scale=18), nullable=False)
-    tax_amount = db.Column(db.Numeric(precision=36, scale=18), nullable=False)
-    
-    status = db.Column(db.String(20), default='pending')  # 'pending', 'completed', 'failed'
-    metadata = db.Column(db.JSON)
-    
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    def to_dict(self) -> dict:
-        """Convert transaction data to dictionary"""
-        return {
-            'id': self.id,
-            'wallet_id': self.wallet_id,
-            'recipient_id': self.recipient_id,
-            'type': self.type,
-            'currency': self.currency,
-            'amount': str(self.amount),
-            'net_amount': str(self.net_amount),
-            'tax_amount': str(self.tax_amount),
-            'status': self.status,
-            'metadata': self.metadata,
-            'timestamps': {
-                'created': self.created_at.isoformat(),
-                'updated': self.updated_at.isoformat()
             }
         }
 

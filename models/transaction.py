@@ -47,6 +47,7 @@ class Transaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     recipient_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    wallet_id = db.Column(db.Integer, db.ForeignKey('wallets.id'), nullable=False)
     
     # Transaction Details
     type = db.Column(db.Enum(TransactionType), nullable=False)
@@ -76,9 +77,10 @@ class Transaction(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     completed_at = db.Column(db.DateTime, nullable=True)
 
-    def __init__(self, user_id: int, type: TransactionType, currency: str, 
+    def __init__(self, user_id: int, wallet_id: int, type: TransactionType, currency: str, 
                  amount: Decimal, details: Dict = None):
         self.user_id = user_id
+        self.wallet_id = wallet_id
         self.type = type
         self.currency = currency
         self.amount = amount
@@ -150,6 +152,7 @@ class Transaction(db.Model):
             # Create refund transaction
             refund = Transaction(
                 user_id=self.user_id,
+                wallet_id=self.wallet_id,
                 type=self.type,
                 currency=self.currency,
                 amount=self.amount,
