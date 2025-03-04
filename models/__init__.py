@@ -9,6 +9,7 @@ db = SQLAlchemy()
 
 # Import all models
 from .user import User
+from .announcement import Announcement
 from .player import Player, PlayerClass, JobType, PlayerCharacter
 from .inventory import Inventory, ItemType, ItemRarity
 from .item import Item
@@ -17,7 +18,6 @@ from .job import Job, JobQuest
 from .gambling_stats import GamblingStats
 
 # Import game-related models
-from .announcement import Announcement
 from .achievement import Achievement
 from .gate import Gate
 from .guild import Guild, GuildMember, GuildQuest
