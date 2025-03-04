@@ -25,22 +25,36 @@ def initialize_database():
         
         # Import all models to ensure they're registered
         from models import (
-            User, 
-            Wallet,
-            Announcement,
-            Guild,
-            Party,
-            Gate,
-            MagicBeast,
-            InventoryItem,
+            User,
+            Player,
+            PlayerCharacter,
+            Inventory,
             Item,
+            Equipment,
+            Job,
+            JobQuest,
+            GamblingStats,
+            Announcement,
+            Achievement,
+            Gate,
+            Guild,
+            GuildMember,
+            GuildQuest,
             Mount,
             Pet,
-            Skill,
+            Currency,
+            Party,
+            PartyMember,
+            PartyQuest,
+            Friend,
+            BlockedUser,
+            PlayerProgress,
+            ClassProgress,
+            JobProgress,
             Quest,
-            GuildQuest,
-            Achievement,
-            Transaction
+            QuestProgress,
+            Transaction,
+            Wallet
         )
         
         # Drop all existing tables
