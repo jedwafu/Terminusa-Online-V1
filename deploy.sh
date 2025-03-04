@@ -701,6 +701,18 @@ initialize_system() {
             systemctl daemon-reload
             systemctl enable terminusa-terminal.service
         fi
+
+        # Install nginx configuration
+        info_log "Setting up nginx configuration..."
+        if [ -f nginx/terminusa.conf ]; then
+            cp nginx/terminusa.conf /etc/nginx/sites-available/
+            ln -sf /etc/nginx/sites-available/terminusa.conf /etc/nginx/sites-enabled/
+            rm -f /etc/nginx/sites-enabled/default  # Remove default site
+            nginx -t && systemctl restart nginx
+            success_log "Nginx configuration installed and service restarted"
+        else
+            error_log "Nginx configuration file not found"
+        fi
     fi
     
     # Create virtual environment if it doesn't exist
@@ -728,16 +740,6 @@ initialize_system() {
         source venv/bin/activate
         if [ -f "init_db.py" ]; then
             python init_db.py
-        fi
-    fi
-    
-    # Setup nginx if running as root
-    if [ "$EUID" -eq 0 ]; then
-        info_log "Setting up nginx..."
-        if [ -f nginx/terminusa.conf ]; then
-            cp nginx/terminusa.conf /etc/nginx/sites-available/terminusa
-            ln -sf /etc/nginx/sites-available/terminusa /etc/nginx/sites-enabled/
-            nginx -t && systemctl restart nginx
         fi
     fi
     
