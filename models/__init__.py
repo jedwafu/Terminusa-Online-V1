@@ -14,6 +14,7 @@ from .inventory import Inventory, ItemType, ItemRarity
 from .item import Item
 from .equipment import Equipment
 from .job import Job, JobQuest
+from .gambling_stats import GamblingStats
 
 # Import game-related models
 from .announcement import Announcement
@@ -46,6 +47,7 @@ def init_models():
     User.quests = db.relationship('QuestProgress', back_populates='user')
     User.equipment = db.relationship('Equipment', backref='user', lazy='dynamic')
     User.party_membership = db.relationship('PartyMember', back_populates='user')
+    User.gambling_stats = db.relationship('GamblingStats', backref='user', uselist=False)
     User.friends = db.relationship('Friend',
         foreign_keys=[Friend.user_id],
         backref=db.backref('user', lazy='joined'),
