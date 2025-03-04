@@ -23,7 +23,7 @@ def initialize_database():
     with app.app_context():
         logger.info("App context created")
         
-        # Import all models to ensure they're registered
+        # Import all models
         from models import (
             User,
             Player,
@@ -61,9 +61,52 @@ def initialize_database():
         logger.info("Dropping all existing tables")
         db.drop_all()
         
-        # Create all tables
-        logger.info("Creating all tables")
-        db.create_all()
+        # Create tables in order
+        logger.info("Creating tables in order")
+        
+        # Create independent tables first
+        logger.info("Creating independent tables")
+        tables_independent = [
+            User.__table__,
+            Item.__table__,
+            Quest.__table__,
+            Guild.__table__
+        ]
+        for table in tables_independent:
+            table.create(bind=db.engine)
+        
+        # Create dependent tables
+        logger.info("Creating dependent tables")
+        tables_dependent = [
+            Player.__table__,
+            PlayerCharacter.__table__,
+            Inventory.__table__,
+            Equipment.__table__,
+            Job.__table__,
+            JobQuest.__table__,
+            GamblingStats.__table__,
+            Announcement.__table__,
+            Achievement.__table__,
+            Gate.__table__,
+            GuildMember.__table__,
+            GuildQuest.__table__,
+            Mount.__table__,
+            Pet.__table__,
+            Currency.__table__,
+            Party.__table__,
+            PartyMember.__table__,
+            PartyQuest.__table__,
+            Friend.__table__,
+            BlockedUser.__table__,
+            PlayerProgress.__table__,
+            ClassProgress.__table__,
+            JobProgress.__table__,
+            QuestProgress.__table__,
+            Transaction.__table__,
+            Wallet.__table__
+        ]
+        for table in tables_dependent:
+            table.create(bind=db.engine)
         
         logger.info("Database initialized successfully")
 
