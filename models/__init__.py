@@ -13,6 +13,7 @@ from .player import Player, PlayerClass, JobType, PlayerCharacter
 from .inventory import Inventory, ItemType, ItemRarity
 from .item import Item
 from .equipment import Equipment
+from .job import Job, JobQuest
 
 # Import game-related models
 from .announcement import Announcement
