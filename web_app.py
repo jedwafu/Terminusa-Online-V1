@@ -1,12 +1,11 @@
 from gevent import monkey
 monkey.patch_all()
-from models import Announcement
 from flask import Flask, render_template, jsonify, request, redirect, url_for
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, verify_jwt_in_request
 from dotenv import load_dotenv
 from database import db
-from models import User, PlayerCharacter, Wallet, Inventory, Transaction, Gate, Guild, Item
+from models import User, PlayerCharacter, Wallet, Inventory, Transaction, Gate, Guild, Item, Announcement
 import os
 import bcrypt
 import logging
