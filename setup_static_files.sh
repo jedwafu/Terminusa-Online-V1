@@ -77,6 +77,18 @@ create_dir "$HOME/.npm"
 export NPM_CONFIG_PREFIX="$HOME/.npm"
 export NPM_CONFIG_CACHE="$HOME/.npm/cache"
 
+# Get absolute paths
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+STATIC_DIR="${SCRIPT_DIR}/static"
+TEMPLATES_DIR="${SCRIPT_DIR}/templates"
+CLIENT_DIR="${SCRIPT_DIR}/client"
+
+# Check if client directory exists
+if [ ! -d "${CLIENT_DIR}" ]; then
+    log_error "Client directory not found: ${CLIENT_DIR}"
+    exit 1
+fi
+
 # Install dependencies
 log_info "Installing dependencies"
 
@@ -84,13 +96,24 @@ log_info "Installing dependencies"
 log_info "Cleaning up previous installations"
 rm -rf "${CLIENT_DIR}/node_modules" "${CLIENT_DIR}/package-lock.json"
 
+# Create package.json if it doesn't exist
+if [ ! -f "${CLIENT_DIR}/package.json" ]; then
+    log_info "Creating package.json"
+    echo '{
+  "name": "terminusa-client",
+  "version": "1.0.0",
+  "private": true
+}' > "${CLIENT_DIR}/package.json"
+fi
+
 # Install packages with error handling
 log_info "Installing npm packages"
 (cd "${CLIENT_DIR}" && \
-npm install --no-bin-links xterm@5.3.0 && \
-npm install --no-bin-links xterm-addon-fit@0.8.0 && \
-npm install --no-bin-links xterm-addon-web-links@0.9.0 && \
-npm install --no-bin-links xterm-addon-webgl@0.16.0) || { log_error "Failed to install npm packages"; exit 1; }
+npm install --no-bin-links \
+  xterm@5.3.0 \
+  xterm-addon-fit@0.8.0 \
+  xterm-addon-web-links@0.9.0 \
+  xterm-addon-webgl@0.16.0) || { log_error "Failed to install npm packages"; exit 1; }
 
 # Check installation
 if [ ! -d "${CLIENT_DIR}/node_modules/xterm" ]; then
