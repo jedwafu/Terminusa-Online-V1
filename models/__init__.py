@@ -43,8 +43,7 @@ def init_models():
     User.transactions = db.relationship('Transaction', backref='user')
     User.guild_membership = db.relationship('GuildMember', backref='user')
     User.progress = db.relationship('PlayerProgress', backref='user', uselist=False)
-    # Relationship is already defined in announcement.py
-    # User.announcements = db.relationship('Announcement', backref=db.backref('author', lazy='joined'), lazy='dynamic')
+    User.announcements = db.relationship('Announcement', backref=db.backref('author', lazy='joined'), lazy='dynamic')
     User.quests = db.relationship('QuestProgress', back_populates='user')
     User.equipment = db.relationship('Equipment', backref='user', lazy='dynamic')
     User.party_membership = db.relationship('PartyMember', back_populates='user')

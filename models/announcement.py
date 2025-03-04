@@ -17,7 +17,7 @@ class Announcement(BaseModel, TimestampMixin):
     
     # Author relationship
     author_id = Column(Integer, ForeignKey('users.id'), nullable=True)
-    author = relationship('User', foreign_keys=[author_id], backref=backref('authored_announcements', lazy='dynamic'))
+    author = relationship('models.user.User', foreign_keys=[author_id], backref=backref('authored_announcements', lazy='dynamic'))
 
 
     def __repr__(self):
