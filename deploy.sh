@@ -1,4 +1,9 @@
 #!/bin/bash
+# Improved deploy.sh script for Terminusa Online
+# This script manages deployment, service control, and system setup
+
+# Enable error handling
+set -e
 
 # Colors for output
 RED='\033[0;31m'
@@ -7,6 +12,14 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
+
+# Debug mode flag (default: false)
+DEBUG=false
+
+# Script variables
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+BACKUP_DIR="${SCRIPT_DIR}/backups"
 
 # Logging functions
 debug_log() {
@@ -30,8 +43,23 @@ info_log() {
     echo "[INFO] $(date '+%Y-%m-%d %H:%M:%S') - $1" >> logs/deploy.log
 }
 
+# Function to check if script is run with sudo
+check_sudo() {
+    if [ "$EUID" -ne 0 ]; then
+        error_log "This operation requires sudo privileges. Please run with sudo."
+        return 1
+    fi
+    return 0
+}
+
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
 # Create logs directory
 mkdir -p logs
+mkdir -p "$BACKUP_DIR"
 
 # Load environment variables
 if [ -f .env ]; then
@@ -39,13 +67,57 @@ if [ -f .env ]; then
     set -a
     source .env
     set +a
+    success_log "Environment variables loaded from .env"
 else
     error_log ".env file not found"
+    info_log "Creating sample .env file"
+    cat > .env << EOF
+# Terminusa Online Environment Configuration
+
+# Server Configuration
+PROD_SERVER=your-server.com
+PROD_USER=terminusa
+MAIN_APP_DIR=/var/www/terminusa
+MAIN_STATIC_DIR=/var/www/terminusa/static
+GAME_APP_DIR=/var/www/terminusa/game
+GAME_STATIC_DIR=/var/www/terminusa/game/static
+BACKUP_DIR=/var/www/terminusa/backups
+
+# Database Configuration
+DATABASE_URL=postgresql://username:password@localhost:5432/terminusa
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=your_password
+POSTGRES_DB=terminusa
+
+# Security
+FLASK_SECRET_KEY=generate_a_secure_random_key
+JWT_SECRET_KEY=generate_another_secure_random_key
+SECURITY_PASSWORD_SALT=generate_a_secure_salt
+
+# Email Configuration
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+MAIL_DEFAULT_SENDER=noreply@terminusa.online
+
+# Web3 Configuration
+SOLANA_NETWORK=mainnet
+SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+EXON_CONTRACT_ADDRESS=your_contract_address
+
+# Feature Flags
+ENABLE_WEB3=True
+ENABLE_GACHA=True
+ENABLE_TRADING=True
+ENABLE_GAMBLING=True
+ENABLE_REFERRALS=True
+ENABLE_LOYALTY=True
+ENABLE_GUILD_QUESTS=True
+EOF
+    error_log "Please edit the .env file with your configuration and run the script again"
     exit 1
 fi
-
-# Set timestamp
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 # Verify required environment variables
 required_vars=(
@@ -62,15 +134,18 @@ required_vars=(
     "POSTGRES_DB"
 )
 
+missing_vars=0
 for var in "${required_vars[@]}"; do
     if [ -z "${!var}" ]; then
         error_log "Required environment variable $var is not set"
-        exit 1
+        missing_vars=$((missing_vars+1))
     fi
 done
 
-# Debug mode flag
-DEBUG=false
+if [ $missing_vars -gt 0 ]; then
+    error_log "$missing_vars required environment variables are missing. Please check your .env file."
+    exit 1
+fi
 
 # Service configurations
 declare -A SERVICE_PORTS=(
@@ -118,6 +193,80 @@ declare -A SERVICE_SCREENS=(
     ["gacha"]="terminusa-gacha"
 )
 
+# Function to check database connection
+check_database_connection() {
+    info_log "Checking database connection..."
+    if PGPASSWORD=${POSTGRES_PASSWORD} psql -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c "SELECT 1" >/dev/null 2>&1; then
+        success_log "Database connection successful"
+        return 0
+    else
+        error_log "Could not connect to database. Please check your database configuration."
+        return 1
+    fi
+}
+
+# Function to check if a port is in use
+check_port() {
+    local port=$1
+    netstat -tuln 2>/dev/null | grep -q ":$port " || ss -tuln 2>/dev/null | grep -q ":$port "
+    return $?
+}
+
+# Function to kill process on a port
+kill_port_process() {
+    local port=$1
+    local pid=$(lsof -t -i:$port 2>/dev/null || ss -tlnp 2>/dev/null | grep ":$port " | awk '{print $6}' | cut -d',' -f2 | cut -d'=' -f2)
+    if [ ! -z "$pid" ]; then
+        kill -9 $pid 2>/dev/null || true
+    fi
+}
+
+# Screen management functions
+check_screen() {
+    if ! command_exists screen; then
+        info_log "Screen is not installed"
+        if [ "$EUID" -eq 0 ]; then
+            info_log "Installing screen..."
+            apt-get update && apt-get install -y screen
+        else
+            error_log "Screen is not installed and script is not running with sudo. Please install screen manually."
+            return 1
+        fi
+    fi
+    return 0
+}
+
+start_screen() {
+    local name=$1
+    local command=$2
+    if ! screen -list | grep -q "$name"; then
+        screen -dmS $name bash -c "$command" || {
+            error_log "Failed to start screen session: $name"
+            return 1
+        }
+        success_log "Started screen session: $name"
+    else
+        info_log "Screen session already exists: $name"
+    fi
+    return 0
+}
+
+check_screen_session() {
+    local name=$1
+    screen -list 2>/dev/null | grep -q "$name"
+    return $?
+}
+
+kill_screen() {
+    local name=$1
+    if check_screen_session "$name"; then
+        screen -X -S $name quit >/dev/null 2>&1
+        success_log "Killed screen session: $name"
+    else
+        debug_log "Screen session not found: $name"
+    fi
+}
+
 # Stop services
 stop_services() {
     info_log "Stopping services..."
@@ -132,12 +281,16 @@ stop_services() {
         fi
     done
     
-    # Stop system services
-    info_log "Stopping system services..."
-    systemctl stop nginx
-    systemctl stop redis-server
-    systemctl stop postgresql
-    systemctl stop postfix
+    # Stop system services if running with sudo
+    if [ "$EUID" -eq 0 ]; then
+        info_log "Stopping system services..."
+        systemctl is-active --quiet nginx && systemctl stop nginx
+        systemctl is-active --quiet redis-server && systemctl stop redis-server
+        systemctl is-active --quiet postgresql && systemctl stop postgresql
+        systemctl is-active --quiet postfix && systemctl stop postfix
+    else
+        info_log "Not running as root, skipping system service management"
+    fi
     
     # Kill any processes on our ports
     for service in "${!SERVICE_PORTS[@]}"; do
@@ -153,64 +306,44 @@ stop_services() {
     success_log "All services stopped"
 }
 
-# Function to check if a port is in use
-check_port() {
-    local port=$1
-    netstat -tuln | grep -q ":$port "
-    return $?
-}
-
-# Function to kill process on a port
-kill_port_process() {
-    local port=$1
-    local pid=$(lsof -t -i:$port)
-    if [ ! -z "$pid" ]; then
-        kill -9 $pid 2>/dev/null
-    fi
-}
-
-# Screen management functions
-check_screen() {
-    if ! command -v screen &> /dev/null; then
-        info_log "Installing screen..."
-        apt-get update && apt-get install -y screen
-    fi
-}
-
-start_screen() {
-    local name=$1
-    local command=$2
-    screen -dmS $name bash -c "$command"
-}
-
-check_screen_session() {
-    local name=$1
-    screen -list | grep -q "$name"
-}
-
-kill_screen() {
-    local name=$1
-    screen -X -S $name quit >/dev/null 2>&1
-}
-
-# Enhanced service management
+# Start services
 start_services() {
     info_log "Starting services..."
     
     # Check if screen is installed
-    check_screen
+    check_screen || return 1
     
     # Create logs directory
     mkdir -p logs
     
-    # Start system services
-    systemctl start postgresql
-    systemctl start redis-server
-    systemctl start nginx
-    systemctl start postfix
+    # Start system services if running with sudo
+    if [ "$EUID" -eq 0 ]; then
+        info_log "Starting system services..."
+        systemctl start postgresql || error_log "Failed to start PostgreSQL"
+        systemctl start redis-server || error_log "Failed to start Redis"
+        systemctl start nginx || error_log "Failed to start Nginx"
+        systemctl start postfix || error_log "Failed to start Postfix"
+    else
+        info_log "Not running as root, skipping system service management"
+    fi
     
-    # Activate virtual environment
-    source venv/bin/activate
+    # Check if virtual environment exists
+    if [ ! -d "venv" ]; then
+        info_log "Virtual environment not found, creating..."
+        python3 -m venv venv || {
+            error_log "Failed to create virtual environment"
+            return 1
+        }
+        source venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt || {
+            error_log "Failed to install dependencies"
+            return 1
+        }
+    else
+        # Activate virtual environment
+        source venv/bin/activate
+    fi
     
     # Start application services in screen sessions
     for service in "${!SERVICE_SCREENS[@]}"; do
@@ -243,6 +376,7 @@ start_services() {
     done
     
     # Wait for services to start
+    info_log "Waiting for services to start..."
     sleep 5
     
     # Check service status
@@ -251,7 +385,7 @@ start_services() {
     success_log "All services started"
 }
 
-# Enhanced system status monitoring
+# System status monitoring
 show_system_status() {
     clear
     echo -e "${CYAN}=== System Status ===${NC}\n"
@@ -270,7 +404,7 @@ show_system_status() {
     
     # Check system services
     for service in postgresql redis-server nginx postfix; do
-        if systemctl is-active --quiet $service; then
+        if systemctl is-active --quiet $service 2>/dev/null; then
             printf "%-20s ${GREEN}%-10s${NC} %-20s\n" "$service" "Running" "${SERVICE_PORTS[$service]}"
         else
             printf "%-20s ${RED}%-10s${NC} %-20s\n" "$service" "Stopped" "-"
@@ -280,7 +414,7 @@ show_system_status() {
     # Check screen services
     for service in "${!SERVICE_SCREENS[@]}"; do
         screen_name=${SERVICE_SCREENS[$service]}
-        if screen -list | grep -q "$screen_name"; then
+        if screen -list 2>/dev/null | grep -q "$screen_name"; then
             printf "%-20s ${GREEN}%-10s${NC} %-20s\n" "$service" "Running" "${SERVICE_PORTS[$service]:-"-"}"
         else
             printf "%-20s ${RED}%-10s${NC} %-20s\n" "$service" "Stopped" "-"
@@ -289,7 +423,16 @@ show_system_status() {
     
     echo
     echo -e "${YELLOW}Screen Sessions:${NC}"
-    screen -list | grep -v "There are screens" || echo "No active screens"
+    screen -list 2>/dev/null | grep -v "There are screens" || echo "No active screens"
+    
+    # Check database connection
+    echo
+    echo -e "${YELLOW}Database Status:${NC}"
+    if PGPASSWORD=${POSTGRES_PASSWORD} psql -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c "SELECT 1" >/dev/null 2>&1; then
+        echo -e "Database Connection: ${GREEN}OK${NC}"
+    else
+        echo -e "Database Connection: ${RED}FAILED${NC}"
+    fi
 }
 
 # Show logs menu
@@ -308,26 +451,43 @@ show_logs_menu() {
     echo "11) PostgreSQL Log"
     echo "12) Redis Log"
     echo "13) Mail Log"
+    echo "14) Deploy Log"
     echo "0) Back to main menu"
     
     read -p "Select log to view: " log_choice
     case $log_choice in
-        1) tail -f logs/flask.log ;;
-        2) tail -f logs/terminal.log ;;
-        3) tail -f logs/game.log ;;
-        4) tail -f logs/email_monitor.log ;;
-        5) tail -f logs/ai_manager.log ;;
-        6) tail -f logs/combat_manager.log ;;
-        7) tail -f logs/economy_systems.log ;;
-        8) tail -f logs/game_mechanics.log ;;
-        9) tail -f /var/log/nginx/error.log ;;
-        10) tail -f /var/log/nginx/access.log ;;
-        11) tail -f /var/log/postgresql/postgresql-main.log ;;
-        12) tail -f /var/log/redis/redis-server.log ;;
-        13) tail -f /var/log/mail.log ;;
+        1) view_log "logs/flask.log" ;;
+        2) view_log "logs/terminal.log" ;;
+        3) view_log "logs/game.log" ;;
+        4) view_log "logs/email_monitor.log" ;;
+        5) view_log "logs/ai_manager.log" ;;
+        6) view_log "logs/combat_manager.log" ;;
+        7) view_log "logs/economy_systems.log" ;;
+        8) view_log "logs/game_mechanics.log" ;;
+        9) view_log "/var/log/nginx/error.log" ;;
+        10) view_log "/var/log/nginx/access.log" ;;
+        11) view_log "/var/log/postgresql/postgresql-main.log" ;;
+        12) view_log "/var/log/redis/redis-server.log" ;;
+        13) view_log "/var/log/mail.log" ;;
+        14) view_log "logs/deploy.log" ;;
         0) return ;;
         *) error_log "Invalid option" ;;
     esac
+}
+
+# Function to safely view logs
+view_log() {
+    local log_file=$1
+    if [ -f "$log_file" ]; then
+        if command_exists less; then
+            less "$log_file"
+        else
+            tail -n 100 "$log_file"
+        fi
+    else
+        error_log "Log file not found: $log_file"
+        read -p "Press Enter to continue..."
+    fi
 }
 
 # Show database menu
@@ -337,53 +497,252 @@ show_database_menu() {
     echo "2) Restore Database"
     echo "3) Run Migrations"
     echo "4) Initialize Database"
+    echo "5) Check Database Status"
     echo "0) Back to main menu"
     
     read -p "Select operation: " db_choice
     case $db_choice in
         1) 
-            backup_file="backup_$(date +%Y%m%d_%H%M%S).sql"
+            backup_file="${BACKUP_DIR}/backup_${TIMESTAMP}.sql"
             info_log "Creating database backup: $backup_file"
-            PGPASSWORD=${POSTGRES_PASSWORD} pg_dump -h localhost -U ${POSTGRES_USER} ${POSTGRES_DB} > $backup_file
-            if [ $? -eq 0 ]; then
-                success_log "Database backed up to $backup_file"
-            else
-                error_log "Database backup failed"
+            mkdir -p "${BACKUP_DIR}"
+            if check_database_connection; then
+                PGPASSWORD=${POSTGRES_PASSWORD} pg_dump -h localhost -U ${POSTGRES_USER} ${POSTGRES_DB} > "$backup_file"
+                if [ $? -eq 0 ]; then
+                    success_log "Database backed up to $backup_file"
+                else
+                    error_log "Database backup failed"
+                fi
             fi
             ;;
         2)
-            read -p "Enter backup file path: " restore_file
+            # List available backups
+            echo -e "\n${YELLOW}Available backups:${NC}"
+            ls -1 "${BACKUP_DIR}" | grep -E "backup_[0-9]+_[0-9]+\.sql" | cat -n
+            echo "0) Cancel"
+            
+            read -p "Select backup to restore (or enter full path): " restore_choice
+            if [[ "$restore_choice" =~ ^[0-9]+$ ]]; then
+                if [ "$restore_choice" -eq 0 ]; then
+                    return
+                fi
+                
+                # Get the selected backup file
+                restore_file=$(ls -1 "${BACKUP_DIR}" | grep -E "backup_[0-9]+_[0-9]+\.sql" | sed -n "${restore_choice}p")
+                if [ -z "$restore_file" ]; then
+                    error_log "Invalid selection"
+                    read -p "Press Enter to continue..."
+                    return
+                fi
+                restore_file="${BACKUP_DIR}/${restore_file}"
+            else
+                restore_file="$restore_choice"
+            fi
+            
             if [ -f "$restore_file" ]; then
-                info_log "Restoring database from: $restore_file"
-                PGPASSWORD=${POSTGRES_PASSWORD} psql -h localhost -U ${POSTGRES_USER} ${POSTGRES_DB} < $restore_file
-                if [ $? -eq 0 ]; then
-                    success_log "Database restored from $restore_file"
-                else
-                    error_log "Database restore failed"
+                # Create a backup before restore
+                backup_before_restore="${BACKUP_DIR}/before_restore_${TIMESTAMP}.sql"
+                info_log "Creating safety backup before restore: $backup_before_restore"
+                if check_database_connection; then
+                    PGPASSWORD=${POSTGRES_PASSWORD} pg_dump -h localhost -U ${POSTGRES_USER} ${POSTGRES_DB} > "$backup_before_restore"
+                    
+                    info_log "Restoring database from: $restore_file"
+                    PGPASSWORD=${POSTGRES_PASSWORD} psql -h localhost -U ${POSTGRES_USER} ${POSTGRES_DB} < "$restore_file"
+                    if [ $? -eq 0 ]; then
+                        success_log "Database restored from $restore_file"
+                    else
+                        error_log "Database restore failed"
+                    fi
                 fi
             else
-                error_log "Backup file not found"
+                error_log "Backup file not found: $restore_file"
             fi
             ;;
         3)
             info_log "Running database migrations"
+            if [ ! -d "venv" ]; then
+                error_log "Virtual environment not found. Please initialize the system first."
+                read -p "Press Enter to continue..."
+                return
+            fi
+            
             source venv/bin/activate
-            flask db upgrade
-            success_log "Database migrations completed"
+            if command_exists flask; then
+                flask db upgrade
+                if [ $? -eq 0 ]; then
+                    success_log "Database migrations completed"
+                else
+                    error_log "Database migrations failed"
+                fi
+            else
+                error_log "Flask command not found. Make sure Flask is installed in your virtual environment."
+            fi
             ;;
         4)
             info_log "Initializing database"
+            if [ ! -d "venv" ]; then
+                error_log "Virtual environment not found. Please initialize the system first."
+                read -p "Press Enter to continue..."
+                return
+            fi
+            
+            # Create a backup before initialization if database exists
+            if check_database_connection; then
+                backup_before_init="${BACKUP_DIR}/before_init_${TIMESTAMP}.sql"
+                info_log "Creating safety backup before initialization: $backup_before_init"
+                PGPASSWORD=${POSTGRES_PASSWORD} pg_dump -h localhost -U ${POSTGRES_USER} ${POSTGRES_DB} > "$backup_before_init"
+            fi
+            
             source venv/bin/activate
-            python init_db.py
-            if [ $? -eq 0 ]; then
-                success_log "Database initialized successfully"
+            if [ -f "init_db.py" ]; then
+                python init_db.py
+                if [ $? -eq 0 ]; then
+                    success_log "Database initialized successfully"
+                else
+                    error_log "Database initialization failed"
+                fi
             else
-                error_log "Database initialization failed"
+                error_log "init_db.py not found"
+            fi
+            ;;
+        5)
+            info_log "Checking database status"
+            if check_database_connection; then
+                # Show database size
+                info_log "Database size information:"
+                PGPASSWORD=${POSTGRES_PASSWORD} psql -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c "SELECT pg_size_pretty(pg_database_size('${POSTGRES_DB}')) as db_size;"
+                
+                # Show table count
+                info_log "Table count:"
+                PGPASSWORD=${POSTGRES_PASSWORD} psql -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB} -c "SELECT count(*) as table_count FROM information_schema.tables WHERE table_schema = 'public';"
             fi
             ;;
         0) return ;;
         *) error_log "Invalid option" ;;
     esac
+    
+    read -p "Press Enter to continue..."
+}
+
+# Deploy to production function
+deploy_production() {
+    info_log "Preparing to deploy to production server: ${PROD_SERVER}"
+    
+    # Check if SSH key is set up
+    if ! ssh -o BatchMode=yes -o ConnectTimeout=5 ${PROD_USER}@${PROD_SERVER} echo "SSH connection successful" > /dev/null 2>&1; then
+        error_log "SSH connection failed. Make sure your SSH key is set up correctly."
+        info_log "You can set up SSH key with: ssh-copy-id ${PROD_USER}@${PROD_SERVER}"
+        read -p "Press Enter to continue..."
+        return 1
+    fi
+    
+    # Create backup
+    backup_file="${BACKUP_DIR}/pre_deploy_${TIMESTAMP}.tar.gz"
+    info_log "Creating backup before deployment: $backup_file"
+    mkdir -p "${BACKUP_DIR}"
+    tar -czf "$backup_file" --exclude="venv" --exclude="node_modules" --exclude=".git" .
+    
+    # Confirm deployment
+    echo
+    echo -e "${YELLOW}You are about to deploy to production server: ${PROD_SERVER}${NC}"
+    echo "This will update the application code on the production server."
+    read -p "Are you sure you want to continue? (y/n): " confirm
+    if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        info_log "Deployment cancelled"
+        return 0
+    fi
+    
+    # Copy files to production server
+    info_log "Copying files to production server..."
+    rsync -avz --exclude="venv" --exclude="node_modules" --exclude=".git" --exclude="__pycache__" \
+        --exclude="*.pyc" --exclude="logs" --exclude="backups" \
+        . ${PROD_USER}@${PROD_SERVER}:${MAIN_APP_DIR}/
+    
+    # Run setup script on production server
+    info_log "Running setup script on production server..."
+    ssh ${PROD_USER}@${PROD_SERVER} "cd ${MAIN_APP_DIR} && chmod +x setup_static_files.sh && ./setup_static_files.sh"
+    
+    # Restart services on production server
+    info_log "Restarting services on production server..."
+    ssh ${PROD_USER}@${PROD_SERVER} "cd ${MAIN_APP_DIR} && chmod +x deploy.sh && ./deploy.sh restart"
+    
+    success_log "Deployment to production server completed successfully"
+    return 0
+}
+
+# Initialize system function
+initialize_system() {
+    info_log "Initializing system..."
+    
+    # Create necessary directories
+    info_log "Creating directories..."
+    mkdir -p static/css static/js static/fonts templates logs
+    
+    if [ "$EUID" -eq 0 ]; then
+        # Create terminusa user if it doesn't exist
+        if ! id -u terminusa >/dev/null 2>&1; then
+            info_log "Creating terminusa user..."
+            useradd -m -d /home/terminusa -s /bin/bash terminusa
+        fi
+
+        mkdir -p /var/www/terminusa
+        mkdir -p /var/log/terminusa
+        
+        # Set proper ownership and permissions
+        chown -R terminusa:terminusa /var/www/terminusa
+        chown -R terminusa:terminusa /var/log/terminusa
+        chmod -R 755 /var/www/terminusa
+        chmod -R 755 /var/log/terminusa
+        
+        # Install systemd service
+        info_log "Installing systemd service..."
+        if [ -f services/terminusa-terminal.service ]; then
+            cp services/terminusa-terminal.service /etc/systemd/system/
+            systemctl daemon-reload
+            systemctl enable terminusa-terminal.service
+        fi
+    fi
+    
+    # Create virtual environment if it doesn't exist
+    if [ ! -d "venv" ]; then
+        info_log "Creating virtual environment..."
+        python3 -m venv venv || {
+            error_log "Failed to create virtual environment"
+            return 1
+        }
+        
+        # Install dependencies
+        source venv/bin/activate
+        pip install --upgrade pip
+        pip install -r requirements.txt
+    fi
+
+    # Run static files setup
+    info_log "Setting up static files..."
+    chmod +x setup_static_files.sh
+    ./setup_static_files.sh
+    
+    # Setup database if connection is available
+    if check_database_connection; then
+        info_log "Setting up database..."
+        source venv/bin/activate
+        if [ -f "init_db.py" ]; then
+            python init_db.py
+        fi
+    fi
+    
+    # Setup nginx if running as root
+    if [ "$EUID" -eq 0 ]; then
+        info_log "Setting up nginx..."
+        if [ -f nginx/terminusa.conf ]; then
+            cp nginx/terminusa.conf /etc/nginx/sites-available/terminusa
+            ln -sf /etc/nginx/sites-available/terminusa /etc/nginx/sites-enabled/
+            nginx -t && systemctl restart nginx
+        fi
+    fi
+    
+    success_log "System initialization completed"
+    return 0
 }
 
 # Main menu
@@ -400,196 +759,20 @@ show_menu() {
         echo "6) View Logs"
         echo "7) Database Operations"
         echo "8) Deploy to Production"
-        echo "9) Debug Mode"
+        echo "9) Toggle Debug Mode (current: $DEBUG)"
         echo "0) Exit"
         echo
         read -p "Select an option: " choice
         
         case $choice in
-            1)
-                info_log "Initializing system..."
-                
-                # Create terminusa user if it doesn't exist
-                if ! id -u terminusa >/dev/null 2>&1; then
-                    info_log "Creating terminusa user..."
-                    sudo useradd -r -s /bin/false terminusa
-                fi
-
-                # Create necessary directories with proper permissions
-                info_log "Creating directories..."
-                sudo mkdir -p /var/www/terminusa
-                sudo mkdir -p /var/log/terminusa
-                sudo mkdir -p static/css static/js static/fonts
-                sudo mkdir -p templates
-                
-                # Set proper ownership and permissions
-                sudo chown -R terminusa:terminusa /var/www/terminusa
-                sudo chown -R terminusa:terminusa /var/log/terminusa
-                sudo chown -R terminusa:terminusa static templates
-                sudo chmod -R 755 /var/www/terminusa
-                sudo chmod -R 755 /var/log/terminusa
-                sudo chmod -R 755 static templates
-
-                # Install systemd service
-                info_log "Installing systemd service..."
-                if [ -f services/terminusa-terminal.service ]; then
-                    sudo cp services/terminusa-terminal.service /etc/systemd/system/
-                    sudo systemctl daemon-reload
-                    sudo systemctl enable terminusa-terminal.service
-                    success_log "Systemd service installed"
-                else
-                    error_log "Service file not found in services directory"
-                    read -p "Press Enter to continue..."
-                    return 1
-                fi
-
-                # Install system dependencies
-                info_log "Installing system dependencies..."
-                if ! command -v npm &> /dev/null || ! command -v node &> /dev/null; then
-                    info_log "Installing Node.js and npm..."
-                    if [ -f /etc/debian_version ]; then
-                        # Debian/Ubuntu
-                        curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-                        sudo apt-get install -y nodejs build-essential
-                    elif [ -f /etc/redhat-release ]; then
-                        # RHEL/CentOS
-                        curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo -E bash -
-                        sudo yum install -y nodejs gcc-c++ make
-                    else
-                        error_log "Unsupported distribution"
-                        read -p "Press Enter to continue..."
-                        return 1
-                    fi
-                    
-                    if ! command -v npm &> /dev/null; then
-                        error_log "Failed to install npm"
-                        read -p "Press Enter to continue..."
-                        return 1
-                    fi
-                    success_log "Node.js and npm installed successfully"
-                else
-                    success_log "Node.js and npm are already installed"
-                fi
-
-                # Set up terminusa user with proper home directory
-                info_log "Setting up terminusa user..."
-                if ! id -u terminusa >/dev/null 2>&1; then
-                    sudo useradd -m -d /home/terminusa -s /bin/bash terminusa
-                fi
-
-                # Set up project directories
-                info_log "Setting up directories..."
-                sudo mkdir -p /var/www/terminusa/{static,templates,logs}
-                sudo mkdir -p /home/terminusa/.npm
-                sudo mkdir -p client/node_modules
-                sudo mkdir -p logs
-
-                # Set proper ownership and permissions
-                info_log "Setting permissions..."
-                sudo chown -R terminusa:terminusa /var/www/terminusa
-                sudo chown -R terminusa:terminusa /home/terminusa
-                sudo chown -R terminusa:terminusa client
-                sudo chown -R terminusa:terminusa logs
-                sudo chmod -R 755 /var/www/terminusa
-                sudo chmod -R 755 /home/terminusa
-                sudo chmod -R 755 client
-                sudo chmod -R 755 logs
-
-                # Make setup script executable
-                info_log "Running static files setup..."
-                chmod +x setup_static_files.sh
-
-                # Install Node.js and npm
-                info_log "Installing Node.js and npm..."
-                if ! command -v node > /dev/null || ! command -v npm > /dev/null; then
-                    sudo apt-get update
-                    sudo apt-get install -y nodejs npm build-essential
-                fi
-
-                # Create directories
-                info_log "Creating directories..."
-                INSTALL_DIR="/var/www/terminusa"
-                sudo mkdir -p "$INSTALL_DIR"
-                sudo mkdir -p /home/terminusa
-
-                # Create user if not exists
-                info_log "Creating user..."
-                if ! id -u terminusa &>/dev/null; then
-                    sudo useradd -m -d /home/terminusa -s /bin/bash terminusa
-                fi
-
-                # Copy files
-                info_log "Copying files..."
-                sudo cp -r . "$INSTALL_DIR/"
-                sudo rm -rf "$INSTALL_DIR/node_modules" || true
-
-                # Set permissions
-                info_log "Setting permissions..."
-                sudo chown -R terminusa:terminusa "$INSTALL_DIR"
-                sudo chown -R terminusa:terminusa /home/terminusa
-                sudo chmod +x "$INSTALL_DIR/setup_static_files.sh"
-
-                # Run setup script
-                info_log "Running setup script..."
-                if sudo -u terminusa bash -c "
-                    cd '$INSTALL_DIR' || exit 1
-                    export HOME=/home/terminusa
-                    export npm_config_cache=/home/terminusa/.npm
-                    export npm_config_prefix=/home/terminusa/.npm
-                    ./setup_static_files.sh
-                " 2>&1; then
-                    success_log "Static files setup completed"
-                else
-                    error_log "Static files setup failed"
-                    read -p "Press Enter to continue..."
-                    return 1
-                fi
-                
-                # Setup database
-                info_log "Setting up database..."
-                source venv/bin/activate
-                if python init_db.py; then
-                    success_log "Database setup completed"
-                else
-                    error_log "Database setup failed"
-                    read -p "Press Enter to continue..."
-                    return 1
-                fi
-                
-                # Setup nginx
-                info_log "Setting up nginx..."
-                if [ -f /etc/nginx/sites-available/terminusa ]; then
-                    success_log "Nginx already configured"
-                else
-                    sudo cp nginx/terminusa.conf /etc/nginx/sites-available/terminusa
-                    sudo ln -sf /etc/nginx/sites-available/terminusa /etc/nginx/sites-enabled/
-                    sudo nginx -t && sudo systemctl restart nginx
-                    success_log "Nginx setup completed"
-                fi
-                
-                success_log "System initialization completed"
-                ;;
-            2)
-                start_services
-                ;;
-            3)
-                stop_services
-                ;;
-            4)
-                stop_services && sleep 2 && start_services
-                ;;
-            5)
-                show_system_status
-                ;;
-            6)
-                show_logs_menu
-                ;;
-            7)
-                show_database_menu
-                ;;
-            8)
-                deploy_production
-                ;;
+            1) initialize_system ;;
+            2) start_services ;;
+            3) stop_services ;;
+            4) stop_services && sleep 2 && start_services ;;
+            5) show_system_status ;;
+            6) show_logs_menu ;;
+            7) show_database_menu ;;
+            8) deploy_production ;;
             9)
                 DEBUG=$([[ "$DEBUG" == "true" ]] && echo "false" || echo "true")
                 info_log "Debug mode: $DEBUG"
