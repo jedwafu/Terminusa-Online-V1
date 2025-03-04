@@ -122,7 +122,7 @@ class SwapTransaction(db.Model):
     fee = db.Column(db.Numeric(precision=36, scale=18), nullable=False)
     
     status = db.Column(db.String(20), default='pending')  # 'pending', 'completed', 'failed'
-    metadata = db.Column(db.JSON)
+    transaction_metadata = db.Column(db.JSON)  # Renamed from metadata to avoid conflict
     
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -138,7 +138,7 @@ class SwapTransaction(db.Model):
             'rate': str(self.rate),
             'fee': str(self.fee),
             'status': self.status,
-            'metadata': self.metadata,
+            'metadata': self.transaction_metadata,
             'timestamps': {
                 'created': self.created_at.isoformat(),
                 'updated': self.updated_at.isoformat()
