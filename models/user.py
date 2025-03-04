@@ -22,6 +22,9 @@ class User(db.Model):
     ban_reason = db.Column(db.String(255))
     ban_expires = db.Column(db.DateTime)
     
+    # Profile Information
+    country = db.Column(db.String(2), nullable=True)  # ISO 2-letter country code
+    
     # Account Security
     last_login = db.Column(db.DateTime)
     last_ip = db.Column(db.String(45))
@@ -199,6 +202,7 @@ class User(db.Model):
             'is_admin': self.is_admin,
             'last_login': self.last_login.isoformat() if self.last_login else None,
             'settings': self.settings,
+            'country': self.country,
             'guild': {
                 'id': self.guild_id,
                 'rank': self.guild_rank
@@ -223,6 +227,7 @@ class User(db.Model):
         return {
             'id': self.id,
             'username': self.username,
+            'country': self.country,
             'guild': {
                 'id': self.guild_id,
                 'rank': self.guild_rank

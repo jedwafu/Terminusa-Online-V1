@@ -7,6 +7,7 @@ class Guild(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
     description = db.Column(db.Text)
+    country = db.Column(db.String(2), nullable=True)  # ISO 2-letter country code
     level = db.Column(db.Integer, default=1)
     experience = db.Column(db.BigInteger, default=0)
     funds = db.Column(db.Numeric(precision=18, scale=9), default=0)  # Exons
