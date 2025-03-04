@@ -6,7 +6,7 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 from dotenv import load_dotenv
 from database import db
 from models import User, PlayerCharacter, Wallet, Inventory, Transaction, Gate, Guild, Item, Announcement
-import os
+from routes.pages import pages_bp
 import bcrypt
 import logging
 import secrets
