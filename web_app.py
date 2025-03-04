@@ -73,36 +73,36 @@ logging.basicConfig(
 # Load environment variables
 load_dotenv()
 
-# Initialize Flask app
-app = Flask(__name__, 
-            static_url_path='/static',
-            static_folder='static')
-CORS(app)
-
-# Ensure required static files exist
-def ensure_static_directories():
-    """Ensure static directories exist"""
+def create_app():
+    """Create and configure the Flask application"""
+    # Create required directories
     os.makedirs('static/images/items', exist_ok=True)
     os.makedirs('static/css', exist_ok=True)
     os.makedirs('static/js', exist_ok=True)
+    os.makedirs('logs', exist_ok=True)
 
-# Initialize directories
-ensure_static_directories()
-os.makedirs('logs', exist_ok=True)  # Create logs directory
+    app = Flask(__name__, 
+                static_url_path='/static',
+                static_folder='static')
+    CORS(app)
 
-# Configure app
-app.config.update(
-    SEND_FILE_MAX_AGE_DEFAULT=0,  # Disable caching during development
-    SECRET_KEY=os.getenv('FLASK_SECRET_KEY', 'dev-key-please-change'),
-    JWT_SECRET_KEY=os.getenv('JWT_SECRET_KEY', 'jwt-key-please-change'),
-    SQLALCHEMY_DATABASE_URI=os.getenv('DATABASE_URL'),
-    SQLALCHEMY_TRACK_MODIFICATIONS=False,
-    JWT_ACCESS_TOKEN_EXPIRES=3600  # 1 hour
-)
+    # Configure app
+    app.config.update(
+        SEND_FILE_MAX_AGE_DEFAULT=0,  # Disable caching during development
+        SECRET_KEY=os.getenv('FLASK_SECRET_KEY', 'dev-key-please-change'),
+        JWT_SECRET_KEY=os.getenv('JWT_SECRET_KEY', 'jwt-key-please-change'),
+        SQLALCHEMY_DATABASE_URI=os.getenv('DATABASE_URL'),
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        JWT_ACCESS_TOKEN_EXPIRES=3600  # 1 hour
+    )
 
-# Initialize extensions
-jwt = JWTManager(app)
-db.init_app(app)
+    # Initialize extensions
+    jwt = JWTManager(app)
+    db.init_app(app)
+
+    return app
+
+app = create_app()
 
 @app.route('/')
 @app.route('/index')
