@@ -31,7 +31,7 @@ class PlayerCharacter(db.Model):
     name = db.Column(db.String(100), nullable=False)
     level = db.Column(db.Integer, default=1)
     experience = db.Column(db.Integer, default=0)
-    player_class = db.Column(db.Enum(PlayerClass), nullable=False)
+    class_type = db.Column(db.String(20), nullable=False)  # Store as string instead of enum
     job_type = db.Column(db.Enum(JobType), nullable=True)
     
     # Relationships
