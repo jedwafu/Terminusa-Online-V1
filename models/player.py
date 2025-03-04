@@ -50,8 +50,8 @@ class Player(db.Model):
     name = db.Column(db.String(50), nullable=False)
     level = db.Column(db.Integer, default=1)
     experience = db.Column(db.BigInteger, default=0)
-    player_class = db.Column(db.Enum(PlayerClass), nullable=False)
-    job_type = db.Column(db.Enum(JobType), nullable=True)
+    player_class = db.Column(db.String(20), nullable=False)  # Store as string instead of enum
+    job_type = db.Column(db.String(20), nullable=True)  # Store as string instead of enum
     
     # Stats
     stats = db.Column(JSONB, nullable=False, default={
@@ -116,32 +116,32 @@ class Player(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     last_login = db.Column(db.DateTime, default=datetime.utcnow)
     
-    def __init__(self, user_id: int, name: str, player_class: PlayerClass):
+    def __init__(self, user_id: int, name: str, player_class: str):
         self.user_id = user_id
         self.name = name
-        self.player_class = player_class
+        self.player_class = player_class.lower()  # Store class name in lowercase
         self._initialize_class_bonuses()
 
     def _initialize_class_bonuses(self):
         """Initialize stats based on chosen class"""
         class_bonuses = {
-            PlayerClass.WARRIOR: {
+            'warrior': {
                 'stats': {'strength': 5, 'vitality': 3},
                 'combat_stats': {'hp': 50, 'attack': 5, 'defense': 5}
             },
-            PlayerClass.MAGE: {
+            'mage': {
                 'stats': {'intelligence': 5, 'wisdom': 3},
                 'combat_stats': {'mp': 50, 'magic_attack': 5, 'magic_defense': 5}
             },
-            PlayerClass.ROGUE: {
+            'rogue': {
                 'stats': {'dexterity': 5, 'luck': 3},
                 'combat_stats': {'accuracy': 5, 'evasion': 5, 'critical_rate': 2}
             },
-            PlayerClass.PRIEST: {
+            'priest': {
                 'stats': {'wisdom': 5, 'vitality': 3},
                 'combat_stats': {'mp': 30, 'magic_defense': 5, 'hp': 20}
             },
-            PlayerClass.RANGER: {
+            'ranger': {
                 'stats': {'dexterity': 5, 'strength': 3},
                 'combat_stats': {'accuracy': 5, 'attack': 3, 'critical_rate': 2}
             }
@@ -192,11 +192,11 @@ class Player(db.Model):
             
         # Class-based bonus stats
         class_stat_focus = {
-            PlayerClass.WARRIOR: ['strength', 'vitality'],
-            PlayerClass.MAGE: ['intelligence', 'wisdom'],
-            PlayerClass.ROGUE: ['dexterity', 'luck'],
-            PlayerClass.PRIEST: ['wisdom', 'vitality'],
-            PlayerClass.RANGER: ['dexterity', 'strength']
+            'warrior': ['strength', 'vitality'],
+            'mage': ['intelligence', 'wisdom'],
+            'rogue': ['dexterity', 'luck'],
+            'priest': ['wisdom', 'vitality'],
+            'ranger': ['dexterity', 'strength']
         }
         
         for stat in class_stat_focus[self.player_class]:
@@ -280,8 +280,8 @@ class Player(db.Model):
             'name': self.name,
             'level': self.level,
             'experience': self.experience,
-            'player_class': self.player_class.value,
-            'job_type': self.job_type.value if self.job_type else None,
+            'player_class': self.player_class,
+            'job_type': self.job_type,
             'stats': self.stats,
             'combat_stats': self.combat_stats,
             'class_levels': self.class_levels,
