@@ -7,6 +7,7 @@ import logging
 from flask import Flask, request, jsonify, g
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
+from flask_migrate import Migrate
 from models import db, User
 from game_manager import GameManager
 
@@ -29,6 +30,7 @@ app.config.from_object('config.Config')
 
 # Initialize extensions
 db.init_app(app)
+migrate = Migrate(app, db)
 jwt = JWTManager(app)
 CORS(app)
 
