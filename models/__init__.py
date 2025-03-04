@@ -23,6 +23,7 @@ from .currency import Currency
 from .party import Party
 from .social import Friend, BlockedUser
 from .progression import PlayerProgress, ClassProgress, JobProgress
+from .quest import Quest, QuestProgress, QuestType, QuestStatus
 
 # Import transaction-related models
 from .transaction import Transaction, TransactionType, TransactionStatus
@@ -40,6 +41,7 @@ def init_models():
     User.guild_membership = db.relationship('GuildMember', backref='user')
     User.progress = db.relationship('PlayerProgress', backref='user', uselist=False)
     User.announcements = db.relationship('Announcement', backref=db.backref('author', lazy='joined'), lazy='dynamic')
+    User.quests = db.relationship('QuestProgress', back_populates='user')
     User.friends = db.relationship('Friend',
         foreign_keys=[Friend.user_id],
         backref=db.backref('user', lazy='joined'),
