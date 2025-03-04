@@ -59,7 +59,10 @@ def initialize_database():
         
         # Drop all existing tables
         logger.info("Dropping all existing tables")
-        db.drop_all()
+        try:
+            db.drop_all()
+        except Exception as e:
+            logger.warning(f"Error dropping tables: {e}")
         
         # Create tables in order
         logger.info("Creating tables in order")
@@ -67,13 +70,17 @@ def initialize_database():
         # Create independent tables first
         logger.info("Creating independent tables")
         tables_independent = [
+            Guild.__table__,  # Create Guild first since User references it
             User.__table__,
             Item.__table__,
-            Quest.__table__,
-            Guild.__table__
+            Quest.__table__
         ]
         for table in tables_independent:
-            table.create(bind=db.engine)
+            try:
+                table.create(bind=db.engine, checkfirst=True)
+                logger.info(f"Created table: {table.name}")
+            except Exception as e:
+                logger.error(f"Error creating table {table.name}: {e}")
         
         # Create dependent tables
         logger.info("Creating dependent tables")
@@ -106,7 +113,11 @@ def initialize_database():
             Wallet.__table__
         ]
         for table in tables_dependent:
-            table.create(bind=db.engine)
+            try:
+                table.create(bind=db.engine, checkfirst=True)
+                logger.info(f"Created table: {table.name}")
+            except Exception as e:
+                logger.error(f"Error creating table {table.name}: {e}")
         
         logger.info("Database initialized successfully")
 
