@@ -262,27 +262,39 @@ check_and_fix_nginx() {
     info_log "Checking nginx configuration for port settings..."
     
     if [ -f "/etc/nginx/sites-available/terminusa.conf" ]; then
-        # Check if nginx is configured to proxy to port 5000 instead of 3000
-        if grep -q "proxy_pass http://127.0.0.1:5000;" /etc/nginx/sites-available/terminusa.conf; then
-            info_log "Nginx is configured to proxy to port 5000, but web_app.py runs on port ${WEBAPP_PORT}. Fixing..."
+        # Create a backup of the original file
+        cp /etc/nginx/sites-available/terminusa.conf /etc/nginx/sites-available/terminusa.conf.bak.${TIMESTAMP}
+        success_log "Created backup of nginx config at /etc/nginx/sites-available/terminusa.conf.bak.${TIMESTAMP}"
+        
+        # Check if nginx is configured to proxy to port 5000 instead of 3000 for the main website
+        if grep -q "location @proxy_to_app {" /etc/nginx/sites-available/terminusa.conf && grep -q "proxy_pass http://localhost:5000;" /etc/nginx/sites-available/terminusa.conf; then
+            info_log "Nginx is configured to proxy main website to port 5000, but web_app.py runs on port ${WEBAPP_PORT}. Fixing..."
             
-            # Create a backup of the original file
-            cp /etc/nginx/sites-available/terminusa.conf /etc/nginx/sites-available/terminusa.conf.bak.${TIMESTAMP}
-            success_log "Created backup of nginx config at /etc/nginx/sites-available/terminusa.conf.bak.${TIMESTAMP}"
+            # Update the port in the nginx configuration for the main website
+            sed -i "s/proxy_pass http:\/\/localhost:5000;/proxy_pass http:\/\/localhost:${WEBAPP_PORT};/g" /etc/nginx/sites-available/terminusa.conf
             
-            # Update the port in the nginx configuration
-            sed -i "s/proxy_pass http:\/\/127.0.0.1:5000;/proxy_pass http:\/\/127.0.0.1:${WEBAPP_PORT};/g" /etc/nginx/sites-available/terminusa.conf
-            sed -i "s/proxy_pass http:\/\/127.0.0.1:5000\/socket.io;/proxy_pass http:\/\/127.0.0.1:${WEBAPP_PORT}\/socket.io;/g" /etc/nginx/sites-available/terminusa.conf
+            success_log "Updated main website proxy configuration in nginx"
+        fi
+        
+        # Check if socket.io configuration exists and needs updating
+        if grep -q "proxy_pass http://localhost:5000/socket.io;" /etc/nginx/sites-available/terminusa.conf; then
+            info_log "Updating socket.io proxy configuration in nginx..."
             
-            # Test and reload nginx
-            if nginx -t; then
-                systemctl reload nginx
-                success_log "Nginx configuration updated and service reloaded"
-            else
-                error_log "Nginx configuration test failed. Please check the configuration manually."
-            fi
+            # Update the port for socket.io
+            sed -i "s/proxy_pass http:\/\/localhost:5000\/socket.io;/proxy_pass http:\/\/localhost:${WEBAPP_PORT}\/socket.io;/g" /etc/nginx/sites-available/terminusa.conf
+            
+            success_log "Updated socket.io proxy configuration in nginx"
+        fi
+        
+        # Keep API endpoints pointing to port 5000
+        info_log "Ensuring API endpoints still point to port ${API_PORT}..."
+        
+        # Test and reload nginx
+        if nginx -t; then
+            systemctl reload nginx
+            success_log "Nginx configuration updated and service reloaded"
         else
-            success_log "Nginx is properly configured for port ${WEBAPP_PORT}"
+            error_log "Nginx configuration test failed. Please check the configuration manually."
         fi
     else
         error_log "Nginx configuration file not found at /etc/nginx/sites-available/terminusa.conf"
