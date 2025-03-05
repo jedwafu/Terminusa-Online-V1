@@ -433,7 +433,7 @@ def handle_exception(error):
 
 if __name__ == '__main__':
     # Get port from environment or use default
-    port = int(os.getenv('WEBAPP_PORT', 5001))
+    port = int(os.getenv('WEBAPP_PORT', 3000))
     debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
     
     # Run the app
