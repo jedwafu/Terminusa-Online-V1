@@ -362,10 +362,18 @@ check_and_fix_nginx() {
         # Keep API endpoints pointing to port 5000
         info_log "Ensuring API endpoints still point to port ${API_PORT}..."
         
-        # Test and reload nginx
+        # Test nginx configuration
         if nginx -t; then
-            systemctl reload nginx
-            success_log "Nginx configuration updated and service reloaded"
+            # Check if nginx is active
+            if systemctl is-active --quiet nginx; then
+                # Reload if active
+                systemctl reload nginx
+                success_log "Nginx configuration updated and service reloaded"
+            else
+                # Start if not active
+                systemctl start nginx
+                success_log "Nginx configuration updated and service started"
+            fi
         else
             error_log "Nginx configuration test failed. Please check the configuration manually."
         fi
@@ -507,10 +515,8 @@ start_services() {
         systemctl start postgresql || error_log "Failed to start PostgreSQL"
         systemctl start redis-server || error_log "Failed to start Redis"
         
-        # Fix nginx configuration before starting
+        # Fix nginx configuration and start/reload it
         check_and_fix_nginx
-        
-        systemctl start nginx || error_log "Failed to start Nginx"
         systemctl start postfix || error_log "Failed to start Postfix"
     else
         info_log "Not running as root, skipping system service management"
