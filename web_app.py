@@ -4,6 +4,7 @@ monkey.patch_all()
 from flask import Flask, render_template, jsonify, request, redirect, url_for
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, verify_jwt_in_request
+from flask_login import LoginManager, current_user
 from dotenv import load_dotenv
 from database import db
 from models import User, PlayerCharacter, Wallet, Inventory, Transaction, Gate, Guild, Item, Announcement
@@ -44,6 +45,15 @@ def create_app():
 
     # Initialize extensions
     jwt = JWTManager(app)
+    
+    # Initialize Flask-Login
+    login_manager = LoginManager(app)
+    login_manager.login_view = "login_page"
+    
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
+    
     db.init_app(app)
 
     return app
