@@ -126,7 +126,7 @@ def internal_error(error):
 if __name__ == '__main__':
     # Get port from environment or use default
     port = int(os.getenv('WEBAPP_PORT', 3000))
-    debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+    debug = os.getenv('FLASK_DEBUG', 'True').lower() == 'true'
     
     # Run the app
     from gevent.pywsgi import WSGIServer
