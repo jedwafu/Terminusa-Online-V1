@@ -3,8 +3,7 @@
 from .base import BaseModel, TimestampMixin
 from database import db
 from sqlalchemy import Column, String, Text, Integer, Boolean, ForeignKey
-from sqlalchemy.orm import relationship, backref
-
+from sqlalchemy.orm import relationship
 
 class Announcement(BaseModel, TimestampMixin):
     """Announcement model for system-wide announcements."""
@@ -15,13 +14,21 @@ class Announcement(BaseModel, TimestampMixin):
     priority = Column(Integer, default=0)  # Higher number = higher priority
     is_active = Column(Boolean, default=True)
     
-    # Author relationship
-    author_id = Column(Integer, ForeignKey('users.id'), nullable=True)
-    # Defer the relationship to avoid circular imports
+    # Author relationship - use nullable=True to allow announcements without authors
+    author_id = Column(Integer, ForeignKey('users.id', name='fk_announcement_author'), nullable=True)
+    
+    # Use property instead of direct relationship to avoid circular imports
     @property
-    def author(self):
-        from models.user import User
-        return User.query.get(self.author_id)
+    def author_name(self):
+        """Get the author's username if available."""
+        if not self.author_id:
+            return None
+        
+        # Import User here to avoid circular imports
+        from .user import User
+        author = User.query.get(self.author_id)
+        return author.username if author else None
+
 
 
     def __repr__(self):
@@ -36,7 +43,7 @@ class Announcement(BaseModel, TimestampMixin):
             'content': self.content,
             'priority': self.priority,
             'is_active': self.is_active,
-            'author': self.author.username if self.author else None,
+            'author': self.author_name,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
