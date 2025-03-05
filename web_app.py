@@ -79,34 +79,9 @@ logging.basicConfig(
     handlers=[file_handler, console_handler]
 )
 
-@app.route('/')
-@app.route('/index')
-def index():
-    """Main landing page"""
-    try:
-        # Check JWT but don't require it
-        verify_jwt_in_request(optional=True)
-        
-        # Get latest announcements for the news section
-        latest_announcements = Announcement.query.order_by(
-            Announcement.created_at.desc()
-        ).limit(3).all()
+# Routes for '/' and '/index' are now handled by the pages_bp Blueprint
 
-        return render_template('index.html', 
-                             title='Home',
-                             latest_announcements=latest_announcements)
-    except Exception as e:
-        logger.error(f"Error rendering index page: {str(e)}")
-        logger.exception(e)  # Log full traceback
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
-
-@app.route('/play')
-def play_page():
-    """Play page"""
-    return redirect('https://play.terminusa.online')
+# Route for '/play' is now handled by the pages_bp Blueprint
 
 @app.route('/login')
 def login_page():
@@ -120,76 +95,7 @@ def login_page():
         return render_template('error.html', 
                              error_message='An error occurred while loading the page. Please try again later.'), 500
 
-@app.route('/marketplace')
-def marketplace_page():
-    """Marketplace page"""
-    try:
-        # Check JWT but don't require it
-        verify_jwt_in_request(optional=True)
-        
-        # Create sample items if none exist
-        items = [
-            {
-                'id': 1,
-                'name': 'Legendary Sword',
-                'type': 'Weapon',
-                'rarity': 'Legendary',
-                'image': 'images/items/sword.jpg',
-                'stats': {
-                    'Attack': '+100',
-                    'Speed': '+20',
-                    'Critical': '15%'
-                },
-                'price': 1000
-            },
-            {
-                'id': 2,
-                'name': 'Mythic Armor',
-                'type': 'Armor',
-                'rarity': 'Epic',
-                'image': 'images/items/armor.jpg',
-                'stats': {
-                    'Defense': '+80',
-                    'HP': '+500',
-                    'Magic Resist': '+30'
-                },
-                'price': 800
-            },
-            {
-                'id': 3,
-                'name': 'Health Potion',
-                'type': 'Consumable',
-                'rarity': 'Common',
-                'image': 'images/items/potion.jpg',
-                'stats': {
-                    'Heal': '200 HP',
-                    'Duration': 'Instant',
-                    'Cooldown': '30s'
-                },
-                'price': 50
-            },
-            {
-                'id': 4,
-                'name': 'Ring of Power',
-                'type': 'Accessory',
-                'rarity': 'Rare',
-                'image': 'images/items/ring.jpg',
-                'stats': {
-                    'All Stats': '+15',
-                    'Magic Power': '+25',
-                    'MP Regen': '+10%'
-                },
-                'price': 500
-            }
-        ]
-
-        return render_template('marketplace_new.html', 
-                             title='Marketplace',
-                             items=items)
-    except Exception as e:
-        logger.error(f"Error rendering marketplace page: {str(e)}")
-        return render_template('error.html',
-                             error_message='Failed to load marketplace. Please try again later.'), 500
+# Route for '/marketplace' is now handled by the pages_bp Blueprint
 
 @app.route('/marketplace/item', methods=['POST'])
 @jwt_required()
@@ -203,94 +109,7 @@ def create_marketplace_item():
         logger.error(f"Error creating marketplace item: {str(e)}")
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
-@app.route('/leaderboard')
-def leaderboard_page():
-    """Leaderboard page"""
-    try:
-        # Check JWT but don't require it
-        verify_jwt_in_request(optional=True)
-        
-        # Create sample hunters if none exist
-        hunters = [
-            {
-                'user': {'username': 'Shadow Monarch'},
-                'rank': 'S',
-                'level': 100,
-                'gates_cleared': 1234,
-                'monsters_defeated': 5678
-            },
-            {
-                'user': {'username': 'Frost Queen'},
-                'rank': 'S',
-                'level': 98,
-                'gates_cleared': 1156,
-                'monsters_defeated': 4567
-            },
-            {
-                'user': {'username': 'Dragon Slayer'},
-                'rank': 'A',
-                'level': 95,
-                'gates_cleared': 1089,
-                'monsters_defeated': 3456
-            },
-            {
-                'user': {'username': 'Storm Mage'},
-                'rank': 'A',
-                'level': 92,
-                'gates_cleared': 987,
-                'monsters_defeated': 2345
-            },
-            {
-                'user': {'username': 'Blade Master'},
-                'rank': 'B',
-                'level': 90,
-                'gates_cleared': 876,
-                'monsters_defeated': 1234
-            }
-        ]
-
-        # Create sample guilds if none exist
-        guilds = [
-            {
-                'name': 'Abyss Walkers',
-                'level': 50,
-                'member_count': 100,
-                'achievement_count': 250
-            },
-            {
-                'name': 'Crimson Dawn',
-                'level': 48,
-                'member_count': 95,
-                'achievement_count': 230
-            },
-            {
-                'name': 'Shadow Legion',
-                'level': 45,
-                'member_count': 90,
-                'achievement_count': 210
-            },
-            {
-                'name': 'Azure Knights',
-                'level': 43,
-                'member_count': 85,
-                'achievement_count': 190
-            },
-            {
-                'name': 'Phoenix Guard',
-                'level': 40,
-                'member_count': 80,
-                'achievement_count': 170
-            }
-        ]
-
-        return render_template('leaderboard_new.html', 
-                             title='Leaderboard',
-                             hunters=hunters,
-                             guilds=guilds)
-    except Exception as e:
-        logger.error(f"Error rendering leaderboard page: {str(e)}")
-        return render_template('error.html',
-                             error_message='Failed to load leaderboard. Please try again later.'), 500
+# Route for '/leaderboard' is now handled by the pages_bp Blueprint
 
 @app.route('/api/login', methods=['POST'])
 def login():
