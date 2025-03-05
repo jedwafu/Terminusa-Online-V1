@@ -83,6 +83,11 @@ GAME_APP_DIR=/var/www/terminusa/game
 GAME_STATIC_DIR=/var/www/terminusa/game/static
 BACKUP_DIR=/var/www/terminusa/backups
 
+# Port Configuration
+WEBAPP_PORT=3000
+API_PORT=5000
+TERMINAL_PORT=6789
+
 # Database Configuration
 DATABASE_URL=postgresql://username:password@localhost:5432/terminusa
 POSTGRES_USER=postgres
@@ -120,6 +125,11 @@ EOF
 fi
 
 # Verify required environment variables
+# Set default port values if not defined in .env
+WEBAPP_PORT=${WEBAPP_PORT:-3000}
+API_PORT=${API_PORT:-5000}
+TERMINAL_PORT=${TERMINAL_PORT:-6789}
+
 required_vars=(
     "PROD_SERVER"
     "PROD_USER"
@@ -151,8 +161,9 @@ fi
 declare -A SERVICE_PORTS=(
     ["postgresql"]="5432"
     ["nginx"]="80,443"
-    ["flask"]="5000"
-    ["terminal"]="6789"
+    ["flask"]="${API_PORT}"
+    ["webapp"]="${WEBAPP_PORT}"
+    ["terminal"]="${TERMINAL_PORT}"
     ["redis"]="6379"
     ["postfix"]="25"
     ["game"]="5001"
@@ -165,6 +176,7 @@ declare -A SERVICE_LOGS=(
     ["postgresql"]="/var/log/postgresql/postgresql-main.log"
     ["nginx"]="/var/log/nginx/error.log"
     ["flask"]="logs/flask.log"
+    ["webapp"]="logs/web.log"
     ["terminal"]="logs/terminal.log"
     ["redis"]="/var/log/redis/redis-server.log"
     ["postfix"]="/var/log/mail.log"
@@ -181,6 +193,7 @@ declare -A SERVICE_LOGS=(
 
 declare -A SERVICE_SCREENS=(
     ["flask"]="terminusa-flask"
+    ["webapp"]="terminusa-webapp"
     ["terminal"]="terminusa-terminal"
     ["game"]="terminusa-game"
     ["email_monitor"]="terminusa-email"
@@ -192,6 +205,89 @@ declare -A SERVICE_SCREENS=(
     ["marketplace"]="terminusa-marketplace"
     ["gacha"]="terminusa-gacha"
 )
+
+# Function to check and fix Flask-Login initialization in web_app.py
+check_and_fix_webapp() {
+    info_log "Checking web_app.py for Flask-Login initialization..."
+    
+    if [ -f "web_app.py" ]; then
+        # Check if Flask-Login is imported but not initialized
+        if grep -q "from flask_login import" web_app.py && ! grep -q "login_manager = LoginManager(app)" web_app.py; then
+            info_log "Flask-Login is imported but not initialized in web_app.py. Fixing..."
+            
+            # Create a backup of the original file
+            cp web_app.py web_app.py.bak.${TIMESTAMP}
+            success_log "Created backup of web_app.py at web_app.py.bak.${TIMESTAMP}"
+            
+            # Add Flask-Login initialization
+            sed -i '/from flask_jwt_extended import/a from flask_login import LoginManager, current_user' web_app.py
+            sed -i '/jwt = JWTManager(app)/a \    # Initialize Flask-Login\n    login_manager = LoginManager(app)\n    login_manager.login_view = "login_page"\n\n    @login_manager.user_loader\n    def load_user(user_id):\n        return User.query.get(int(user_id))' web_app.py
+            
+            success_log "Fixed Flask-Login initialization in web_app.py"
+        else
+            success_log "Flask-Login is properly initialized in web_app.py or not used"
+        fi
+    else
+        error_log "web_app.py not found"
+    fi
+}
+
+# Function to check and fix base.html template
+check_and_fix_base_html() {
+    info_log "Checking base.html for invalid endpoints..."
+    
+    if [ -f "templates/base.html" ]; then
+        # Check if the swapper endpoint is referenced
+        if grep -q 'url_for.*pages.swapper' templates/base.html; then
+            info_log "Found reference to non-existent endpoint 'pages.swapper' in base.html. Fixing..."
+            
+            # Create a backup of the original file
+            cp templates/base.html templates/base.html.bak.${TIMESTAMP}
+            success_log "Created backup of base.html at templates/base.html.bak.${TIMESTAMP}"
+            
+            # Remove the swapper link
+            sed -i '/<a href="{{ url_for.*pages.swapper.*}}" class="nav-link">Buy Exons<\/a>/d' templates/base.html
+            
+            success_log "Fixed invalid endpoint reference in base.html"
+        else
+            success_log "No invalid endpoint references found in base.html"
+        fi
+    else
+        error_log "templates/base.html not found"
+    fi
+}
+
+# Function to check and fix nginx configuration
+check_and_fix_nginx() {
+    info_log "Checking nginx configuration for port settings..."
+    
+    if [ -f "/etc/nginx/sites-available/terminusa.conf" ]; then
+        # Check if nginx is configured to proxy to port 5000 instead of 3000
+        if grep -q "proxy_pass http://127.0.0.1:5000;" /etc/nginx/sites-available/terminusa.conf; then
+            info_log "Nginx is configured to proxy to port 5000, but web_app.py runs on port ${WEBAPP_PORT}. Fixing..."
+            
+            # Create a backup of the original file
+            cp /etc/nginx/sites-available/terminusa.conf /etc/nginx/sites-available/terminusa.conf.bak.${TIMESTAMP}
+            success_log "Created backup of nginx config at /etc/nginx/sites-available/terminusa.conf.bak.${TIMESTAMP}"
+            
+            # Update the port in the nginx configuration
+            sed -i "s/proxy_pass http:\/\/127.0.0.1:5000;/proxy_pass http:\/\/127.0.0.1:${WEBAPP_PORT};/g" /etc/nginx/sites-available/terminusa.conf
+            sed -i "s/proxy_pass http:\/\/127.0.0.1:5000\/socket.io;/proxy_pass http:\/\/127.0.0.1:${WEBAPP_PORT}\/socket.io;/g" /etc/nginx/sites-available/terminusa.conf
+            
+            # Test and reload nginx
+            if nginx -t; then
+                systemctl reload nginx
+                success_log "Nginx configuration updated and service reloaded"
+            else
+                error_log "Nginx configuration test failed. Please check the configuration manually."
+            fi
+        else
+            success_log "Nginx is properly configured for port ${WEBAPP_PORT}"
+        fi
+    else
+        error_log "Nginx configuration file not found at /etc/nginx/sites-available/terminusa.conf"
+    fi
+}
 
 # Function to check database connection
 check_database_connection() {
@@ -316,11 +412,19 @@ start_services() {
     # Create logs directory
     mkdir -p logs
     
+    # Check and fix configuration issues
+    check_and_fix_webapp
+    check_and_fix_base_html
+    
     # Start system services if running with sudo
     if [ "$EUID" -eq 0 ]; then
         info_log "Starting system services..."
         systemctl start postgresql || error_log "Failed to start PostgreSQL"
         systemctl start redis-server || error_log "Failed to start Redis"
+        
+        # Fix nginx configuration before starting
+        check_and_fix_nginx
+        
         systemctl start nginx || error_log "Failed to start Nginx"
         systemctl start postfix || error_log "Failed to start Postfix"
     else
@@ -351,7 +455,10 @@ start_services() {
         if ! screen -list | grep -q "$screen_name"; then
             case $service in
                 "flask")
-                    start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python web_app.py > logs/flask.log 2>&1"
+                    start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python app.py > logs/flask.log 2>&1"
+                    ;;
+                "webapp")
+                    start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python web_app.py > logs/web.log 2>&1"
                     ;;
                 "terminal")
                     start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python terminal_server.py > logs/terminal.log 2>&1"
@@ -433,43 +540,63 @@ show_system_status() {
     else
         echo -e "Database Connection: ${RED}FAILED${NC}"
     fi
+    
+    # Check web application
+    echo
+    echo -e "${YELLOW}Web Application Status:${NC}"
+    if curl -s -o /dev/null -w "%{http_code}" http://localhost:${WEBAPP_PORT} 2>/dev/null | grep -q "200"; then
+        echo -e "Web Application: ${GREEN}OK${NC}"
+    else
+        echo -e "Web Application: ${RED}FAILED${NC}"
+    fi
+    
+    # Check API
+    echo
+    echo -e "${YELLOW}API Status:${NC}"
+    if curl -s -o /dev/null -w "%{http_code}" http://localhost:${API_PORT}/health 2>/dev/null | grep -q "200"; then
+        echo -e "API: ${GREEN}OK${NC}"
+    else
+        echo -e "API: ${RED}FAILED${NC}"
+    fi
 }
 
 # Show logs menu
 show_logs_menu() {
     echo -e "\n${YELLOW}Available Logs:${NC}"
     echo "1) Flask App Log"
-    echo "2) Terminal Server Log"
-    echo "3) Game Server Log"
-    echo "4) Email Monitor Log"
-    echo "5) AI Manager Log"
-    echo "6) Combat Manager Log"
-    echo "7) Economy Systems Log"
-    echo "8) Game Mechanics Log"
-    echo "9) Nginx Error Log"
-    echo "10) Nginx Access Log"
-    echo "11) PostgreSQL Log"
-    echo "12) Redis Log"
-    echo "13) Mail Log"
-    echo "14) Deploy Log"
+    echo "2) Web App Log"
+    echo "3) Terminal Server Log"
+    echo "4) Game Server Log"
+    echo "5) Email Monitor Log"
+    echo "6) AI Manager Log"
+    echo "7) Combat Manager Log"
+    echo "8) Economy Systems Log"
+    echo "9) Game Mechanics Log"
+    echo "10) Nginx Error Log"
+    echo "11) Nginx Access Log"
+    echo "12) PostgreSQL Log"
+    echo "13) Redis Log"
+    echo "14) Mail Log"
+    echo "15) Deploy Log"
     echo "0) Back to main menu"
     
     read -p "Select log to view: " log_choice
     case $log_choice in
         1) view_log "logs/flask.log" ;;
-        2) view_log "logs/terminal.log" ;;
-        3) view_log "logs/game.log" ;;
-        4) view_log "logs/email_monitor.log" ;;
-        5) view_log "logs/ai_manager.log" ;;
-        6) view_log "logs/combat_manager.log" ;;
-        7) view_log "logs/economy_systems.log" ;;
-        8) view_log "logs/game_mechanics.log" ;;
-        9) view_log "/var/log/nginx/error.log" ;;
-        10) view_log "/var/log/nginx/access.log" ;;
-        11) view_log "/var/log/postgresql/postgresql-main.log" ;;
-        12) view_log "/var/log/redis/redis-server.log" ;;
-        13) view_log "/var/log/mail.log" ;;
-        14) view_log "logs/deploy.log" ;;
+        2) view_log "logs/web.log" ;;
+        3) view_log "logs/terminal.log" ;;
+        4) view_log "logs/game.log" ;;
+        5) view_log "logs/email_monitor.log" ;;
+        6) view_log "logs/ai_manager.log" ;;
+        7) view_log "logs/combat_manager.log" ;;
+        8) view_log "logs/economy_systems.log" ;;
+        9) view_log "logs/game_mechanics.log" ;;
+        10) view_log "/var/log/nginx/error.log" ;;
+        11) view_log "/var/log/nginx/access.log" ;;
+        12) view_log "/var/log/postgresql/postgresql-main.log" ;;
+        13) view_log "/var/log/redis/redis-server.log" ;;
+        14) view_log "/var/log/mail.log" ;;
+        15) view_log "logs/deploy.log" ;;
         0) return ;;
         *) error_log "Invalid option" ;;
     esac
@@ -746,6 +873,13 @@ initialize_system() {
     info_log "Setting up static files..."
     chmod +x setup_static_files.sh
     ./setup_static_files.sh
+    
+    # Check and fix configuration issues
+    check_and_fix_webapp
+    check_and_fix_base_html
+    if [ "$EUID" -eq 0 ]; then
+        check_and_fix_nginx
+    fi
     
     # Setup database if connection is available
     if check_database_connection; then
