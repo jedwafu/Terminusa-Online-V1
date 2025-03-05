@@ -96,18 +96,6 @@ def login_page():
         return render_template('error.html', 
                              error_message='An error occurred while loading the page. Please try again later.'), 500
 
-@app.route('/marketplace/item', methods=['POST'])
-@jwt_required()
-def create_marketplace_item():
-    """Create new marketplace item - requires authentication"""
-    try:
-        data = request.get_json()
-        # Implementation for creating item
-        return jsonify({'status': 'success'})
-    except Exception as e:
-        logger.error(f"Error creating marketplace item: {str(e)}")
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
 @app.errorhandler(404)
 def not_found_error(error):
     """Handle 404 errors"""
