@@ -34,7 +34,8 @@
                 <a href="https://terminusa-online.gitbook.io/terminusa-online-whitepaper" class="nav-link" target="_blank">Whitepaper</a>
                 <a href="{{ url_for('pages.leaderboard') }}" class="nav-link">Leaderboard</a>
                 <a href="{{ url_for('pages.marketplace') }}" class="nav-link">Marketplace</a>
-                <a href="{{ url_for('pages.swapper') }}" class="nav-link">Buy Exons</a>
+<!-- Remove or comment out the invalid link -->
+<!-- <a href="{{ url_for('pages.swapper') }}" class="nav-link">Buy Exons</a> -->
                 {% if current_user.is_authenticated %}
                 <a href="{{ url_for('pages.play') }}" class="nav-button">Play Now</a>
                 <a href="{{ url_for('auth.logout') }}" class="nav-link">Logout</a>
