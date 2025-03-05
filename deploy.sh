@@ -232,79 +232,6 @@ check_and_fix_webapp() {
     fi
 }
 
-# Function to check and create web_app_simple.py if it doesn't exist
-check_and_create_simple_webapp() {
-    info_log "Checking for web_app_simple.py..."
-    
-    if [ ! -f "web_app_simple.py" ]; then
-        info_log "web_app_simple.py not found. Creating a simplified version..."
-        
-        cat > web_app_simple.py << EOF
-from flask import Flask, render_template, jsonify, request, redirect, url_for
-import os
-import logging
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-app = Flask(__name__, 
-            static_url_path='/static',
-            static_folder='static')
-
-@app.route('/')
-def index():
-    """Home page"""
-    return render_template('index.html', title='Home')
-
-@app.route('/play')
-def play_page():
-    """Play page"""
-    return redirect('https://play.terminusa.online')
-
-@app.route('/login')
-def login_page():
-    """Login page"""
-    try:
-        return render_template('login_new.html', 
-                             title='Login',
-                             is_authenticated=False)
-    except Exception as e:
-        logger.error(f"Error rendering login page: {str(e)}")
-        return render_template('error.html', 
-                             error_message='An error occurred while loading the page. Please try again later.'), 500
-
-@app.errorhandler(404)
-def not_found_error(error):
-    """Handle 404 errors"""
-    if request.path.startswith('/api/'):
-        return jsonify({'error': 'Not found'}), 404
-    return render_template('error.html', 
-                         error_message='The page you are looking for could not be found.'), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    """Handle 500 errors"""
-    if request.path.startswith('/api/'):
-        return jsonify({'error': 'Internal server error'}), 500
-    return render_template('error.html', 
-                         error_message='An internal server error occurred. Please try again later.'), 500
-
-if __name__ == '__main__':
-    # Get port from environment or use default
-    port = int(os.getenv('WEBAPP_PORT', 3000))
-    debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-    
-    # Run the app
-    app.run(host='0.0.0.0', port=port, debug=debug)
-EOF
-        
-        success_log "Created web_app_simple.py"
-    else
-        success_log "web_app_simple.py already exists"
-    fi
-}
-
 # Function to check and fix base.html template
 check_and_fix_base_html() {
     info_log "Checking base.html for invalid endpoints..."
@@ -524,22 +451,18 @@ start_services() {
     
     # Check if virtual environment exists
     if [ ! -d "venv" ]; then
-        info_log "Virtual environment not found, creating..."
+        info_log "Creating virtual environment..."
         python3 -m venv venv || {
             error_log "Failed to create virtual environment"
             return 1
         }
+        
+        # Install dependencies
         source venv/bin/activate
         pip install --upgrade pip
-        pip install -r requirements.txt || {
-            error_log "Failed to install dependencies"
-            return 1
-        }
-    else
-        # Activate virtual environment
-        source venv/bin/activate
+        pip install -r requirements.txt
     fi
-    
+
     # Start application services in screen sessions
     for service in "${!SERVICE_SCREENS[@]}"; do
         screen_name=${SERVICE_SCREENS[$service]}
@@ -549,13 +472,7 @@ start_services() {
                     start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python app.py > logs/flask.log 2>&1"
                     ;;
                 "webapp")
-                    # Check if web_app_simple.py exists and use it instead if available
-                    if [ -f "web_app_simple.py" ]; then
-                        info_log "Using web_app_simple.py instead of web_app.py"
-                        start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python web_app_simple.py > logs/web.log 2>&1"
-                    else
-                        start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python web_app.py > logs/web.log 2>&1"
-                    fi
+                    start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python web_app.py > logs/web.log 2>&1"
                     ;;
                 "terminal")
                     start_screen "$screen_name" "cd $(pwd) && source venv/bin/activate && python terminal_server.py > logs/terminal.log 2>&1"
