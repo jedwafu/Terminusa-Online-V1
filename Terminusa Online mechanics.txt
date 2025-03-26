@@ -1,0 +1,144 @@
+Hi Agent! Add this to your considerations of developing this game. This is an MMORPG play-to-earn dungeon hunter game integrated with Solana blockchain with game and marketplace currencies of Solana, Exons and Crystals. The game is text-based and must be playable on terminal via web browser technology called xterm.js. Here are the things to consider:
+
+
+Instructions:
+1.) Read and comprehend Terminusa Online files and documents.
+
+2.) Re-align the source codes, database and design according to the notes provided below these instructions.
+
+3.) We are already in the production stage of the game. Direct testing in production is our current practice.
+
+4.) Create deploy.sh script. this will be our one-stop shop for deploying and managing the server.
+
+5.) Improve the documentations and the README file for our git repo and create a changelog.md file to keep track on changes and progress on specific dates.
+
+here are the notes to consider:
+
+Project name: Terminusa Online
+*this is inspired by solo leveling and known dungeon hunter games
+
+-Make mechanics that the player should have an in-game wallet with 3 currencies (Solana, Exons and Crystals). Player can send exons from their web3 wallet or via swaps using a token swapper system in game and via web app when they connect their web3 wallets.
+- **Solana**: Blockchain-based cryptocurrency for real-world value transactions.
+- **Exons**: Solana blockchain-based governance token.
+- **Crystals**: Off-chain in-game currency (soon to be tokenized as first utility token of the game).
+-Monsters are called Magic Beasts
+-Dungeons are called Gates
+-Make AI Agent that learns from the players of the game like their choices in menus, activities performed in game (example, more on gambling than gate hunting or vice versa and a like), job class, profile, inventory, status, achievement and progression.
+
+1.) I have a working VPS with IP 46.250.228.210 and domains:
+a.) https://terminusa.online - serves as the main website and account management (view profile, view inventory, view achievements, view progress, view job class, view status, etc.). This share the same account information, maybe API calls could work?
+b.) https://play.terminusa.online - servers as the play area of the game powered by xterm.js
+
+2.) I have initial source codes prepared:
+a.) study the existing files.
+b.) prototype for xterm.js terminal game is this client.py - currently playable in linux and windows.
+
+3.) Make a sustainable economy between these 3 currencies Solana, Exons, and Crystals. Create a token swapper system in game and via web app so players can swap solana for exons. Players can swap also exons for crystals.
+a.) create marketplace system - viewable via website under https://marketplace.terminusa.online
+b.) create trading system - can be done in game, trade inventory items for Exons and Crystals.
+c.) create Hunter Shop system - items can be purchased by Exons and Crystals.
+-----10 slots Inventory expansion can be bought by crystals
+-----rename licence can be bought by crystals
+-----high grade life potions and high grade life potions can be bought by crystals
+-----job reset can be bought by exons
+-----job license can be bought by exons
+-----hunter class upgrade licese can be bought by exons
+-----remote shop license can be bought by exons to buy and sell buy NPC items (lowest grade items) and sell loots can be purchased by exons. Player may also repair his equipment durability to 100% here but must pay Crystals.
+-----remote shop license can be bought by exons sells all antidotes for negative status like poisoned, feared, confused and etc (see health status system).
+-----basic resurrection potions can be purchased via exons. resurrection potion revives a player from being dead and will give 50% HP healed.
+-----higher resurrection poitions can be purchased via exons (this could resurrect a player from being dead, decapitated or a shadow) but the value is x3 of a basic resurrection potion and will give 100% HP healed.
+d.) create gacha system for mounts and pets- can only be purchaed by Exons (Mount and pate grade system - Basic, Intermediate, Excellent, Legendary and Immortal). Must be AI agent powered depending on player activities performed in game (example, more on gambling than gate hunting or vice versa and a like), job class, profile, stats, level and must be probably fair.
+e.) create a referral system for inviting players in the game. Rewards is leveraged depending on number of players invited in the multiples of 100 and invited players must reached level 50 in game. Rewards will be Crystals.
+f.) create a loyalty system for holding Exons and Crystals in their in-game wallet every month depending on their percentage of the blockchain. 
+g.) create a gambling system available to all players a flip coin game that rewards players twice of their bets in crystals. Must be AI agent powered depending on player activities performed in game (example, more on gambling than gate hunting or vice versa and a like), job class,  profile, stats, level and must be probably fair.
+h.) create a party system where in no limits of party members but the rewards sharing per member will decrease depending on how many they are in a party. Loot rewards depends on the loot system.
+i.) create a loot system where loots gained depends on the quality of gates, quality of magic beasts, total luck amount of players in the party.
+j.) create a player leveling and stats system aligned with solo-leveling anime that affects their performance in the whole game including gacha, gambling and rewards.
+k.) create an inventory system that may drop loots and percentage of their in-game currencies (Solana, Exons and Crystals) when they failed a gate or they die inside gate. If gate was cleared by the surviving party team members they may receive the drop loots of their dead comrades. All dropped loots and unrewarded loots will go to a admin account Solana wallet: FNEdD3PWMLwbNKxtaHy3W2NVfRJ7wqDNx4M9je8Xc6Mw
+l.) create a tax system that is implemented to all transactions in game and in market place:
+----13% tax of Crystals goes to the admin account username "adminbb"
+----13% tax of Exons goes to the admin account wallet FNEdD3PWMLwbNKxtaHy3W2NVfRJ7wqDNx4M9je8Xc6Mw
+----additional 2% tax of Crystals transaction for Guild system related and goes to the admin account "adminbb"
+----additional 2% tax of Exons transaction for Guild system related and goes to the admin account wallet: FNEdD3PWMLwbNKxtaHy3W2NVfRJ7wqDNx4M9je8Xc6Mw
+----gate Crystal rewards are also included to tax system
+m.) create a solana contract address system wherein the admin account can edit the Contract Address for Exons.
+n.) create a currency system where in we can add off-chain currencies and set the maximum supply of each currencies.
+-----Initial supply for Crystals is 100,000,000 only.
+-----include functions of tax system to set taxes inside currency system dashboard
+-----add option if selected currency can be earned in gates.
+
+4.) create a quest system with quest bank must be an AI agent powered that can orchestrate a quest according to the activities performed in game (example, more on gambling than gate hunting or vice versa and a like), job class, profile, inventory, status, achievement and progression of the player. include change class quests that requires job class license to be completed.
+
+5.) create a gate system must be an AI agent powered that can orchestrate a quest according to the activities performed in game (example, more on gambling than gate hunting or vice versa and a like), job class, profile, inventory, status, achievement and progression of the player. a player dies in a gate may be revived via resurrection potion.
+a.) inside gate, equipment my break or lose durability. computation is according to Damage to HP taken, Mana used and time spent in a gate. The longer a player finishes the gate the higher decrease in equipment durability.
+b.) a player inside a gate may be resurrected only using resurrection potion that can only be purchased via hunter shop.
+c.) life potions, mana potions and antidote to health statuses that may be used inside and outside gates.
+d.) gate system has two options. Solo or Party. Solo triggers solo combat system and Party triggers Party combat system.
+e.) gate system has grade system paterned in Solo-Leveling anime with Master or Monarch category magic beasts depending on the grade of the gate.
+
+6.) create a guild system. application for guild requires huge amount of exons and crystals. guild system gives mandatory guild quests to all members with decent rewards but of higher tax.
+
+7.) create a job system powered by AI agent. Make 5 basic classes: Fighter, Mage, Assassin, Archer, Healer. Make job rank up system limitless according to levels in a multiples of 50. Job quest may be given after hitting levels multiples of 50 and job quest depends on the AI agent powered system that based it decisions according to the activities performed in game (example, more on gambling than gate hunting or vice versa and a like), job , profile, inventory, status, achievement and progression.
+a.) healer classes and skills cannot ressurect a player and will never have that skill in a party raid in a gate but healers may regenarete HP and Mana of target player or party.
+b.) Jobs may mix again depending on the AI agent powered quest systems.
+c.) Jobs are limitless but please make a proper naming convention. If job path is not matched, list the jobs separated by a comma.
+
+8.) create durability system for equipment. 100% total health of equipment and if goes to 0% it will be broken and must be repaired using shop when outside gate raids or via remote shop license if inside a gate raid.
+
+9.) create a skill system must be an AI agent powered that can orchestrate a quest according to the activities performed in game (example, more on gambling than gate hunting or vice versa and a like), job, profile, inventory, status, achievement and progression of the player.
+a.) There should resurrection skills that can ressurect a player in gate raids.
+b.) Make a monarch skill called "Arise" that only Shadow Monarch job can have. This is excempted to the resurrection rule and the only skill that can ressurect a player or a magic beast only inside a gate that could help a shadow monarch job player increase its win rate in a gate. Once a player has been resurrected using "Arise" he can no longer play the game and his character will be marked as shadow in health status and owned by the player who casted Arise during the battle system. If the player wants to free from being a shadow. He needs to purchase a ressurection potion from the hunter shop.
+c.) skills may inflict health statuses
+---burn chance of getting after receiving a fire related skill damage that damages overtime a player inside and outside the gate. can only be healed by Chill Antidote and "Cure" skill of healers.
+---poisoned chance of getting after receiving a venom or poison related skill damage that damages overtime a player inside and outside the gate. can only be healed by Cleansing Antidote and "Cure" skill of healers.
+---frozen chance of getting after receiving a ice related skill damage that damages overtime a player inside and outside the gate. can only be healed by Flame antidote and "Cure" skill of healers.
+---feared chance of getting after receiving a negative aura related skill damage that damages overtime a player inside and outside the gate. can only be healed by Shilajit Antidote.
+---confused chance of getting after receiving a psychic related skill damage that damages overtime a player inside and outside the gate. can only be healed by Shilajit Antidote.
+---dismembered chance of getting after receiving a slash related skill damage that damages overtime a player inside and outside the gate. dismembered status can only be removed by "Regenerate" Skill of healers.
+---decapitated chance of getting after receiving a slash related skill damage that may kill a player instantly. Decapitated status requires higher resurrection potion from hunter shop. Only "Arise" skill may resurrect a decapitated player but will leave a shadow status.
+---shadow after being resurrected by a Shadow Monarch job your game status will be shadow that cannot perform any transactions, gate raids or any activities aside from buying from hunter shop. You need to buy higher resurrection poition to continue playing.
+
+10.) create a combat system to be used in gate raids. fully automatic and idle once entered solo or with party.
+a.) Solo combat system - triggers when chosen by a player to go inside a gate solo.
+---AI agent powered loot rewards system (solo gives higher rate of getting higher amount and quality of loots)
+b.) stronger magic beasts drops higher amount and quality of loots
+c.) only currency that can be farmed in gates are crystals or currencies enabled in currency system.
+d.) Party combat system - triggers when chosen by a player to enter a gate with his party
+---AI agent powered loot rewards system (solo gives higher rate of getting higher amount and quality of loots)
+
+11.) Add the following functions to Main Menu
+-Guild
+-Party
+--Create Party
+---Invite Part Members
+--Join Party
+---Show all available party
+
+12.) create achievement system that gives bonus stats and crystal rewards. Must be AI agent powered depending on player activities performed in game (example, more on gambling than gate hunting or vice versa and a like), job,  profile, stats and level.
+13.) work with virtual environment (venv venv) since we will be deploying this in a vps with multiple web apps.
+14.) Update the website with the following Key Features: Gate Cleared (overall total and total per gate class), AI Agent-powered quests and in-game mechanics, Guild System, Leaderboards, Marketplace, Solo-leveling or Party-leveling and Multi-platform
+15.) Replace Menu Bar with the following:
+----Home
+----Whitepaper (External Link>>> https://terminusa-online.gitbook.io/terminusa-online-whitepaper)
+----Leaderboards (Categories: Top Hunters(Rank, Name, Level, Job, Class, Overall total and total per gate class) and Top Guilds)
+----Marketplace
+----Buy Exons (hyperlink pending)
+----Manageme Account (redirect to https://terminusa.online/account.html)
+16.) Create hunter class system. from class F to class S. a player may upgrade his class using Hunter Association system. 
+----class upgrade requires hunter class upgrade licese to be purchased on Hunter Shop.
+----appraisal depends on AI-agents decision. Must be AI agent powered depending on player activities performed in game (example, more on gambling than gate hunting or vice versa and a like), job,  profile, stats and level.
+----class upgrade confidence level system. player and ai may use this system as meter if the player needs to an upgrade to his class.
+17.) This game's database will serve multiple websites. Maybe we can setup an API to serve multiple websites. This will be a good idea to make the game more scalable and easier to
+18.) Create element system, add elements to equipments and skills that would affect total damages that gain additional or decrease in percentage when element is used against a player with element dominance.
+---use element dominance (according to dominant elements in skills and equipement of a player) to compute additional or decrease in damage
+---a player may have 7 elements (neutral, holy, fire, water, lightning, earth, shadow)
+---neutral element or no element has no additional or decrease in damage received or dealt with.
+---shadow is an element that represent (darkness, poison, undead)
+---holy is the absolute weakness of shadow
+---shadow is the absolute weakness of holy
+---elements have weaknesses and strenghts. you search and decide the correct mechanics for this.
+19.) Create equipment level system. Player can upgrade their equipments by paying crystals, amount of crystals required increases as level of equipment increases. Max level of upgrade depends on max level of player. Success rate must be an AI agent powered that can gauge success rate percentage according to the activities performed in game (example, more on gambling than gate hunting or vice versa and a like), job class, profile, inventory, status, achievement and progression of the player
+20.) We are deploying this in production using a Almalinux VPS 8.8 with apache(httpd)+nginx running as webserver and reverse proxy.
+21.) We have to use TOML technology and not .env
+22.) DB details are as follows>> username: root | password: Jeidel123
+23.) We will retain the use of executable client file. Therefore, players may play using web browser https://play.terminusa.online and client executable file. Both will be connected to the same database and should only allow one session at a time, to prevent duplicate login and to prevent players from playing in both platforms at the same time.
