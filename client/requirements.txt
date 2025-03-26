@@ -1,5 +1,0 @@
-rich==13.5.2
-requests==2.31.0
-python-dotenv==0.15.0
-asyncio==3.4.3
-aiohttp==3.8.1

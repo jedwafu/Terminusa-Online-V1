@@ -1,0 +1,29 @@
+[package]
+name = "rustyhack_client"
+version = "0.3.2"
+authors = ["pbellchambers <pbellchambers@users.noreply.github.com>"]
+edition.workspace = true
+homepage = "https://github.com/pbellchambers/rustyhack-mmo"
+repository = "https://github.com/pbellchambers/rustyhack-mmo"
+license = "AGPL-3.0"
+readme = "../README.md"
+description = "Client for Rustyhack MMO - An ASCII \"roguelike\" MMORPG"
+keywords = ["game", "roguelike", "mmorpg", "ascii-art", "terminal-game"]
+categories = ["games"]
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rustyhack_lib = { path = "../rustyhack_lib" }
+log.workspace = true
+simplelog.workspace = true
+console_engine.workspace = true
+crossterm.workspace = true
+laminar.workspace = true
+crossbeam-channel.workspace = true
+bincode.workspace = true
+regex.workspace = true
+chrono.workspace = true
+rayon.workspace = true
+message-io.workspace = true

@@ -1,0 +1,60 @@
+{
+  "monsters": [
+    {
+      "monster_type": "Snake",
+      "spawn_positions": [
+        {
+          "x": 49,
+          "y": 30
+        },
+        {
+          "x": 68,
+          "y": 23
+        },
+        {
+          "x": 66,
+          "y": 34
+        }
+      ]
+    },
+    {
+      "monster_type": "Kobold",
+      "spawn_positions": [
+        {
+          "x": 93,
+          "y": 8
+        },
+        {
+          "x": 86,
+          "y": 10
+        },
+        {
+          "x": 98,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "monster_type": "Rat",
+      "spawn_positions": [
+        {
+          "x": 24,
+          "y": 3
+        },
+        {
+          "x": 48,
+          "y": 9
+        }
+      ]
+    },
+    {
+      "monster_type": "Zombie",
+      "spawn_positions": [
+        {
+          "x": 3,
+          "y": 29
+        }
+      ]
+    }
+  ]
+}

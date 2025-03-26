@@ -1,278 +1,48 @@
-# Terminusa Online
-
-A terminal-based MMORPG inspired by Solo Leveling, featuring AI-driven mechanics, a robust economy system, and Web3 integration. Play directly in your browser using a terminal interface powered by xterm.js.
-
-## Features
-
-- **Terminal Interface**: Browser-based terminal gameplay using xterm.js
-- **Real-time Interaction**: WebSocket-based communication for instant responses
-
-- **AI-Driven Game Mechanics**: Dynamic quest generation, adaptive difficulty, and personalized achievements
-- **Multi-Currency System**: Integrated with Solana blockchain (SOL, EXON, Crystals)
-- **Combat System**: Real-time combat with status effects and elemental mechanics
-- **Gate System**: Procedurally generated dungeons with varying difficulties
-- **Job System**: Multiple classes with unique progression paths
-- **Guild System**: Guild management, quests, and guild wars
-- **Party System**: Group-based activities with shared rewards
-- **Equipment System**: Upgradeable gear with durability mechanics
-- **Achievement System**: AI-evaluated progress tracking
-- **Gacha System**: Mount and pet summoning with dynamic rates
-- **Gambling System**: Coin flip game with AI-adjusted probabilities
-- **Hunter Shop**: Special items and licenses
-
-## Prerequisites
-
-### Server Requirements
-- Python 3.8+
-- PostgreSQL 12+
-- Redis 6+
-- Node.js 14+ (for Web3 features)
-- Solana CLI tools (for blockchain integration)
-
-### Client Requirements
-- Modern web browser with WebSocket support
-- Node.js and npm for client dependency management
-
-## Installation
-
-### Server Setup
-
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/terminusa-online.git
-cd terminusa-online
-```
-
-2. Create and activate a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# or
-venv\Scripts\activate  # Windows
-```
-
-3. Install server dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-4. Set up environment variables:
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
-
-5. Initialize the system:
-```bash
-# This will:
-# - Create the terminusa user
-# - Set up directories and permissions
-# - Install systemd service
-# - Initialize the database
-# - Set up static files
-./deploy.sh
-# Select option 1 from the menu
-```
-
-### Service Management
-
-The terminal server runs as a systemd service for reliability. Service file is located in:
-```
-services/terminusa-terminal.service
-```
-
-Service commands:
-```bash
-# Start the service
-sudo systemctl start terminusa-terminal
-
-# Stop the service
-sudo systemctl stop terminusa-terminal
-
-# Check status
-sudo systemctl status terminusa-terminal
-
-# View logs
-sudo journalctl -u terminusa-terminal
-```
-
-Or use the deploy script menu:
-```bash
-./deploy.sh
-# Options 2-4 for service management
-```
-
-### Client Setup
-
-1. Navigate to client directory:
-```bash
-cd client
-```
-
-2. Install client dependencies:
-```bash
-npm install
-```
-
-3. Build client assets:
-```bash
-npm run postinstall
-```
-
-## Configuration
-
-The application can be configured through environment variables or the `.env` file. Key configuration options:
-
-- `FLASK_APP`: Main application file (default: app.py)
-- `FLASK_ENV`: Environment (development/production)
-- `DATABASE_URL`: PostgreSQL connection URL
-- `REDIS_URL`: Redis connection URL
-- `SOLANA_RPC_URL`: Solana RPC endpoint
-- `JWT_SECRET_KEY`: Secret key for JWT tokens
-- `ADMIN_WALLET`: Admin wallet address for system operations
-
-See `config.py` for all configuration options.
-
-## Running the Application
-
-1. Start the main server:
-```bash
-python app.py
-```
-
-2. Start the terminal server:
-```bash
-python terminal_server.py
-```
-
-3. Start the client server:
-```bash
-cd client
-npm start
-```
-
-4. Start the monitoring server (optional):
-```bash
-python monitoring_server.py
-```
-
-5. Access the game:
-- Open https://play.terminusa.online in your browser
-- Or locally: http://localhost:3000
-
-## Development
-
-### Project Structure
-
-```
-terminusa-online/
-├── app.py              # Main application
-├── config.py           # Configuration
-├── game_manager.py     # Game state coordinator
-├── models/            # Database models
-├── game_systems/      # Game mechanics
-│   ├── ai_agent.py
-│   ├── combat_manager.py
-│   ├── currency_system.py
-│   ├── equipment_system.py
-│   ├── gacha_system.py
-│   ├── gambling_system.py
-│   ├── gate_system.py
-│   ├── guild_system.py
-│   ├── hunter_shop.py
-│   ├── job_system.py
-│   └── party_system.py
-├── static/           # Static files
-└── templates/        # HTML templates
-```
-
-### Adding New Features
-
-1. Create new system in `game_systems/`
-2. Add models in `models/`
-3. Register system with `GameManager`
-4. Add configuration in `config.py`
-5. Update documentation
-
-### Testing
-
-Run tests with:
-```bash
-pytest
-```
-
-## API Documentation
-
-### Authentication
-
-All game actions require JWT authentication. Get a token via:
-
-```http
-POST /api/auth/login
-{
-    "username": "user",
-    "password": "pass"
-}
-```
-
-### Game Actions
-
-Game actions are performed through:
-
-```http
-POST /api/game/action
-{
-    "action": "action_name",
-    "params": {
-        // Action-specific parameters
-    }
-}
-```
-
-See API documentation for all available actions.
-
-## Deployment
-
-1. Set up production server:
-```bash
-./deploy.sh setup
-```
-
-2. Configure SSL certificates:
-```bash
-./deploy.sh ssl
-```
-
-3. Deploy application:
-```bash
-./deploy.sh deploy
-```
-
-## Monitoring
-
-Access monitoring dashboard at:
-```
-https://terminusa.online/admin/monitoring
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit changes
-4. Push to the branch
-5. Create a Pull Request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Support
-
-For support, email support@terminusa.online or join our Discord server.
-
-## Acknowledgments
-
-- Solo Leveling for inspiration
-- Solana team for blockchain integration support
-- Open source community for various libraries used
+![Rustyhack Logo](https://github.com/pbellchambers/rustyhack-mmo/raw/main/assets/logo/rustyhack-logo.png "Rustyhack Logo")
+
+# Rustyhack MMO
+A barebones cross between an ASCII "roguelike" and MMORPG / MUD written in Rust. Lacking a lot of basic features. It currently has a client & server console program that allows a player to be created, move around, fight other players/monsters, pick up and drop things, look at things, and level up.
+
+[![Build status](https://img.shields.io/github/actions/workflow/status/pbellchambers/rustyhack-mmo/main.yml?branch=main)](https://github.com/pbellchambers/rustyhack-mmo/actions)
+[![Downloads](https://img.shields.io/github/downloads/pbellchambers/rustyhack-mmo/total)](https://github.com/pbellchambers/rustyhack-mmo/releases)
+[![License](https://img.shields.io/github/license/pbellchambers/rustyhack-mmo)](https://github.com/pbellchambers/rustyhack-mmo/blob/main/LICENSE)
+
+
+## Usage
+1. Download the relevant OS version from [Releases](https://github.com/pbellchambers/rustyhack-mmo/releases)
+2. Unzip
+3. Run `rustyhack_server` from the command line
+4. Run `rustyhack_client` from the command line
+5. Connect client to server *(note: if you're running both locally, just accept the default address/ports, and it will autoconfigure)*
+6. By default, the server will back up to `rustyhack_server_world_backup.json` every 60 seconds, and will attempt to load from this on start (if it exists)
+
+## Controls
+- Movement: ← ↑ → ↓ Arrow keys
+- Combat: Move into enemy
+- Commands:
+  - L - Look around you
+  - P - Pick up item underneath you
+  - D - Drop item
+  - U - increase stat points after level up
+  - M - change map when standing on map exit location
+- Quit: Ctrl-q
+
+## Components
+- **rustyhack_client** - contains all the client code
+- **rustyhack_server** - contains all the server code
+- **rustyhack_lib** - contains modules that are shared between both client and server
+- **assets** - assets required for the server to run, note: assets directory must be in the same location as `rustyhack_server`
+
+## Assets
+Currently, the following functionality is defined entirely by text or json files located in the `assets` directory:
+- **maps** - *.map plain-text* - Map definitions. All maps should be enclosed by a boundary of # characters in any shape, and end with a % character on the last line. See existing examples.
+- **map_exits** - *.json* - Map exit locations, and where they lead.
+- **monsters** - *.json* - Types of monsters, their stats and inventory etc.
+- **spawns** - *.json* - Spawn locations of monsters. There should be one spawn file per map.
+
+## Building from source
+1. Install latest version of [rust](https://www.rust-lang.org/) (most recently confirmed working `1.85.0`)
+2. Download this repository
+3. Run `cargo build` in the repository root directory
+4. Copy `assets` directory into `target/debug` directory
+5. Run `rustyhack_server` and `rustyhack_client` from `target/debug` directory

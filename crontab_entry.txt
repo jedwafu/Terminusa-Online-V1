@@ -1,2 +1,0 @@
-# Run deploy script every 5 minutes to sync with GitHub
-*/5 * * * * /root/deploy.sh >> /root/deploy.log 2>&1
